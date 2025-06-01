@@ -1,0 +1,14 @@
+2000-06-02  Fixed bug when saving templates. Erase the file "ide.php.conf" if you're upgrading from version 1.0.
+2000-06-02  Added line numbers to "Fancy view".
+2000-06-03  Added 'Options' page
+2000-06-03  Added 'About' page
+2000-06-10  Added option - 'Protect entities'. Makes IE4/5 handle &amp;gt; etc correctly in the code window
+2000-06-12  New feature - IDE.PHP can now be used to develop any server-side code, including CGI!
+2000-06-12  Added options to edit suffix list (to control in which context code is evaluated, - ".php .html .cgi" etc)
+2000-06-12  Added options to control file permissions and newline characters, necessary for CGI on UNIX
+2000-07-16  Added option to save username & password. Needed for 'Fancy view' when using password protection.
+2000-07-16  Fixed minor bug when using </TEXTAREA>.
+2001-08-28  Fixed a few bugs, saving files and template with </TEXTAREA> etc.
+2002-04-09  Several bugfixes. tar.gz now expands in a version specific subdirectory
+2004-08-21  Bugfix: you can now save files named "0" (zero) in your data-dir without crashes (...)
+2009-09-28  Updated code for compatibility with php 5.2

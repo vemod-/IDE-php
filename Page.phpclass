@@ -1,0 +1,410 @@
+<?php
+/*******************************************************************************\
+*    IDE.PHP, a web based editor for quick PHP development                     *
+*    Copyright (C) 2000  Johan Ekenberg                                        *
+*                                                                              *
+*    This program is free software; you can redistribute it and/or modify      *
+*    it under the terms of the GNU General Public License as published by      *
+*    the Free Software Foundation; either version 2 of the License, or         *
+*    (at your option) any later version.                                       *
+*                                                                              *
+*    This program is distributed in the hope that it will be useful,           *
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of            *
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             *
+*    GNU General Public License for more details.                              *
+*                                                                              *
+*    You should have received a copy of the GNU General Public License         *
+*    along with this program; if not, write to the Free Software               *
+*    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA *
+*                                                                              *
+*    To contact the author regarding this program,                             *
+*    please use this email address: <ide.php@ekenberg.se>                      *
+\*******************************************************************************/
+
+class Page {
+	var $Bgcolor		= "#E0E4EA";
+	var $Box_color	= "#2d2d2d";
+	var $Box_bgcolor	= "#ffffff";
+	var $Link_color	= "#0A0AA0";
+	var $Alink_color	= "#0000CC";
+	var $Vlink_color	= "#464686";
+	public string $CSS_code = "";
+	public string $JS_code = "";
+
+	function html_top($encoding="UTF-8") {
+	   $ret = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
+	   //$ret = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
+	$ret.="<html><head>";
+	//$ret .=	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />";   
+	$ret .= "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=$encoding\">";
+	   //$ret .= "<script src=\"codepress/codepress.js\" type=\"text/javascript\"></script>  ";
+	   /*
+		$ret .= "<script language=\"javascript\" type=\"text/javascript\" src=\"editarea_0_8_2/edit_area/edit_area_full.js\"></script>";
+		
+		$ret .= "<script language=\"javascript\" type=\"text/javascript\">";
+		$ret .= "editAreaLoader.init({id: \"code\",start_highlight: true	// if start with highlight
+				,allow_resize: \"both\"
+				,allow_toggle: true
+				,word_wrap: true
+				,language: \"en\"
+				,syntax: \"php\"
+				,allow_toggle: false
+				,browsers:\"all\"	
+				,display:\"onload\"
+	});";
+		$ret .= "</script>";
+		*/
+		//$ret .= "<script type=\"text/javascript\" src=\"javascript/jshttpauth.js\"></script>";
+		//$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/lightbox.css\">\n";    
+		$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/ide.php.css\">\n";
+		$ret .= "<script type=\"text/javascript\" src=\"javascript/php_serializer.js\"></script>\n";    
+		$ret .= "<script type=\"text/javascript\" src=\"javascript/lightbox.js\"></script>\n";
+		$ret .= "<script src=\"javascript/ide.php.js\" type=\"text/javascript\"></script>\n";    
+		$ret .= "<!--[if gt IE 6]><!-->
+	<SCRIPT LANGUAGE=\"JavaScript\">
+	<!--
+			olderBrowser=false;
+	-->
+	</script>
+	<![endif]-->\n";    
+		
+		/*
+		ob_start();
+	   include('./lightbox.js');
+	   $ret.=ob_get_contents();
+	   ob_end_clean();
+	*/
+	   $ret .= "<TITLE>I D E . P H P</TITLE>\n";
+	   $ret .= "{$this->CSS_code}\n";
+	   $ret .= "{$this->JS_code}\n";   
+	   $ret .= "</HEAD>\n";
+	   $ret .= "<BODY BGCOLOR='{$this->Bgcolor}' LINK='{$this->Link_color}' ALINK='{$this->Alink_color}' VLINK='{$this->Vlink_color}'>\n";
+	   return ($ret);
+	}
+	
+	function html_bottom() {
+	   return "</BODY></HTML>\n";
+	}
+	
+	function begin_invisible_table($width, $attr="") {
+	   $ret = "<TABLE WIDTH='$width' BORDER='0' ";
+	   $ret .= (is_array($attr) ? join(" ", $attr) : NULL) . ">\n";
+	   return ($ret);
+	}
+	
+	function end_invisible_table() {
+	   $ret = "</TABLE>\n";
+	   return ($ret);
+	}
+	
+	function start_box_table($attr="") {
+	   $ret = "<TABLE BORDER='0' CELLPADDING='10' CELLSPACING='1' BGCOLOR='{$this->Box_color}' ALIGN='center' ";
+	   $ret .= (is_array($attr) ? join(" ", $attr) : NULL) . ">\n";
+	   //$ret .= "<TR><TD>\n";
+	   //$ret .= "<TABLE BORDER='0' CELLPADDING='3' CELLSPACING='1' BGCOLOR='{$this->Box_color}' ALIGN='center' HEIGHT='100%' WIDTH='100%'>\n";
+	   return ($ret);
+	}
+	
+	function end_box_table() {
+	   //$ret .= "</TABLE></TD></TR>";
+	   $ret = "</TABLE>\n";
+	   return ($ret);
+	}
+	
+	function info_box($width, $content) {
+	   $ret = $this->start_box_table(array("WIDTH='$width'"));
+	   $ret .= "<TR BGCOLOR='{$this->Box_bgcolor}'><TD>\n";
+	   //$ret .= $this->begin_invisible_table("100%", array("CELLPADDING='10'", "CELLSPACING='0'", "ALIGN='center'", "BGCOLOR='{$this->Box_bgcolor}'"));
+	   //$ret .= "<TR><TD CLASS='netscapesucks'>\n";
+	   $ret .= $content;
+	   //$ret .= "</TD></TR></TABLE>\n";
+	   $ret .= "</TD></TR>\n";
+	   $ret .= $this->end_box_table();
+	   return($ret);
+	}
+	
+	function menu_item($caption,$action,$disabled=false,$checked=false)
+	{
+		$checkmark='&nbsp;';
+		if ($checked)
+		{
+			$checkmark="&nbsp;&#10003;";
+		}
+		//$caption="<table border='1' cellspacing='0' cellpadding='0' width='100%'><tr><td style='width:20px;min-width:20px;text-align:left;'>$checkmark</td><td align='left'>$caption&nbsp;&nbsp;</td></tr></table>";
+		$caption="<span style='position:absolute;left:-7px;'>$checkmark</span>$caption&nbsp;&nbsp;";
+		if ($disabled)
+		{
+			return "<li class='disabled'>$caption</li>\n";
+		}
+		return "<li><a href='#' onClick='$action'>$caption</a></li>\n";
+	}
+	/*
+	function menu_top($caption)
+	{
+		$ret = "";
+		global $menu_id;
+		$menu_id++;
+		if ($caption != '')
+		{   
+			$ret .= "<div class='inside_menu'>\n";
+			$ret .="<div class='navcontainer'>\n";
+			$ret .="<ul class='navlist' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+			$ret .="<li><a href='#' id='current'>$caption</a></li>\n";
+			$ret .="<span id='sub_$menu_id' class='navsubbox'>\n";
+			return $ret;
+		}
+		$ret .= "<div class='inside_menu' style='padding:0px;margin:0px;visibility:hidden;'>\n";
+		$ret .="<div class='navcontainer'>\n";
+		$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+		$ret .="<li style='visibility:hidden;'>\n";
+		$ret .="<a href='#' id='current' style='padding:0px;margin:0px;padding-right:3px;visibility:hidden;height:21px;'></a></li>\n";
+		$ret .="<span id='sub_$menu_id' class='navsubbox' style='margin-left:3px;'>\n";
+		return $ret;    
+	}
+	
+	function menu_bottom()
+	{
+		$ret ="</span></ul></div>";   
+		$ret .="</div>\n";
+		return $ret;
+	}
+	*/
+	function menu_create($caption, $items)
+	{
+		$ret = "";
+		global $menu_id;
+		$menu_id++;
+		if ($caption != '')
+		{   
+			$ret .= "<div class='inside_menu'>\n";
+			$ret .="<div class='navcontainer'>\n";
+			$ret .="<ul class='navlist' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+			$ret .="<li><a href='#' id='current'>$caption</a></li>\n";
+			//$ret .="<span id='sub_$menu_id' class='navsubbox'>\n";
+			//return $ret;
+			//$x=new borderimg('span',"<div style='margin:-6px -9px -8px'>".$items."</div>","sub_$menu_id",'navsubbox','margin-top:8px;margin-left:9px;');        
+		}
+		else
+		{
+			$ret .= "<div class='inside_menu' style='padding:0px;margin:0px;visibility:hidden;'>\n";
+			$ret .="<div class='navcontainer'>\n";
+			$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+			$ret .="<li style='visibility:hidden;'>\n";
+			$ret .="<a href='#' id='current' style='padding:0px;margin:0px;padding-right:3px;visibility:hidden;height:21px;'></a></li>\n";
+			//$ret .="<span id='sub_$menu_id' class='navsubbox' style='margin-left:3px;'>\n";
+			//$x=new borderimg('span',"<div style='margin:-6px -9px -8px'>".$items."</div>","sub_$menu_id",'navsubbox','margin-top:8px;margin-left:12px;');        
+		}
+		//return $ret;    
+		//$x->borderwidth(8,39,44);
+		//$ret.= $x->borderimage('./images/mnshadow.png',10,39,44);
+		$ret .= "<span id='sub_$menu_id' class='navsubbox'><span class='insidesubbox'>$items</span></span>\n";
+		//$ret.= $items;
+		$ret .="</ul></div>";   
+		$ret .="</div>\n";
+		return $ret;
+	}
+	
+	function menu_button($caption,$action,$disabled=false,$checked=false,$right_align=false)
+	{
+		$ret = "";
+		if ($right_align)
+		{
+			$ret .= "<div class='inside_menu' style='float:right;clear:left;'>";    
+		}
+		else
+		{
+			$ret .= "<div class='inside_menu'>";
+		}    
+		$buttonclass="class='btn'";    
+		if ($disabled)
+		{
+			$buttonclass="disabled class='btndisabled'";
+		}     
+		if ($checked)
+		{
+			$buttonclass="class='btnpressed'";    
+		}   
+		$ret .= "<a href='#' $buttonclass onClick='$action'>$caption</a>\n";
+		$ret.="</div>";
+		return $ret;
+	}
+	
+	function select_list($name,$value,$items)
+	{
+		$ret ="<select name='$name'>";
+		for ($i=0;$i<count($items);$i++)
+		{
+			$selected=($i+1==$value) ? ' selected':'';
+			$j=$i+1;
+			$ret.="<option value='$j'$selected>{$items[$i]}</option>";
+		}
+		$ret.="</select>";
+		return $ret;
+	}
+	
+	function __construct() {
+	   $this->CSS_code = "";
+	
+	   $this->JS_code = "";
+	}
+}
+/*
+class borderimg{
+	var $url;
+	var $width;
+	var $height;
+	var $borderwidth=array();
+	var $imgwidth=array();
+	var $elem;
+	var $style;
+	var $content;
+	var $class;
+	var $id;
+	function __construct($elem='span',$content='',$id='',$class='',$style='')
+	{
+		$this->content=$content;
+		$this->elem=$elem;
+		$this->style=$style;
+		if ($id)
+		{
+			$this->id="id='{$id}'";
+		}
+		if ($class)
+		{
+			$this->class="class='{$class}'";
+		}
+	}
+	function borderwidth($top,$right=-1,$bottom=-1,$left=-1)
+	{
+		$this->borderwidth['top']=$top;
+		$this->borderwidth['bottom']=$bottom;
+		$this->borderwidth['left']=$left;
+		$this->borderwidth['right']=$right;
+		if ($bottom==-1)
+		{
+			$this->borderwidth['bottom']=$this->borderwidth['top'];
+		}
+		if ($right==-1)
+		{
+			$this->borderwidth['right']=$this->borderwidth['top'];
+		}
+		if ($left==-1)
+		{
+			$this->borderwidth['left']=$this->borderwidth['right'];
+		}
+	}
+	function borderimage($url,$top,$right=-1,$bottom=-1,$left=-1)
+	{
+		$ret = "";
+		$this->url=$url;
+		$info=getimagesize($url);
+		$this->width=$info[0];
+		$this->height=$info[1];
+
+		$this->imgwidth['top']=$top;
+		$this->imgwidth['bottom']=$bottom;
+		$this->imgwidth['left']=$left;
+		$this->imgwidth['right']=$right;
+		if ($bottom==-1)
+		{
+			$this->imgwidth['bottom']=$this->imgwidth['top'];
+		}
+		if ($right==-1)
+		{
+			$this->imgwidth['right']=$this->imgwidth['top'];
+		}
+		if ($left==-1)
+		{
+			$this->imgwidth['left']=$this->imgwidth['right'];
+		}
+		$srcx=$this->width-$this->imgwidth['right'];
+		$middlew=$this->width-($this->imgwidth['left']+$this->imgwidth['right']);
+		$middleh=$this->height-($this->imgwidth['top']+$this->imgwidth['bottom']);
+		$srcy=$this->height-$this->imgwidth['bottom'];
+
+		$ret .= "<{$this->elem} {$this->id} {$this->class}
+		style='border-style:solid;
+		border-color:#ffffff;
+		border-top:{$this->borderwidth['top']}px;
+		border-right:{$this->borderwidth['right']}px;
+		border-bottom:{$this->borderwidth['bottom']}px;
+		border-left:{$this->borderwidth['left']}px;
+		background:url(\"imgslicer.php?image={$this->url}&srcw={$middlew}&srch={$middleh}&destw={$middlew}&desth={$middleh}&srcx={$this->imgwidth['left']}&srcy={$this->imgwidth['top']}\");
+		{$this->style}'
+		>\n";
+
+		//top section
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['left']}&srch={$this->imgwidth['top']}&destw={$this->borderwidth['left']}&desth={$this->borderwidth['top']}&srcx=0&srcy=0'
+		style='position:absolute;
+		left:-{$this->borderwidth['left']}px;
+		top:-{$this->borderwidth['top']}px;
+		z-index:-1;'
+		/>\n";
+		
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$middlew}&srch={$this->imgwidth['top']}&destw={$middlew}&desth={$this->borderwidth['top']}&srcx={$this->imgwidth['left']}&srcy=0'
+		style='position:absolute;
+		height:{$this->borderwidth['top']}px;
+		width:100%;
+		left:0px;
+		top:-{$this->borderwidth['top']}px;
+		z-index:-1;'
+		/>\n";
+
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['right']}&srch={$this->imgwidth['top']}&destw={$this->borderwidth['right']}&desth={$this->borderwidth['top']}&srcx={$srcx}&srcy=0'
+		style='position:absolute;
+		right:-{$this->borderwidth['right']}px;
+		top:-{$this->borderwidth['top']}px;
+		z-index:-1;'
+		/>\n";
+
+		//middle section
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['left']}&srch={$middleh}&destw={$this->borderwidth['left']}&desth={$middleh}&srcx=0&srcy={$this->imgwidth['top']}'
+		style='position:absolute;
+		left:-{$this->borderwidth['left']}px;
+		top:0px;
+		height:100%;
+		width:{$this->borderwidth['left']}px;
+		z-index:-1;'
+		/>\n";
+
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['right']}&srch={$middleh}&destw={$this->borderwidth['right']}&desth={$middleh}&srcx={$srcx}&srcy={$this->imgwidth['top']}'
+		style='position:absolute;
+		right:-{$this->borderwidth['right']}px;
+		top:0px;
+		height:100%;
+		width:{$this->borderwidth['right']}px;
+		z-index:-1;'
+		/>\n";
+
+		//bottom section;
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['left']}&srch={$this->imgwidth['bottom']}&destw={$this->borderwidth['left']}&desth={$this->borderwidth['bottom']}&srcx=0&srcy={$srcy}'
+		style='position:absolute;
+		left:-{$this->borderwidth['left']}px;
+		bottom:-{$this->borderwidth['bottom']}px;
+		z-index:-1;'
+		/>\n";
+
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$middlew}&srch={$this->imgwidth['bottom']}&destw={$middlew}&desth={$this->borderwidth['bottom']}&srcx={$this->imgwidth['left']}&srcy={$srcy}'
+		style='position:absolute;
+		height:{$this->borderwidth['bottom']}px;
+		width:100%;
+		left:0px;
+		bottom:-{$this->borderwidth['bottom']}px;
+		z-index:-1;'
+		/>\n";
+
+		$ret .= "<img src='imgslicer.php?image={$this->url}&srcw={$this->imgwidth['right']}&srch={$this->imgwidth['bottom']}&destw={$this->borderwidth['right']}&desth={$this->borderwidth['bottom']}&srcx={$srcx}&srcy={$srcy}'
+		style='position:absolute;
+		right:-{$this->borderwidth['right']}px;
+		bottom:-{$this->borderwidth['bottom']}px;
+		z-index:-1;'
+		\n/>";
+
+		//include ('imgslicer.php');
+		$ret .= "{$this->content}</{$this->elem}>";
+		return $ret;
+	}
+
+}
+*/
+?>
