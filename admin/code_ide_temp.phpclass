@@ -1,0 +1,170 @@
+<?php
+/*******************************************************************************\
+*    IDE.PHP, a web based editor for quick PHP development                     *
+*    Copyright (C) 2000  Johan Ekenberg                                        *
+*                                                                              *
+*    This program is free software; you can redistribute it and/or modify      *
+*    it under the terms of the GNU General Public License as published by      *
+*    the Free Software Foundation; either version 2 of the License, or         *
+*    (at your option) any later version.                                       *
+*                                                                              *
+*    This program is distributed in the hope that it will be useful,           *
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of            *
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             *
+*    GNU General Public License for more details.                              *
+*                                                                              *
+*    You should have received a copy of the GNU General Public License         *
+*    along with this program; if not, write to the Free Software               *
+*    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA *
+*                                                                              *
+*    To contact the author regarding this program,                             *
+*    please use this email address: <ide.php@ekenberg.se>                      *
+\*******************************************************************************/
+
+class Conf {
+/* Public vars begin with Uppercase letter,
+   private vars all lowercase. */
+   var $Success_message_color		= "#119900";
+   var $Alert_message_color		= "#DD0000";
+   //var $Fancy_line_number_color		= "#222222";
+   var $Conf_file			= "./ide.php.conf";
+   var $Code_file			= "./code_ide";	// Keeps the current code.
+   var $Backup_file			= "./backup_ide";	// Keeps the backed up code.
+   //var $tmp_file_basename		= "./tmp_ide";	// $this->$Eval_suffix get added here, forms $this->Tmp_file
+   var $Data_dir			= "./data";  
+
+    /*Just remember*/
+   var $Eval_path			= "./data/example";
+   var $Dir_path            = "./data";   
+   var $Dir_sortorder       = 1;
+   var $Current_file        ="./data/example";
+   var $IsBinary            =0; 
+   var $Encoding			="UTF-8";
+   var $Dirtyfile           =0;
+   var $Copy_file           ="";  
+   var $Previous_submit     ="";
+   var $Phpnet              =0;
+   var $Fancy               =0;
+   var $LayoutStyle         =1;  
+   var $tdleftstyle         ='width:18%';
+   var $tdmiddlestyle       ='width:41%';
+   var $tdrightstyle         ='width:41%';       
+   var $tdtopleftstyle         ='height:50%;width:18%';
+   var $tdtoprightstyle       ='height:50%;width:82%';
+   var $tdbottomstyle         ='height:50%;width:100%';  
+   var $recentfiles           ="";
+   var $recentdirs            ="";
+   var $recentevals           ="";  
+   var $Syncmode              ="temp";  
+   var $UIdata                =""; 
+   var $ftp_path			  ="";
+   var $ftp_system_path		  ="";
+         
+   /* Option defaults go here */
+   var $Allow_browse_below_root=0;
+   //var $Code_rows			= 36;
+   //var $Code_cols			= 80;
+   var $Code_template			= "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n<html>\n<head>\n<style type=\"text/css\">\n\n</style>\n<script language=\"javascript\">\n\n</script>\n</head>\n<body>\n<?php\n\n?>\n</body>\n</html>";
+   //var $Fancy_view_line_numbers		= 1;
+   var $Protect_entities		= 0;  
+   var $Eval_suffix_list		= array(".php", ".html", ".shtml", ".cgi", ".jsp");
+   var $Eval_executable			= 0;		// Needed for .cgi etc.
+   var $Unix_newlines			= 0;		// For cgi on UNIX
+   //var $Http_auth_username      = "";
+   //var $Http_auth_password      = ""; 
+   var $Phpneturl               = "http://php.net/manual-lookup.php";
+   var $Overwrite_original      = 1;  
+   var $Right_trim              = 1;
+   var $editorfont				= 1;
+   var $editorfontsize			= 4;
+   var $editorlinespace			= 3;
+
+   /* Names of config options go in this array */
+   var $conf_var_names			= array('Code_template','Protect_entities', 
+                                                'Eval_executable', 'Unix_newlines','Phpneturl','Overwrite_original','Allow_browse_below_root',
+                                                'Eval_path','Dir_path','Dir_sortorder','Current_file','IsBinary','Encoding','Dirtyfile','Copy_file',
+                                                'Previous_submit','Phpnet','Fancy','LayoutStyle','Eval_suffix_list',
+                                                'tdleftstyle','tdrightstyle','tdmiddlestyle','tdtoprightstyle','tdtopleftstyle','tdbottomstyle',
+                                                'recentfiles','recentdirs','recentevals','Right_trim','Syncmode','UIdata','ftp_path','ftp_system_path','editorfont','editorfontsize','editorlinespace');
+   /* Other vars */
+   var $saved_conf_array;
+
+function __construct() {
+   if (!is_dir('./'.$_SERVER['PHP_AUTH_USER']))
+   {
+      mkdir('./'.$_SERVER['PHP_AUTH_USER'],0777);
+   } 
+   $this->Conf_file='./'.$_SERVER['PHP_AUTH_USER'].'/ide_php.conf';
+   $this->Code_file='./'.$_SERVER['PHP_AUTH_USER'].'/code_ide';
+   $this->Backup_file='./'.$_SERVER['PHP_AUTH_USER'].'/backup_ide';   
+   if (!file_exists($this->Conf_file))
+   {
+       @unlink($this->Code_file);
+   }    
+   $this->init_vars();
+   //$this->Tmp_file = $this->tmp_file_basename . $this->Eval_suffix;
+   //sort($this->Eval_suffix_list);
+}
+
+function init_vars() {
+   global $_POST;
+   $this->saved_conf_array = $this->get_saved_conf_array();  
+   foreach ($this->conf_var_names as $var_name) {
+      if (isset($_POST[$var_name])) {
+         $this->$var_name = $_POST[$var_name];
+      }
+      elseif(isset($this->saved_conf_array[$var_name])) {
+         $this->$var_name = $this->saved_conf_array[$var_name];
+      }
+   }
+}
+
+function save_to_file($var_names = array()) {
+   if (! sizeof($var_names)) {				// No arg =
+      $var_names = $this->conf_var_names;		// save everything
+   }  
+   $save_to_file_array = $this->saved_conf_array;
+   //while (list(,$name) = each($var_names)) {
+   foreach ($var_names as $name) {
+      if (isset($this->$name)) {
+         $save_to_file_array[$name] = $this->$name;
+      }
+   }
+   $CONF_FILE = fopen($this->Conf_file, "w");
+   fputs ($CONF_FILE, serialize($save_to_file_array));
+   fclose ($CONF_FILE);
+   $this->saved_conf_array=$save_to_file_array;  
+}
+
+function get_saved_conf_array() {
+   if (! file_exists($this->Conf_file)) {
+      return FALSE;
+   }
+   $CF = fopen($this->Conf_file, "r");
+   $saved_conf_array = unserialize(fread($CF, filesize($this->Conf_file)));
+   fclose ($CF);
+   return ($saved_conf_array);
+}
+
+function get_saved_value($var) {
+   return($this->saved_conf_array[$var]);
+}
+
+function is_bad_environment() {
+   $error = "";
+   if (! (file_exists($this->Data_dir) || mkdir($this->Data_dir, 0705)) ) {
+      $error = "Directory {$this->Data_dir} doesn't exist and can not be created!<BR>
+                Possibly wrong permissions for the Ide.php directory?? (chmod 777)";      
+   }
+   elseif (! (is_writeable($this->Data_dir) && is_readable($this->Data_dir))) {
+      $error = "Directory {$this->Data_dir} has incorrect permissions!<BR>
+                PHP needs both read and write access to this directory! (chmod 777)";      
+   }
+   elseif (! is_writeable(".")) {
+      $error = "The Ide.php directory (current directory) has incorrect permissions!<BR>
+                PHP needs both read and write access to this directory! (chmod 777)";      
+   }
+   return $error;
+}
+
+}?>

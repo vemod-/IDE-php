@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+:popover-open {
+  width: 150px;
+  height: 150px;
+  position: absolute;
+
+
+
+
+  font-size: 25px;
+  font-weight:bold;
+	position:absolute;
+	display:block;
+	left:50px;
+	top:30px;
+    filter:alpha(opacity=85);
+    -moz-opacity: 0.85;
+    opacity: 0.85;
+	border:solid transparent;
+	border-width:9px 31px 46px 31px;
+	border-image:url("../images/mnshadow.png") 10% 49% 50%;
+	-moz-border-image:url("../images/mnshadow.png") 10% 49% 50%;
+	-webkit-border-image:url("../images/mnshadow.png") 10% 49% 50%;
+}
+</style>
+</head>
+<body>
+
+<h1>Demo of :popover-open</h1>
+
+<button popovertarget="myPopover">Open Popover</button>
+
+<div popover id="myPopover">HELLO!</div>
+
+</body>
+</html>

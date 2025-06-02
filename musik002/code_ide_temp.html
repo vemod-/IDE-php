@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<style type="text/css">
+
+</style>
+<script language="javascript">
+
+var browser = new Browser();
+
+var currentKnob='';
+
+function Browser() {
+
+  var ua, s, i;
+
+  this.isIE    = false;
+  this.isNS    = false;
+  //this.version = null;
+
+  ua = navigator.userAgent;
+
+  s = "MSIE";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isIE = true;
+    //this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  s = "Opera";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isIE = true;
+    //this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  s = "Netscape6/";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    //this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  // Treat any other "Gecko" browser as NS 6.1.
+
+  s = "Gecko";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    //this.version = 6.1;
+    return;
+  }
+}
+
+function initKnobs()
+{
+	var knobdiv=document.getElementById('knob1');
+	var i=1;
+	while (knobdiv)
+	{
+		knobdiv.style.position='relative';
+		var knobVal=document.getElementById('knob'+i+'_value');
+		if (!knobVal)
+		{
+			knobdiv.innerHTML="<input type='hidden' id='knob"+i+"_value' name='knob"+i+"_value'/>"+knobdiv.innerHTML;
+			knobVal=document.getElementById('knob'+i+'_value');
+		}
+		var knobimg=document.createElement('img');
+		knobimg.id='knobimg'+i;
+		knobimg.src='knob1.png';
+    		knobimg.onmousedown = function (event) {
+    			currentKnob=this.id;
+        		var knobbg=document.getElementById('knob_bg');
+
+        		if (!knobbg)
+        		{
+            			knobbg=document.createElement('div');
+            			knobbg.id='knob_bg';
+            			knobbg.style.top='0px';
+            			knobbg.style.left='0px';
+            			knobbg.style.width='100%';
+            			knobbg.style.height='100%';
+            			knobbg.style.position='fixed';
+            			//knobbg.style.backgroundColor='#ffffff';
+            			knobbg.style.display='block';
+            			knobbg.innerHTML=' ';
+            			//knobbg.onmousemove=new Function("dragGo(event);");
+            			//knobbg.onmouseup=new Function("dragStop(event);");
+            			document.body.appendChild(knobbg);
+        		}
+       			knobbg.style.zIndex=8000;
+        		this.parentNode.style.zIndex=8001;
+        		knobbg.style.cursor='default';
+        		knobbg.style.visibility='visible';
+
+	        	if (browser.isIE)
+        		{
+            			document.attachEvent("onmousemove", knob_dragGo);
+            			document.attachEvent("onmouseup",   knob_dragStop);
+          			window.event.cancelBubble = true;
+            			window.event.returnValue = false;
+        		}
+        		if (browser.isNS)
+        		{
+            			document.addEventListener("mousemove", knob_dragGo,   true);
+            			document.addEventListener("mouseup",   knob_dragStop, true);
+            			event.preventDefault();
+        		}
+			//return false;
+		};
+		var dotimg=document.createElement('img');
+		dotimg.id='dotimg'+i;
+		dotimg.src='dot.jpg';
+		dotimg.style.position='absolute';
+		knobdiv.insertBefore(knobimg,knobVal);
+		knobdiv.insertBefore(dotimg,knobVal);
+		setKnobValue(knobimg,getKnobValue(knobimg));
+		i++;
+		knobdiv=document.getElementById('knob'+i);
+	}
+}
+
+function knob_dragGo(event)
+{
+	var knob=document.getElementById(currentKnob);
+	setKnobValue(knob,getDotValue(event,knob));
+    if (browser.isIE)
+    {
+        window.event.cancelBubble = true;
+        window.event.returnValue = false;
+    }
+    if (browser.isNS)
+    {
+        event.preventDefault();
+    }
+}
+
+function knob_dragStop(event)
+{
+	var knob=document.getElementById(currentKnob);
+	setKnobValue(knob,getDotValue(event,knob));
+    if (browser.isIE) {
+        document.detachEvent("onmousemove", knob_dragGo);
+        document.detachEvent("onmouseup",   knob_dragStop);
+    }
+    if (browser.isNS) {
+        document.removeEventListener("mousemove", knob_dragGo,   true);
+        document.removeEventListener("mouseup",   knob_dragStop, true);
+    }
+    knob.parentNode.style.zIndex='auto';
+    var knobbg=document.getElementById('knob_bg');
+    knobbg.style.visibility='hidden';
+}
+
+function getY( oElement )
+{
+	var iReturnValue = 0;
+	while( oElement != null ) {
+		iReturnValue += oElement.offsetTop;
+		oElement = oElement.offsetParent;
+	}
+	return iReturnValue;
+}
+
+function getX( oElement )
+{
+	var iReturnValue = 0;
+	while( oElement != null ) {
+		iReturnValue += oElement.offsetLeft;
+		oElement = oElement.offsetParent;
+	}
+	return iReturnValue;
+}
+
+function getKnobIndex(knob)
+{
+	return knob.id.substring(7);
+}
+
+function getKnobMin(knob)
+{
+	var knobMin=document.getElementById('knob'+getKnobIndex(knob)+'_min');
+	if (knobMin)
+	{
+		return knobMin.value;
+	}
+	return 0;
+}
+
+function getKnobMax(knob)
+{
+	var knobMax=document.getElementById('knob'+getKnobIndex(knob)+'_max');
+	if (knobMax)
+	{
+		return knobMax.value;
+	}
+	return 100;
+}
+
+function getKnobValue(knob)
+{
+	var knobValue=document.getElementById('knob'+getKnobIndex(knob)+'_value');
+	if (knobValue.value)
+	{
+		return knobValue.value;
+	}
+	return getKnobMin(knob);
+}
+
+function getKnobDot(knob)
+{
+	return document.getElementById('dotimg'+getKnobIndex(knob));
+}
+
+function setKnobValue(knob,value)
+{
+    	var x=0.0;
+	var min=getKnobMin(knob);
+    	var max=getKnobMax(knob);
+
+    	if (value - min == 0)
+    	{
+        	x = 0.7;
+    	}
+    	else
+    	{
+        	x = (((6.283184 - 0.7) - 0.7) / ((max - min) / (value - min))) + 0.7
+    	}
+    	var dot=getKnobDot(knob);
+    	dot.style.left=(16 + parseInt(10.0 * -Math.sin(x),10))+'px';
+
+    	dot.style.top=(16 + parseInt(10.0 * Math.cos(x),10))+'px';
+    	var val=document.getElementById('knob'+getKnobIndex(knob)+'_value');
+    	if (val)
+    	{
+    		val.value=parseInt(value,10);
+    	}
+}
+
+function getDotValue(event,knob)
+{
+	var x,y,x2,y2,angle;
+	var min=getKnobMin(knob);
+  if (browser.isNS) {
+    x = event.clientX + window.scrollX;
+    y = event.clientY + window.scrollY;
+  }
+  if (browser.isIE) {
+    x = window.event.clientX + document.documentElement.scrollLeft
+      + document.body.scrollLeft;
+    y = window.event.clientY + document.documentElement.scrollTop
+      + document.body.scrollTop;
+  }
+  x-=getX(knob);
+  y-=getY(knob);
+
+    x2 = x - 16;
+    y2 = y - 16;
+    angle=0;
+    if (x2==0)
+    {
+        if (y2 < 0)
+        {
+        	angle = 3.141592;
+        }
+    }
+    else if (x2<0)
+    {
+        angle = Math.atan(y2 / x2) + (3.141592 / 2);
+    }
+    else
+    {
+        angle = Math.atan(y2 / x2) + (3.141592 * 1.5);
+    }
+    if (angle>(6.283184 - 0.7))
+    {
+    	angle = (6.283184 - 0.7);
+    }
+    if (angle < 0.7)
+    {
+    	angle = 0.7;
+    }
+    if (angle - 0.7 == 0)
+    {
+        return min;
+    }
+    return parseInt(((getKnobMax(knob) - min) / (((6.283184 - 0.7) - 0.7) / (angle - 0.7))),10) + parseInt(min,10);
+}
+</script>
+</head>
+<body bgcolor='#cccccc'>
+<form name='main_form' method='post'>
+
+<div id='knob1'>
+<input type='hidden' id='knob1_min' value='5'>
+<input type='hidden' id='knob1_max' value='105'>
+<input type='text' id='knob1_value' value='100'>
+</div>
+
+<div id='knob2'>
+
+</div>
+
+</form>
+<script language='javascript'>
+initKnobs();
+</script>
+</body>
+</html>
