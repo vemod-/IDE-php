@@ -134,7 +134,7 @@ class Ide
 				$this->Conf->Fancy=$_POST['fancy'];
 			} elseif($_POST['action']=='chmod_file') {
 				if (!@chmod($_POST['some_file_name'],octdec(substr('0000'.$_POST['chmod_value'], -4)))) {
-					$this->alert_message = "Could not CHMOD file {$_POST['some_file_name']}: $php_errormsg";
+					$this->alert_message = "Could not CHMOD file {$_POST['some_file_name']}";
 				} else {
 					clearstatcache();
 				}
@@ -355,7 +355,7 @@ class Ide
 			} elseif($_POST['action'] == 'save_as_template') {
 				$this->Conf->Code_template = $this->Edit->getCode();
 				$this->success_message .= 'Template was saved';
-			} elseif($_POST['action'] == 'set_unzip') {
+			} /*elseif($_POST['action'] == 'set_unzip') {
 				$zippath=realpath($this->Conf->Dir_path);
 				exec("cd $zippath; unzip ".realpath($this->Conf->Current_file),$output,$return_var);
 				if ($return_var==0)
@@ -366,7 +366,19 @@ class Ide
 				{
 					$this->alert_message .= 'Could not unzip archive '.basename($this->Conf->Current_file);
 				}	
-			} elseif($_POST['action'] == 'zip_folder') {
+			} */elseif ($_POST['action'] == 'set_unzip') {
+				$zippath = realpath($this->Conf->Dir_path);
+				$zipfile = realpath($this->Conf->Current_file);
+			
+				$zip = new ZipArchive();
+				if ($zip->open($zipfile) === TRUE) {
+					$zip->extractTo($zippath);
+					$zip->close();
+					$this->success_message .= 'Archive ' . basename($this->Conf->Current_file) . ' was unzipped';
+				} else {
+					$this->alert_message .= 'Could not unzip archive ' . basename($this->Conf->Current_file);
+				}
+			} /*elseif($_POST['action'] == 'zip_folder') {
 				$zippath=realpath($this->Conf->Dir_path.'/..');
 				$zipname=$zippath.'/'.basename($this->Conf->Dir_path).'.zip';
 				exec("cd $zippath; zip -r $zipname ./".basename($this->Conf->Dir_path),$output,$return_var);
@@ -383,6 +395,36 @@ class Ide
 				else
 				{
 					$this->alert_message .= 'Could not create archive '.$zipname;
+				}
+			}*/elseif ($_POST['action'] == 'zip_folder') {
+				$zippath = realpath($this->Conf->Dir_path . '/..');
+				$sourceDir = realpath($this->Conf->Dir_path);
+				$zipname = $zippath . '/' . basename($sourceDir) . '.zip';
+			
+				$zip = new ZipArchive();
+				if ($zip->open($zipname, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+					$files = new RecursiveIteratorIterator(
+						new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
+						RecursiveIteratorIterator::LEAVES_ONLY
+					);
+			
+					foreach ($files as $file) {
+						$filePath = $file->getRealPath();
+						$relativePath = substr($filePath, strlen($sourceDir) + 1);
+						$zip->addFile($filePath, $relativePath);
+					}
+			
+					$zip->close();
+					$this->success_message .= 'Archive ' . basename($zipname) . ' was created';
+			
+					$reldir = "{$this->Conf->Dir_path}/..";
+					$reldir = $this->shorten_reldir($reldir);
+					$this->Conf->Dir_path = $reldir;
+					$this->Conf->Current_file = '';
+					$this->Edit->createFromData('');
+					$this->save_code_files();
+				} else {
+					$this->alert_message .= 'Could not create archive ' . basename($zipname);
 				}
 			} elseif(($_POST['action'] == 'zip_system') || ($_POST['action'] == 'download_system')) {
 				$this->systemZip();
@@ -476,7 +518,7 @@ class Ide
 		// Or return null
 		return null;
 	}
-
+/*
 	function systemZip()
 	{
 		$sysdir=realpath('./');
@@ -497,6 +539,89 @@ class Ide
 		exec("cd $sysdir/systemzip; zip -r $sysdir/systemzip/idephp.zip ./idephp/*");
 		exec("rm -rf $sysdir/systemzip/idephp");
 	}
+*/
+
+	function systemZip()
+	{
+		$sysdir = realpath('./');
+		$zipDir = $sysdir . '/systemzip';
+		$tempDir = $zipDir . '/idephp';
+		$zipFile = $zipDir . '/idephp.zip';
+	
+		// Skapa tempstruktur
+		if (!is_dir($tempDir . '/data')) {
+			mkdir($tempDir . '/data', 0777, true);
+		}
+	
+		// Kopiera specifika filer
+		$sysfiles = [
+			'index.php', 'about_ide.php', 'admin_ide.php', 'Changes.txt', 'Conf.phpclass',
+			'encoding_ide.php', 'http_authenticate.php', 'license.txt', 'options_ide.php',
+			'Page.phpclass', 'readme.txt', 'web_about_ide.php', 'data/example'
+		];
+	
+		foreach ($sysfiles as $file) {
+			$source = $sysdir . '/' . $file;
+			$destination = $tempDir . '/' . $file;
+	
+			// Se till att undermappar finns (t.ex. data/)
+			if (!is_dir(dirname($destination))) {
+				mkdir(dirname($destination), 0777, true);
+			}
+	
+			copy($source, $destination);
+		}
+	
+		// Kopiera kataloger (rekursivt)
+		$sysdirs = ['images', 'javascript', 'css'];
+		foreach ($sysdirs as $dir) {
+			$sourceDir = $sysdir . '/' . $dir;
+			$targetDir = $tempDir . '/' . $dir;
+	
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
+	
+			foreach ($iterator as $item) {
+				$destPath = $targetDir . '/' . $iterator->getSubPathName();
+				if ($item->isDir()) {
+					mkdir($destPath, 0777, true);
+				} else {
+					if (!is_dir(dirname($destPath))) {
+						mkdir(dirname($destPath), 0777, true);
+					}
+					copy($item, $destPath);
+				}
+			}
+		}
+	
+		// Skapa ZIP
+		$zip = new ZipArchive();
+		if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+			$files = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS),
+				RecursiveIteratorIterator::LEAVES_ONLY
+			);
+	
+			foreach ($files as $file) {
+				$filePath = $file->getRealPath();
+				$relativePath = substr($filePath, strlen($tempDir) + 1);
+				$zip->addFile($filePath, $relativePath);
+			}
+	
+			$zip->close();
+		} else {
+			$this->alert_message .= "ZipArchive: Kunde inte skapa zipfil.";
+			return false;
+		}
+
+    // Rensa temporär mapp
+    $this->delTree($tempDir);
+
+    $this->success_message .= "Zip-fil skapad: idephp.zip";
+    return true;
+}
 
     function getRemoteFile($url)
     {
@@ -624,7 +749,7 @@ class Ide
 		$files = glob($dir . '*', GLOB_MARK );
 		foreach ($files as $file ) {
 			if (is_dir($file ) ) {
-				delTree($file );
+				this->delTree($file );
 			} else {
 				unlink($file );
 			}
@@ -648,9 +773,10 @@ class Ide
 	
 	function dir_is_empty($dir)
 	{
-		return(count(glob('$dir/*')) === 0) ? true : false;
+		//return(count(glob('$dir/*')) === 0) ? true : false;
+		return (count(glob($dir . '/*')) === 0);
 	}
-
+	/*
 	function shorten_reldir($reldir,$realpath='')
 	{
 		//optimization of relative a path
@@ -678,7 +804,11 @@ class Ide
 		}
 		return $ret;
 	}
-
+	*/
+	function shorten_reldir($reldir, $base = __DIR__) {
+		return str_replace($base, '.', realpath($reldir));
+	}
+	
 	function undo_file($filepath)
 	{
 		if (!file_exists($this->Conf->Backup_file)) {
@@ -803,7 +933,7 @@ class Ide
 		    $i++;
             $newfilename=$this->Conf->Dir_path.'/new_'.$i.'.php';    
         }
-		$menu .=$this->Out->menu_item('Download file...','main_form.save_as_filename.value="'.$this->Conf->Current_file.'";main_submit("set_download");');
+		$menu = $this->Out->menu_item('Download file...','main_form.save_as_filename.value="'.$this->Conf->Current_file.'";main_submit("set_download");');
 		$menu .=$this->Out->menu_item('Upload file...','upload_file();');
 		$menu .=$this->Out->menu_item('Get file from URL...','get_url_file();');
 		$menu .=$this->Out->menu_item('Give permissions','chmod_file("'.$this->Conf->Current_file.'","0666");',!file_exists($this->Conf->Current_file));		
@@ -916,7 +1046,7 @@ class Ide
 		$ret .= "<a href='#' class='imgbutton' onClick='main_form.phpnet.value=0;main_submit(\"eval\");' title='Run'>&nbsp;&nbsp;<img src='images/play.png'/>&nbsp;&nbsp;</a>";
 		$ret .= "</div>";
 		//$ret.=$this->Out->menu_top('Evaluate');
-		$menu .=$this->Out->menu_item('Sync','main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="sync"){main_form.syncmode.value="";}else{main_form.syncmode.value="sync";}main_submit("eval_sync");',!file_exists($this->Conf->Current_file),$this->Conf->Syncmode=='sync');
+		$menu = $this->Out->menu_item('Sync','main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="sync"){main_form.syncmode.value="";}else{main_form.syncmode.value="sync";}main_submit("eval_sync");',!file_exists($this->Conf->Current_file),$this->Conf->Syncmode=='sync');
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('Temporary (auto ext)','main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="temp"){main_form.syncmode.value="";}else{main_form.syncmode.value="temp";}main_submit("eval_sync")',!file_exists($this->temp_file()),$this->Conf->Syncmode=='temp');
 		for ($i=0; $i<count($this->Conf->Eval_suffix_list); $i++) {
@@ -1048,11 +1178,11 @@ class Ide
 		{
 			$src='';
 		}
-		$ret .="<div class='fixed_window'>\n";
+		$ret ="<div class='fixed_window'>\n";
 		$ret .="<iframe id='evaluationwindow' name='evaluationwindow' frameborder='0' width='100%' height='100%' class='scroll_window' style='$borderstyle' src='".$src."'></iframe></div>\n";
 		return $ret;
 	}
-
+/*
 	function main_page()
 	{
 		global $_POST;
@@ -1190,6 +1320,128 @@ class Ide
 			echo $ret;
 		}
 		return($ret);
+	}
+*/
+	function main_page()
+	{
+		global $_POST;
+	
+		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
+	
+		$ret = <<<HTML
+	<form name="main_form" id="main_form" enctype="multipart/form-data" method="POST" action="{$h($_SERVER['PHP_SELF'])}">
+	<input type="hidden" name="action" id="action" value="">
+	<input type="hidden" name="prev_submit" value="{$h(md5(time() . session_id()))}">
+	<input type="hidden" id="change_counter" name="change_counter" value="{$h($this->Conf->Dirtyfile)}">
+	<input type="hidden" name="Current_filename" id="Current_filename" value="{$h($this->Conf->Current_file)}">
+	<input type="hidden" id="save_as_filename" name="save_as_filename" value="{$h($_POST['save_as_filename'] ?? '')}">
+	<input type="hidden" id="fancy" name="fancy" value="{$h($this->Conf->Fancy)}">
+	<input type="hidden" id="phpnet" name="phpnet" value="{$h($this->Conf->Phpnet)}">
+	<input type="hidden" id="syncmode" name="syncmode" value="{$h($this->Conf->Syncmode)}">
+	<input type="hidden" id="layoutstyle" name="layoutstyle" value="{$h($this->Conf->LayoutStyle)}">
+	<input name="current_directory" id="current_directory" type="hidden" value="">
+	<input name="sortorder" id="sortorder" type="hidden" value="">
+	<input name="some_file_name" id="some_file_name" type="hidden" value="">
+	<input name="chmod_value" id="chmod_value" type="hidden" value="">
+	HTML;
+	
+		// Layout style values, using fallback from POST
+		foreach ([
+			'td_left_style' => 'tdleftstyle',
+			'td_middle_style' => 'tdmiddlestyle',
+			'td_right_style' => 'tdrightstyle',
+			'td_top_left_style' => 'tdtopleftstyle',
+			'td_top_right_style' => 'tdtoprightstyle',
+			'td_bottom_style' => 'tdbottomstyle'
+		] as $postKey => $confProp) {
+			$this->Conf->$confProp = $_POST[$postKey] ?? $this->Conf->$confProp;
+			$ret .= "<input type='hidden' name='{$h($postKey)}' id='{$h($postKey)}' value='{$h($this->Conf->$confProp)}'>\n";
+		}
+	
+		// Start wrapper div
+		$ret .= "<div class='wrapper' id='wrapper_div'><div class='relative'>";
+	
+		if ($this->Conf->LayoutStyle == 1) {
+			// 3-column layout
+			$ret .= <<<HTML
+	<table class='insidediv'><tr>
+	<td style="{$h($this->Conf->tdleftstyle)}" class="insidedivpad" id="td_left">
+	<div class="relative"><div class="insidewrapper">
+	{$this->file_window('border-left:0px;border-bottom:0px;')}
+	</div><div class="header">{$this->file_menu()}</div></div></td>
+	<td style="{$h($this->Conf->tdmiddlestyle)}" class="insidedivpad" id="td_middle">
+	<div class="vert_container"><div id="splitter1" class="vert_split" onmousedown="dragStart(event,this.id,'td_left')"></div></div>
+	<div class="relative"><div class="insidewrapper">
+	{$this->code_window('border-left:0px;border-bottom:0px;')}
+	</div><div class="header">{$this->code_menu()}</div></div></td>
+	<td style="{$h($this->Conf->tdrightstyle)}" class="insidedivpad" id="td_right">
+	<div class="vert_container"><div id="splitter2" class="vert_split" onmousedown="dragStart(event,this.id,'td_middle')"></div></div>
+	<div class="relative"><div class="insidewrapper">
+	{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
+	</div><div class="header">{$this->eval_menu()}</div></div></td>
+	</tr></table>
+	HTML;
+		} else {
+			// Split top/bottom layout
+			$ret .= <<<HTML
+	<table class='insidediv'>
+	<tr>
+	<td class='insidedivpad' style="{$h($this->Conf->tdtopleftstyle)}" id="td_top_left">
+	<div class="relative"><div class="insidewrapper">
+	{$this->file_window('border-left:0px;')}
+	</div><div class="header">{$this->file_menu()}</div></div></td>
+	<td class='insidedivpad' style="{$h($this->Conf->tdtoprightstyle)}" id="td_top_right">
+	<div class="vert_container"><div id="splitter1" class="vert_split" onmousedown="dragStart(event,this.id,'td_top_left')"></div></div>
+	<div class="relative"><div class="insidewrapper">
+	{$this->code_window('border-left:0px;border-right:0px;')}
+	</div><div class="header">{$this->code_menu()}</div></div></td>
+	</tr><tr>
+	<td colspan="2" class='insidedivpad' style="{$h($this->Conf->tdbottomstyle)}" id="td_bottom">
+	<div class="horiz_container"><div id="splitter2" class="horiz_split" onmousedown="dragStart(event,this.id,'td_top_left%td_top_right')"></div></div>
+	<div class="relative"><div class="insidewrapper">
+	{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
+	</div><div class="header">{$this->eval_menu()}</div></div></td>
+	</tr></table>
+	HTML;
+		}
+	
+		// Global toolbar
+		$ret .= <<<HTML
+	</div></div>
+	<div class="globalheader">
+	{$this->toolbar_left()}
+	{$this->toolbar_middle()}
+	{$this->toolbar_right()}
+	</div>
+	</form>
+	HTML;
+	
+		// Save UI data
+		$this->Conf->recentfiles = $this->recentfiles->save();
+		$this->Conf->recentdirs = $this->recentdirs->save();
+		$this->Conf->recentevals = $this->recentevals->save();
+		if (isset($_POST['UIdata'])) {
+			$this->Conf->UIdata = $_POST['UIdata'];
+		}
+		$this->Conf->save_to_file();
+	
+		// JavaScript block
+		$ret .= "<script>\nsyncTextarea(" . json_encode($this->Conf->UIdata) . ");\n</script>\n";
+	
+		// Confirm overwrite if needed
+		if (!empty($_POST['overwrite_ok'])) {
+			$fileName = $h($_POST['save_as_filename']);
+			$action = $h($_POST['action']) . '_replace';
+			$ret .= "<script>\nae_confirm(callback_submit,'The file {$fileName} already exists, replace?','{$action}');\n</script>\n";
+		}
+	
+		// Start download on load
+		if (isSet($_POST['action']) && $_POST['action'] === 'download_system') {
+			$ret .= "<script>window.onload = startdownload;</script>\n";
+			echo $ret;
+		}
+	
+		return $ret;
 	}
 
 }

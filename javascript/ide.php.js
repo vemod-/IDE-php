@@ -315,14 +315,18 @@ function select_lines(elem,startLine,endLine)
 }
  
 function showHideLayer() {
+    const menu = document.getElementById(sub_id);
    if (show==true)
    {     
-      document.getElementById(sub_id).style.visibility = "visible";
-      document.getElementById(sub_id).style.zIndex=1000;          
+      menu.style.visibility = "visible";
+      menu.style.display = "block";
+      menu.style.zIndex = 99999; 
+      //menu.style.position = "absolute";           
    }
    else
    {
-      document.getElementById(sub_id).style.visibility = "hidden";
+   		menu.style.display = "none";
+      //menu.style.visibility = "hidden";
    }
 }
 

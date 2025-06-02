@@ -99,7 +99,6 @@ td.toolbar{
     white-space: nowrap;
     background-color:#f3f3f3;
 	position:relative;
-	top:-11px;
 }
 .header,.leftheader,.leftheaderinfo,.globalheader{
     top:0px;
@@ -507,12 +506,14 @@ display:none;
 .navsubbox{
     font-weight:bold;
 	position:absolute;
-	visibility:hidden;
-	display:block;
+	//visibility:hidden;
+	display:none;
 	left:-25px;
     filter:alpha(opacity=85);
     -moz-opacity: 0.85;
     opacity: 0.85;
+    //z-index: 1000;
+    z-index: 99999;
 	border:solid transparent;
 	border-width:9px 31px 46px 31px;
 	border-image:url("../images/mnshadow.png") 10% 49% 50%;
