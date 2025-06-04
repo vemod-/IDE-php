@@ -16,7 +16,7 @@ class options
 		$this->Conf=new Conf;
 		if (isSet($_POST['action']) && $_POST['action'] == "save_options") {
 			$this->options_page_save(array('Protect_entities',
-			'Eval_executable', 'Unix_newlines','Overwrite_original','Phpneturl','Allow_browse_below_root','Right_trim','Eval_suffix_list','editorfont','editorfontsize','editorlinespace'));
+			'Eval_executable', 'Unix_newlines','Overwrite_original','Phpneturl','Allow_browse_below_root','UseCodeMirror','Right_trim','Eval_suffix_list','editorfont','editorfontsize','editorlinespace'));
 		}
 		if (isSet($_POST['options_action'])) {
 			if ($_POST['options_action'] == "add_suffix") {
@@ -51,6 +51,7 @@ class options
 		$unix_newlines_checked = $this->Conf->Unix_newlines ? "CHECKED" : "";
 		$overwriteoriginal_checked = $this->Conf->Overwrite_original ? "CHECKED" : "";
 		$Allow_browse_below_root_checked = $this->Conf->Allow_browse_below_root ? "CHECKED" : "";
+		$UseCodeMirror_checked = $this->Conf->UseCodeMirror ? "CHECKED" : "";
 		$Right_trim_checked = $this->Conf->Right_trim ? "CHECKED" : "";
 		reset($this->Conf->Eval_suffix_list);
 		$sections = array("<P><INPUT TYPE='CHECKBOX' NAME='Overwrite_original' VALUE='1' $overwriteoriginal_checked>
@@ -63,7 +64,9 @@ class options
 		Protect HTML entities(IE4/5)<br/>
 		<INPUT TYPE='CHECKBOX' NAME='Eval_executable' VALUE='1' $eval_executable_checked>Make temporary files executable(CGI on UNIX)<br/>
 		<INPUT TYPE='CHECKBOX' NAME='Unix_newlines' VALUE='1' $unix_newlines_checked>
-		Use UNIX newlines(CGI on UNIX)
+		Use UNIX newlines(CGI on UNIX)<br/>
+		<INPUT TYPE='CHECKBOX' NAME='UseCodeMirror' VALUE='1' $UseCodeMirror_checked>
+		Use CodeMirror Editor
 		</P>",
 		"<P CLASS='indentall'>Suffix list:&nbsp;&nbsp;<b><I>&nbsp;" . join(" &nbsp;", $this->Conf->Eval_suffix_list) . "</I></b></P>\n
 		<P CLASS='indentall'><INPUT TYPE='text' NAME='add_remove_suffix' SIZE='8'> Add/remove suffix
@@ -98,6 +101,7 @@ class options
 		$this->Conf->Right_trim = $_POST['Right_trim'] ? 1 : 0;
 		$this->Conf->Overwrite_original = $_POST['Overwrite_original'] ? 1 : 0;
 		$this->Conf->Allow_browse_below_root = $_POST['Allow_browse_below_root'] ? 1 : 0;
+		$this->Conf->UseCodeMirror = $_POST['UseCodeMirror'] ? 1 : 0;
 		$this->Conf->Protect_entities = $_POST['Protect_entities'] ? 1 : 0;
 		$this->Conf->Eval_executable = $_POST['Eval_executable'] ? 1 : 0;
 		$this->Conf->Unix_newlines = $_POST['Unix_newlines'] ? 1 : 0;

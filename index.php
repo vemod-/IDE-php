@@ -138,6 +138,8 @@ class Ide
 				$this->Conf->Phpnet=$_POST['phpnet'];
 			} elseif($_POST['action']=='fancy') {
 				$this->Conf->Fancy=$_POST['fancy'];
+			//} elseif($_POST['action']=='use_code_mirror') {
+			//	$this->Conf->UseCodeMirror=$_POST['use_code_mirror'];
 			} elseif($_POST['action']=='chmod_file') {
 				if (!@chmod($_POST['some_file_name'],octdec(substr('0000'.$_POST['chmod_value'], -4)))) {
 					$this->alert_message = "Could not CHMOD file {$_POST['some_file_name']}";
@@ -992,19 +994,11 @@ class Ide
 	function code_menu()
 	{
 		$ret ="<div class='top_window_z1000'>";
-		/*
-    if ($this->Conf->Fancy)
-    {
-        $ret .= "<a href='#' class='btnpressed' id='submit_fancy_view' onClick='main_form.fancy.value=(1-main_form.fancy.value);main_form.action.value=\"fancy\"; main_form.submit()'>Fancy view</a>";
-    }
-    else
-    {
-        $ret .= "<a href='#' class='btn' id='submit_fancy_view' onClick='main_form.fancy.value=(1-main_form.fancy.value);main_form.action.value=\"fancy\"; main_form.submit()'>Fancy view</a>";
-    }
-    */
-		//$ret .=$this->Out->menu_top('Code');
-		$menu =$this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
-		$menu .="<hr/>";
+		$menu = "";
+		if (!$this->Conf->UseCodeMirror) {
+			$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
+			$menu .="<hr/>";
+		}
 		$menu .=$this->Out->menu_item('Search...','search_textarea(true);',($this->Conf->Fancy or $this->Conf->IsBinary));
 		$menu .=$this->Out->menu_item('Replace...','replace_textarea();',($this->Conf->Fancy or $this->Conf->IsBinary));
 		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',($this->Conf->Fancy or $this->Conf->IsBinary));
@@ -1016,10 +1010,8 @@ class Ide
 		$menu .=$this->Out->menu_item('Save','main_submit("save");',(!file_exists($this->Conf->Current_file)));
 		$menu .=$this->Out->menu_item('Save as...','save_as("'.$this->Conf->Current_file.'")');
 		$menu .=$this->Out->menu_item('Encoding...','showFrame("./encoding_ide.php","","Encoding","Close",true);return false;');
-		//$ret .=$this->Out->menu_bottom($menu);
 		$ret .= $this->Out->menu_create('Code',$menu);
 		$menu='';
-		//$ret .=$this->Out->menu_top($this->Conf->Current_file);
 		for ($i=$this->recentfiles->count()-1; $i>=0; $i--) {
 			$menu .=$this->Out->menu_item($this->recentfiles->item($i),'submit_file("'.$this->recentfiles->item($i).'")',!file_exists($this->recentfiles->item($i)));
 			if ($i==$this->recentfiles->count()-1) {
@@ -1029,11 +1021,9 @@ class Ide
                 }
 			}
 		}
-		//$ret .=$this->Out->menu_bottom();
 		$ret .= $this->Out->menu_create($this->Conf->Current_file,$menu);
 		$ret .= "<div class='inside_menu'>";
 		$ret .= "<span id='dirty_p'>\n";
-		//$ret .='&nbsp;';
 		$ret .=($this->Conf->Dirtyfile>0) ? '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save">&nbsp;<img src="images/savel.png"/>&nbsp;</a>':'';
 		$ret .="</span>\n";
 		$ret .= "</div>\n";
@@ -1100,22 +1090,60 @@ class Ide
 	{
 		$ret ="<div class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror) {
+			$ret .= "
+				<!-- CSS och JS -->
+				<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.css\">
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.js\"></script>
+				
+				<!-- Språkmoduler -->
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/javascript/javascript.js\"></script>
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/php/php.js\"></script>
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/htmlmixed/htmlmixed.js\"></script>
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/xml/xml.js\"></script>
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/clike/clike.js\"></script>
+				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/css/css.js\"></script>
+				<script>
+				let editor = null;
+				document.addEventListener(\"DOMContentLoaded\", function() {
+					if (typeof(CodeMirror) !== 'undefined') {
+						if (document.getElementsByName('CodeMirrorTextArea').length > 0) {
+							editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {
+								lineNumbers: true,
+								mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
+								theme: \"default\",  // Du kan ladda in andra teman också
+								indentUnit: 4,
+								tabSize: 4
+							});
+							editor.on(\"change\", () => checkDirtyCodeMirror());
+							editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
+							editor.on(\"focus\", () => checkDirtyCodeMirror());
+							editor.on(\"refresh\", () => checkDirtyCodeMirror());
+							checkDirtyCodeMirror();
+						}
+					}
+				});
+				</script>";
+			$ret .= "<style>
+				.CodeMirror, .CodeMirror pre {
+					{$this->code_style()}
+				}
+				</style>";
 		    $ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-
-			$ret .= '<textarea class="absolute" name="CodeMirrorTextArea" id="code" data-mode="'.$this->Edit->detectCodeMirrorMode($this->Conf->Current_file).'" style="'.$this->code_style().'">'.$this->Edit->getTextareaCode().'</textarea>';
+			$ret.='<div class="leftwrapperinfo" style="border-left:0;'.$this->code_style().'">';
+			$ret .= '<textarea class="absolute" name="CodeMirrorTextArea" id="code" data-mode="'.$this->Edit->detectCodeMirrorMode($this->Conf->Current_file).'">'.$this->Edit->getTextareaCode().'</textarea>';
+			$ret .= "</div>";
 			$ret .= "<div id='infobarborder'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
 			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>&nbsp;&nbsp;'.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'>&nbsp;<img src='images/lock.gif'>&nbsp;</a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).'&nbsp;';
 			$ret .= "</div>";
-
-			$ret.='</div>';
+			$ret .= '</div>';
 
 		}
         else if (!$this->Conf->IsBinary)
         {
     		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-	       	if ($this->Conf->Fancy==0) {
+	       	if ($this->Conf->Fancy == 0) {
 	   	       	$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
     			$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
 	       		$ret.='</div>';
@@ -1126,14 +1154,14 @@ class Ide
 		        $ret.='</div>';
 	       		$ret.='</div>';
     		}
-	       	$leftheaderclass=($this->Conf->Fancy==0) ? 'leftheaderinfo':'leftheader';
+	       	$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
     		$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
 	       	$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
     		//$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode(range(1, $this->Edit->getlen()), '<br />'). '</code>';
     		$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
 	       	$ret.= '</div>';
     		$ret.= '</div>';
-	       	if ($this->Conf->Fancy==0) {
+	       	if ($this->Conf->Fancy == 0) {
 		      	$ret .= "<div id='infobarborder'></div>";
        			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 	       		$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
@@ -1353,6 +1381,7 @@ class Ide
 	<input type="hidden" name="Current_filename" id="Current_filename" value="{$h($this->Conf->Current_file)}">
 	<input type="hidden" id="save_as_filename" name="save_as_filename" value="{$h($_POST['save_as_filename'] ?? '')}">
 	<input type="hidden" id="fancy" name="fancy" value="{$h($this->Conf->Fancy)}">
+	<input type="hidden" id="use_code_mirror" name="use_code_mirror" value="{$h($this->Conf->UseCodeMirror)}">
 	<input type="hidden" id="phpnet" name="phpnet" value="{$h($this->Conf->Phpnet)}">
 	<input type="hidden" id="syncmode" name="syncmode" value="{$h($this->Conf->Syncmode)}">
 	<input type="hidden" id="layoutstyle" name="layoutstyle" value="{$h($this->Conf->LayoutStyle)}">
@@ -1878,7 +1907,7 @@ class Editor
     {
 		ob_start();
 		highlight_string($this->getCode());
-		$fancy_code_str.=ob_get_contents();
+		$fancy_code_str = ob_get_contents();
 		ob_end_clean();
 		return $fancy_code_str;    
     }

@@ -101,7 +101,7 @@ function main_submit(action) {
         }
         var codeData = editor.getValue();
         var elem = document.getElementById('code');
-		elem.remove();
+		elem.disabled = true;
 		var newElem = document.createElement('textarea');
 		newElem.name = 'code';
 		newElem.style.display = 'none'; // Dölj det
@@ -183,15 +183,6 @@ var sel_line_num=-1;
 
 function syncTextarea (UIstr) {
     var elem=document.getElementById('code');
-    if (document.getElementById('change_counter').value === 0)
-    {
-    	if (editor && typeof editor.getValue === 'function') {
-    		savedCode = editor.getValue();
-		}
-		else {
-        	savedCode = elem.value;
-        }
-    }     
     var UIfield=document.createElement('input');
     UIfield.id='UIdata';
     UIfield.name='UIdata';    
@@ -225,6 +216,15 @@ function syncTextarea (UIstr) {
    {
     return;
    }
+       if (Number(document.getElementById('change_counter').value) === 0)
+    {
+    	if (editor && typeof editor.getValue === 'function') {
+    		savedCode = editor.getValue();
+		}
+		else {
+        	savedCode = elem.value;
+        }
+    }     
     elem.onkeydown = function (evt) {
     var retval=catchTab(this,evt);
     //setTimeout("checkDirty()",0);
@@ -401,7 +401,7 @@ function showHideLayer() {
 
 function decimalToHex(d, padding) {
     var hex = Number(d).toString(16);
-    padding = typeof padding === "undefined" || padding === null ? padding = 2 : padding;
+    padding = typeof padding === "undefined" || padding == null ? padding = 2 : padding;
 
     while (hex.length < padding) {
         hex = "0" + hex;
@@ -429,7 +429,7 @@ function checkDirty()
 			{
 				selcode=selcode.replace(/\r/g,'');
 			}
-			if (selL !== 0)
+			if (selL != 0)
 			{
 				var selection=selcode.substring(selS,selS+selL);
 				var rows=selection.substring_count('\n')+1;
@@ -456,7 +456,7 @@ function checkDirty()
 	}
 	else
 	{
-		isdirty=(document.getElementById('change_counter').value>0);
+		isdirty=(Number(document.getElementById('change_counter').value) > 0);
 	} 
 	if (isdirty)
 	{
@@ -495,7 +495,7 @@ function checkDirtyCodeMirror() {
         if (savedCode.length > 0) {
             isDirty = currentCode !== savedCode;
         } else {
-            isDirty = (document.getElementById('change_counter').value > 0);
+            isDirty = (Number(document.getElementById('change_counter').value) > 0);
         }
 		if (isDirty)
 		{
@@ -532,7 +532,6 @@ function checkDirtyCodeMirror() {
         document.getElementById('infobar').innerHTML =
             save_image(isDirty, false) + '&nbsp;&nbsp;&nbsp;' + info + '&nbsp;&nbsp;&nbsp;' + ccodestr;
     }
-
     return isDirty;
 }
 
@@ -555,7 +554,7 @@ function checkEnter(e)
 {
     var evt = e ? e : window.event;
 	var c = evt.which ? evt.which : evt.keyCode;
-    if (c === 13)
+    if (c == 13)
     {   
         document.main_form.action.value='eval_change';
         var evalbutton=document.getElementById('submit_eval');
@@ -582,11 +581,11 @@ function change_inc(c)
     {
         return;
     } 
-    if (c === 27){return;}
-    if (c === 45){return;}       
-    if (c === 91){return;}
-    if (c === 93){return;}    
-    if (c === 144){return;} 
+    if (c == 27){return;}
+    if (c == 45){return;}       
+    if (c == 91){return;}
+    if (c == 93){return;}    
+    if (c == 144){return;} 
     inc_changecount();       
 }
 
@@ -603,7 +602,7 @@ function inc_changecount(reset)
     }
     else
     {
-        document.getElementById('change_counter').value=0;
+        document.getElementById('change_counter').value = 0;
         document.getElementById('dirty_p').innerHTML='';
     }      
 }
@@ -635,14 +634,14 @@ function replaceSelection(input, replaceString) {
 			var selectionEnd = input.selectionEnd;	
 			input.value = input.value.substring(0, selectionStart)+ replaceString + input.value.substring(selectionEnd);
 		
-			if (selectionStart !== selectionEnd){ 
+			if (selectionStart != selectionEnd){ 
 				setSelectionRange(input, selectionStart, selectionStart + replaceString.length);
 			}else{
 				setSelectionRange(input, selectionStart + replaceString.length, selectionStart + replaceString.length);
 			}
 		}else if (document.selection) {
 			var range = document.selection.createRange();
-			if (range.parentElement() === input) {
+			if (range.parentElement() == input) {
 				var isCollapsed = range.text === '';
 				range.text = replaceString;
 	
@@ -762,16 +761,16 @@ function selLen(input,trueCharCount) {
 function catchTab(item,e){        
     var evt = e ? e : window.event;      
 	c = evt.which ? evt.which : evt.keyCode;
-	if (c === 114) //f3
+	if (c == 114) //f3
 	{
         search_textarea(false);
         return false;
     }	
-	if(c === 9){  //tab
+	if(c == 9){  //tab
         replaceSelection(item,String.fromCharCode(9));	
 		return false;
 	} 
-    if (c === 13)   // enter
+    if (c == 13)   // enter
     {   
         var code=document.getElementById(item.id);
         var SE=selEnd(item);
@@ -792,14 +791,14 @@ function create_text_event(str,id)
 		var selectionEnd = input.selectionEnd;	
 		input.value = input.value.substring(0, selectionStart)+ str + input.value.substring(selectionEnd);
     
-		if (selectionStart !== selectionEnd){ 
+		if (selectionStart != selectionEnd){ 
 			setSelectionRange(input, selectionStart, selectionStart + str.length);
 		}else{
 			setSelectionRange(input, selectionStart + str.length, selectionStart + str.length);
 		}
 	}else if (document.selection) { //IE
 		var range = document.selection.createRange();
-		if (range.parentElement() === input) {
+		if (range.parentElement() == input) {
 			var isCollapsed = range.text === '';
 			range.text = str;
 
@@ -859,7 +858,7 @@ function submit_file(file)
 
 function submit_file_callback(returncode,id,value)
 {
-    if (returncode !== 1)
+    if (returncode != 1)
     {
         main_submit("load_browse_discard");
         return;
@@ -874,9 +873,9 @@ function chmod_file(file,value)
 
 function chmod_callback(returncode,id,value)
 {
-    if (returncode === 1)
+    if (returncode == 1)
     {
-        if (value !== '' && value !== null)
+        if (value != '' && value != null)
         {
             document.getElementById('some_file_name').value=id;    
             document.getElementById('chmod_value').value=""+value+"";
@@ -894,9 +893,9 @@ function save_as(file)
 function prompt_callback(returncode,id,value)
 {
     //var answer = prompt ('Save as ',""+file+"");
-    if (returncode === 1)
+    if (returncode == 1)
     {      
-        if (value !== '' && value !== null)
+        if (value != '' && value != null)
         {    
             document.getElementById('save_as_filename').value=""+value+"";    
             main_submit(id);
@@ -948,7 +947,7 @@ function copy_file(path)
 
 function copy_file_callback(returncode,id,value)
 {
-    if (returncode !== 1)
+    if (returncode != 1)
     {
         main_submit("set_copy_discard");
     }
@@ -957,7 +956,7 @@ function copy_file_callback(returncode,id,value)
 
 function callback_submit(returncode,act)
 {
-    if (returncode !== 0)
+    if (returncode != 0)
     {
         main_submit(act);    
     }
@@ -1015,7 +1014,7 @@ function search_textarea(showDialog)
         var code=document.getElementById('code');    
         searchSelStart=selStart(document.getElementById('code'));
         searchSelEnd=selEnd(document.getElementById('code'));  
-        if (searchSelStart !== searchSelEnd)
+        if (searchSelStart != searchSelEnd)
         {
             searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
         }
@@ -1033,13 +1032,13 @@ function search_textarea(showDialog)
 function search_callback(returncode,id,value)
 {
     var code=document.getElementById('code');
-    if (returncode === 1)
+    if (returncode == 1)
     {
         value_array=value.split('|¤|');
         searchTerm=value_array[0];
-        searchMatchCase=(value_array[1] === 'true') ? true:false;
-        searchWholeWord=(value_array[2] === 'true') ? true:false;
-        searchSelected=(value_array[3] === 'true') ? true:false;          
+        searchMatchCase=(value_array[1] == 'true') ? true:false;
+        searchWholeWord=(value_array[2] == 'true') ? true:false;
+        searchSelected=(value_array[3] == 'true') ? true:false;          
         if (!searchSelected)
         {
             searchSelStart=0;
@@ -1047,11 +1046,11 @@ function search_callback(returncode,id,value)
         }
         searchPos=searchSelStart;                     
     }
-    if (returncode === 0)
+    if (returncode == 0)
     {
         return;
     }
-    if (searchTerm !== '' && searchTerm !== null)
+    if (searchTerm != '' && searchTerm != null)
     {    
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
@@ -1068,7 +1067,7 @@ function search_callback(returncode,id,value)
         while (1)
         {
             start=code.value.substring(searchPos,searchSelEnd).search(regex);
-            if (start !== -1)
+            if (start != -1)
             {
                 if (searchWholeWord)
                 {
@@ -1091,7 +1090,7 @@ function search_callback(returncode,id,value)
                 }
             }
         }
-        if (start === -1)
+        if (start == -1)
         {
             ae_alert(searchTerm + ' not found');        
         }
@@ -1107,7 +1106,7 @@ function replace_textarea()
         var code=document.getElementById('code');    
         searchSelStart=selStart(document.getElementById('code'));
         searchSelEnd=selEnd(document.getElementById('code'));    
-        if (searchSelStart !== searchSelEnd)
+        if (searchSelStart != searchSelEnd)
         {
             searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
         }    
@@ -1121,16 +1120,16 @@ function replace_callback(returncode,id,value)
 {
     var replacements=0;
     var code=document.getElementById('code');   
-    if (returncode === 1)
+    if (returncode == 1)
     {
         value_array=value.split('|¤|');
         searchTerm=value_array[0];
         replaceTerm=value_array[1];        
-        searchMatchCase=(value_array[2] === 'true') ? true:false;
-        searchWholeWord=(value_array[3] === 'true') ? true:false;    
-        searchSelected=(value_array[4] === 'true') ? true:false;          
+        searchMatchCase=(value_array[2] == 'true') ? true:false;
+        searchWholeWord=(value_array[3] == 'true') ? true:false;    
+        searchSelected=(value_array[4] == 'true') ? true:false;          
     }
-    if (returncode === 0)
+    if (returncode == 0)
     {
         return;
     }
@@ -1140,7 +1139,7 @@ function replace_callback(returncode,id,value)
         searchSelEnd=code.value.length;            
     }
     searchPos=searchSelStart;                           
-    if (searchTerm !== '' && searchTerm !== null && replaceTerm !== '' && replaceTerm !== null)
+    if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
     {     
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
@@ -1157,7 +1156,7 @@ function replace_callback(returncode,id,value)
         while (1)
         {
             start=code.value.substring(searchPos,searchSelEnd).search(regex);
-            if (start !== -1)
+            if (start != -1)
             {
                 if (searchWholeWord)
                 {
@@ -1174,7 +1173,7 @@ function replace_callback(returncode,id,value)
                 break;
             }
         }
-        if (replacements === 0)
+        if (replacements == 0)
         {
             ae_alert(searchTerm + ' not found');        
         }
@@ -1280,7 +1279,7 @@ function clearAuthenticationCache(page) {
 
     function clearAuthenticationCache_callback(returncode,page,value)
     {
-        if (returncode === 1)
+        if (returncode == 1)
         {
             if (page.length === 0) page = '.force_logout';
             try{
@@ -1355,7 +1354,7 @@ function validatePass()
         }
     }
 	// check for a value in both fields.
-	if (pw1 === '' || pw2 === '') {
+	if (pw1 == '' || pw2 == '') {
 		ae_alert('Please enter your password twice.');
 		return false;
 	}
@@ -1369,7 +1368,7 @@ function validatePass()
 		ae_alert("Sorry, spaces are not allowed.");
 		return false;
 	}
-	if (pw1 !== pw2) {
+	if (pw1 != pw2) {
 		ae_alert("You did not enter the same new password twice. Please re-enter your password.");
 		return false;
 	}
@@ -1383,7 +1382,7 @@ function getElementsByClassName(node,classname) {
 	var testClass = new RegExp("(^|\\s)" + classname + "(\\s|$)");
 	var tag = "*";
 	var node = node || document;
-	var elements = (tag === "*" && node.all)? node.all : node.getElementsByTagName(tag);
+	var elements = (tag == "*" && node.all)? node.all : node.getElementsByTagName(tag);
 	var returnElements = [];
 	var current;
 	var length = elements.length;
@@ -1506,7 +1505,7 @@ function dragStart(event,id, td1) {
 
     // If this is a text node, use its parent element.
 
-    if (dragObj.elNode.nodeType === 3)
+    if (dragObj.elNode.nodeType == 3)
       dragObj.elNode = dragObj.elNode.parentNode;
   }
 

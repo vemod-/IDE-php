@@ -34,60 +34,26 @@ class Page {
 	function html_top($encoding="UTF-8") {
 	   $ret = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
 	   //$ret = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
-	$ret.="<html><head>";
-	//$ret .=	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />";   
-	$ret .= "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=$encoding\">";
+		$ret.="<html><head>";
+		//$ret .=	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />";   
+		$ret .= "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=$encoding\">";
 	   //$ret .= "<script src=\"codepress/codepress.js\" type=\"text/javascript\"></script>  ";
 	   /*
 		$ret .= "<script language=\"javascript\" type=\"text/javascript\" src=\"editarea_0_8_2/edit_area/edit_area_full.js\"></script>";
 		
 		$ret .= "<script language=\"javascript\" type=\"text/javascript\">";
 		$ret .= "editAreaLoader.init({id: \"code\",start_highlight: true	// if start with highlight
-				,allow_resize: \"both\"
-				,allow_toggle: true
-				,word_wrap: true
-				,language: \"en\"
-				,syntax: \"php\"
-				,allow_toggle: false
-				,browsers:\"all\"	
-				,display:\"onload\"
-	});";
+			,allow_resize: \"both\"
+			,allow_toggle: true
+			,word_wrap: true
+			,language: \"en\"
+			,syntax: \"php\"
+			,allow_toggle: false
+			,browsers:\"all\"	
+			,display:\"onload\"
+		});";
 		$ret .= "</script>";
 		*/
-		
-		$ret .= "
-			<!-- CSS och JS -->
-			<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.css\">
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.js\"></script>
-			
-			<!-- Språkmoduler -->
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/javascript/javascript.js\"></script>
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/php/php.js\"></script>
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/htmlmixed/htmlmixed.js\"></script>
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/xml/xml.js\"></script>
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/clike/clike.js\"></script>
-			<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/css/css.js\"></script>
-			<script>
-			let editor = null;
-			document.addEventListener(\"DOMContentLoaded\", function() {
-				if (typeof(CodeMirror) !== 'undefined') {
-					if (document.getElementsByName('CodeMirrorTextArea').length > 0) {
-						editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {
-							lineNumbers: true,
-							mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
-							theme: \"default\",  // Du kan ladda in andra teman också
-							indentUnit: 4,
-							tabSize: 4
-						});
-						editor.on(\"change\", () => checkDirtyCodeMirror());
-						editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
-						editor.on(\"focus\", () => checkDirtyCodeMirror());
-						editor.on(\"refresh\", () => checkDirtyCodeMirror());
-						checkDirtyCodeMirror();
-					}
-				}
-			});
-			</script>";
 		//$ret .= "<script type=\"text/javascript\" src=\"javascript/jshttpauth.js\"></script>";
 		//$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/lightbox.css\">\n";    
 		$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/ide.php.css\">\n";

@@ -84,7 +84,7 @@ class Conf {
    var $conf_var_names			= array('Code_template','Protect_entities', 
                                                 'Eval_executable', 'Unix_newlines','Phpneturl','Overwrite_original','Allow_browse_below_root',
                                                 'Eval_path','Dir_path','Dir_sortorder','Current_file','IsBinary','Encoding','Dirtyfile','Copy_file',
-                                                'Previous_submit','Phpnet','Fancy','LayoutStyle','Eval_suffix_list',
+                                                'Previous_submit','Phpnet','Fancy','UseCodeMirror','LayoutStyle','Eval_suffix_list',
                                                 'tdleftstyle','tdrightstyle','tdmiddlestyle','tdtoprightstyle','tdtopleftstyle','tdbottomstyle',
                                                 'recentfiles','recentdirs','recentevals','Right_trim','Syncmode','UIdata','ftp_path','ftp_system_path','editorfont','editorfontsize','editorlinespace');
    /* Other vars */
