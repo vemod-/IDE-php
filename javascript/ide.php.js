@@ -6,11 +6,11 @@ var do_scroll_loop=is_opera;
 var browser = new Browser();
 var savedCode='';
 
-if (String.prototype.substring_count==null) String.prototype.substring_count=function(substring){ 
+if (!String.prototype.substring_count) String.prototype.substring_count=function(substring){ 
      var count = 0;
      var idx = 0;
 
-     while ((idx = this.indexOf(substring, idx)) != -1)
+     while ((idx = this.indexOf(substring, idx)) !== -1)
      {
         idx++;
         count++;
@@ -19,8 +19,8 @@ if (String.prototype.substring_count==null) String.prototype.substring_count=fun
      return count;
 }
 
-if (String.prototype.explode==null) String.prototype.explode=function(separator){ 
-     if (this.indexOf(separator) == -1)
+if (!String.prototype.explode) String.prototype.explode=function(separator){ 
+     if (this.indexOf(separator) === -1)
      {
         var retval=new Array();
         retval[0]=this;
@@ -54,7 +54,7 @@ window.onbeforeunload=function()
 {
     if (document.main_form)
     {
-        if ((document.main_form.action.value.length==0) || (document.main_form.action.value=='options') || (document.main_form.action.value=='about'))
+        if ((document.main_form.action.value.length === 0) || (document.main_form.action.value === 'options') || (document.main_form.action.value === 'about'))
         {
             if (checkDirty())
             {
@@ -67,29 +67,69 @@ window.onbeforeunload=function()
 var show;
 var sub_id;
 
-function main_submit(action)
-{
-    var elem=document.getElementById('code');
-    if (elem)
-    {
-        //document.main_form.scrollposy.value=parseInt(elem.scrollTop,10);
-        //document.main_form.scrollposx.value=parseInt(elem.scrollLeft,10);
-        var php = new PHP_Serializer();
-        var UIdata=new Array();
-        if (document.getElementById('UIdata').value.length)
-        {        
-            UIdata=php.unserialize(document.getElementById('UIdata').value);
+function main_submit(action) {
+    var php = new PHP_Serializer();
+    var UIdata = {};
+
+    var uidataField = document.getElementById('UIdata');
+    if (uidataField && uidataField.value.length) {
+        UIdata = php.unserialize(uidataField.value);
+    }
+
+    // === CodeMirror-variant ===
+    if (editor) {
+        // Scrollposition
+        var scrollInfo = editor.getScrollInfo();
+        UIdata['scrollTop'] = scrollInfo.top;
+        UIdata['scrollLeft'] = scrollInfo.left;
+
+        // Markering / cursor
+        var sel = editor.listSelections();
+        if (sel.length > 0) {
+            var anchor = sel[0].anchor;
+            var head = sel[0].head;
+
+            UIdata['selAnchorLine'] = anchor.line;
+            UIdata['selAnchorCh'] = anchor.ch;
+            UIdata['selHeadLine'] = head.line;
+            UIdata['selHeadCh'] = head.ch;
+
+            var startPos = editor.indexFromPos(anchor);
+            var endPos = editor.indexFromPos(head);
+            UIdata['selStart'] = Math.min(startPos, endPos);
+            UIdata['selEnd'] = Math.max(startPos, endPos);
         }
-        UIdata['scrollTop']=parseInt(elem.scrollTop,10);
-        UIdata['scrollLeft']=parseInt(elem.scrollLeft,10);
-        if (elem.tagName.toLowerCase()=='textarea')
-        {
-            UIdata['selStart']=selStart(elem,true);
-            UIdata['selEnd']=selEnd(elem,true);
-        }           
-        document.getElementById('UIdata').value=php.serialize(UIdata);
-    }            
-    document.main_form.action.value=action;
+        var codeData = editor.getValue();
+        var elem = document.getElementById('code');
+		elem.remove();
+		var newElem = document.createElement('textarea');
+		newElem.name = 'code';
+		newElem.style.display = 'none'; // Dölj det
+		newElem.value = codeData;
+		document.main_form.appendChild(newElem);
+    }
+
+    // === Fallback till vanlig <textarea> ===
+    else {
+        var elem = document.getElementById('code');
+        if (elem) {
+            UIdata['scrollTop'] = parseInt(elem.scrollTop, 10) || 0;
+            UIdata['scrollLeft'] = parseInt(elem.scrollLeft, 10) || 0;
+
+            if (elem.tagName.toLowerCase() === 'textarea') {
+                UIdata['selStart'] = selStart(elem, true);
+                UIdata['selEnd'] = selEnd(elem, true);
+            }
+        }
+    }
+
+    // Skriv tillbaka till dolt fält
+    if (uidataField) {
+        uidataField.value = php.serialize(UIdata);
+    }
+
+    // Skicka formuläret
+    document.main_form.action.value = action;
     document.main_form.submit();
 }
 
@@ -104,23 +144,54 @@ function startdownload()
 	document.getElementById('main_form').submit();
 }
 
-function UItimeout()
-{
-    var elem=document.getElementById('code');
+function UItimeout() {
     var php = new PHP_Serializer();
-    var UIdata=php.unserialize(document.getElementById('UIdata').value);
-    if (elem.tagName.toLowerCase()=='textarea')
-    {
-        setSelectionRange(elem,UIdata['selStart'],UIdata['selEnd'],true);
-    }    
-    elem.scrollTop=UIdata['scrollTop'];   
-    elem.scrollLeft=UIdata['scrollLeft'];              
+    var uidataField = document.getElementById('UIdata');
+    if (!uidataField || !uidataField.value.length) return;
+
+    var UIdata = php.unserialize(uidataField.value);
+
+    // === CodeMirror-variant ===
+    if (editor && typeof editor.scrollTo === 'function') {
+        // Återställ scrollposition
+        editor.scrollTo(UIdata['scrollLeft'] || 0, UIdata['scrollTop'] || 0);
+
+        // Återställ markering
+        if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
+            var startPos = editor.posFromIndex(UIdata['selStart']);
+            var endPos = editor.posFromIndex(UIdata['selEnd']);
+            editor.setSelection(startPos, endPos);
+        }
+
+    // === Fallback till vanlig <textarea> ===
+    } else {
+        var elem = document.getElementById('code');
+        if (!elem || elem.tagName.toLowerCase() !== 'textarea') return;
+
+        // Återställ markering
+        if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
+            setSelectionRange(elem, UIdata['selStart'], UIdata['selEnd'], true);
+        }
+
+        // Återställ scrollposition
+        elem.scrollTop = UIdata['scrollTop'] || 0;
+        elem.scrollLeft = UIdata['scrollLeft'] || 0;
+    }
 }
 
 var sel_line_num=-1;
 
 function syncTextarea (UIstr) {
     var elem=document.getElementById('code');
+    if (document.getElementById('change_counter').value === 0)
+    {
+    	if (editor && typeof editor.getValue === 'function') {
+    		savedCode = editor.getValue();
+		}
+		else {
+        	savedCode = elem.value;
+        }
+    }     
     var UIfield=document.createElement('input');
     UIfield.id='UIdata';
     UIfield.name='UIdata';    
@@ -135,7 +206,7 @@ function syncTextarea (UIstr) {
     {
         if (!is_opera)
         {
-            if (elem.tagName.toLowerCase()=='textarea') 
+            if (elem.tagName.toLowerCase() === 'textarea') 
             {
                 elem.style.width=((elem.parentNode.offsetWidth)-34)+'px';
                 document.getElementById('code_numbers').style.paddingTop='1px';
@@ -143,14 +214,14 @@ function syncTextarea (UIstr) {
         }    
     }
     init_splitters();     
-    var elem1=document.getElementById('code_numbers');
+    var elem1 = document.getElementById('code_numbers');
     elem.onscroll = function (evt) {
     //var st=parseInt(this.scrollTop,10);      
     elem1.style.top = (parseInt(this.scrollTop,10) * -1) + 'px';
     //document.main_form.scrollposy.value=st;
     //document.main_form.scrollposx.value=parseInt(elem.scrollLeft,10);      
    };
-   if (elem.tagName.toLowerCase()!='textarea')
+   if (elem.tagName.toLowerCase() !== 'textarea')
    {
     return;
    }
@@ -171,51 +242,49 @@ function syncTextarea (UIstr) {
     elem.onfocus = function (evt) {
     setTimeout("checkDirty()",0);
    }; 	
-    elem1.onmousedown = function (evt) 
-    {
-        sel_line_num=line_number(evt,this);
-        var splitbg=document.getElementById('splitter_bg');
-
-        if (!splitbg)
-        {
-            splitbg=document.createElement('div');
-            splitbg.id='splitter_bg';
-            splitbg.style.top='0px';
-            splitbg.style.left='0px';
-            splitbg.style.width='100%';
-            splitbg.style.height='100%';
-            splitbg.style.position='fixed';
-            //splitbg.style.backgroundColor='#ffffff';
-            splitbg.style.display='block';
-            splitbg.innerHTML='&nbsp;';
-            //splitbg.onmousemove=new Function("dragGo(event);");
-            //splitbg.onmouseup=new Function("dragStop(event);");
-            document.body.appendChild(splitbg);    
-        }
-        splitbg.style.zIndex=8000;
-        this.parentNode.style.zIndex=8001;        
-        splitbg.style.cursor='default';        
-        splitbg.style.visibility='visible';
-        
-        if (browser.isIE) 
-        {
-            document.attachEvent("onmousemove", lines_dragGo);
-            document.attachEvent("onmouseup",   lines_dragStop);
-            window.event.cancelBubble = true;
-            window.event.returnValue = false;
-        }
-        if (browser.isNS) 
-        {
-            document.addEventListener("mousemove", lines_dragGo,   true);
-            document.addEventListener("mouseup",   lines_dragStop, true);
-            event.preventDefault();
-        }        			
-   }; 		         
+   if (elem1) {
+		elem1.onmousedown = function (evt) 
+		{
+			sel_line_num=line_number(evt,this);
+			var splitbg=document.getElementById('splitter_bg');
+	
+			if (!splitbg)
+			{
+				splitbg=document.createElement('div');
+				splitbg.id='splitter_bg';
+				splitbg.style.top='0px';
+				splitbg.style.left='0px';
+				splitbg.style.width='100%';
+				splitbg.style.height='100%';
+				splitbg.style.position='fixed';
+				//splitbg.style.backgroundColor='#ffffff';
+				splitbg.style.display='block';
+				splitbg.innerHTML='&nbsp;';
+				//splitbg.onmousemove=new Function("dragGo(event);");
+				//splitbg.onmouseup=new Function("dragStop(event);");
+				document.body.appendChild(splitbg);    
+			}
+			splitbg.style.zIndex=8000;
+			this.parentNode.style.zIndex=8001;        
+			splitbg.style.cursor='default';        
+			splitbg.style.visibility='visible';
+			
+			if (browser.isIE) 
+			{
+				document.attachEvent("onmousemove", lines_dragGo);
+				document.attachEvent("onmouseup",   lines_dragStop);
+				window.event.cancelBubble = true;
+				window.event.returnValue = false;
+			}
+			if (browser.isNS) 
+			{
+				document.addEventListener("mousemove", lines_dragGo,   true);
+				document.addEventListener("mouseup",   lines_dragStop, true);
+				event.preventDefault();
+			}        			
+	   };
+	} 		         
    elem.focus(); 
-   if (document.getElementById('change_counter').value==0)
-   {
-        savedCode=elem.value;
-   }     
 }
 
 function lines_dragGo(event)
@@ -316,7 +385,7 @@ function select_lines(elem,startLine,endLine)
  
 function showHideLayer() {
     const menu = document.getElementById(sub_id);
-   if (show==true)
+   if (show)
    {     
       menu.style.visibility = "visible";
       menu.style.display = "block";
@@ -332,7 +401,7 @@ function showHideLayer() {
 
 function decimalToHex(d, padding) {
     var hex = Number(d).toString(16);
-    padding = typeof (padding) === "undefined" || padding === null ? padding = 2 : padding;
+    padding = typeof padding === "undefined" || padding === null ? padding = 2 : padding;
 
     while (hex.length < padding) {
         hex = "0" + hex;
@@ -343,91 +412,128 @@ function decimalToHex(d, padding) {
 
 function checkDirty()
 {
-    //var currfile=document.getElementById('Current_filename').value;
-    //if (currfile.length>0)
-    //{
-        /*
-        var dirtyfile=document.getElementById('dirtyfilevalue').value;
-        var changecount=document.getElementById('change_counter').value;
-        if ((dirtyfile>0) || (changecount>0))
-        {           
-            var filetext=document.getElementById('dirty_p').innerHTML;
-            if (filetext.indexOf('*')==-1)
-            {
-                document.getElementById('dirty_p').innerHTML=filetext+'*';
-            }   
-            document.getElementById('dirtyfilevalue').value=1;
-            return true;
-        } 
-        */
-        var isdirty=false;
-        var code=document.getElementById('code');
-        if (code.tagName.toLowerCase()=='textarea')
-        {
-            if (document.getElementById('infobar'))
-            {
-                var selS=selStart(code,true);
-                var selL=selLen(code,true); 
-                var info='';
-                var selcode=code.value;
-                if (browser.isIE && !is_opera)
-                {
-                    selcode=selcode.replace(/\r/g,'');
-                }
-                if (selL!=0)
-                {
-                    var selection=selcode.substring(selS,selS+selL);
-                    var rows=selection.substring_count('\n')+1;
-                    var startarray=selcode.substring(0,selS).split('\n');
-                    var startcol=startarray[startarray.length-1].length;                               
-                    var endarray=selcode.substring(0,selS+selL).split('\n');
-                    var endcol=endarray[endarray.length-1].length;               
-                    info+= rows+'&nbsp;x&nbsp;'+Math.abs(endcol-startcol)+'&nbsp;&nbsp;&nbsp;['+selection.length+']&nbsp;';   
-                }
-                else
-                {
-                    var startarray=selcode.substring(0,selS).split('\n');
-                    var startcol=startarray[startarray.length-1].length+1;
-                    var startrow=startarray.length;
-                    var endarray=selcode.split('\n');    
-                    info+= startrow+'&nbsp;:&nbsp;'+startcol+'&nbsp;/&nbsp;'+endarray.length+'&nbsp;';                                           
-                }
-                document.getElementById('infobar').innerHTML=info+'&nbsp;&nbsp;&nbsp;'+selcode.charCodeAt(selS)+'&nbsp;(0x'+decimalToHex(selcode.charCodeAt(selS),2)+')';
-            }   
+	var isdirty=false;
+	if (editor) {
+		return checkDirtyCodeMirror();
+	}
+	var code=document.getElementById('code');
+	if (code.tagName.toLowerCase() === 'textarea')
+	{
+		if (document.getElementById('infobar'))
+		{
+			var selS=selStart(code,true);
+			var selL=selLen(code,true); 
+			var info='';
+			var selcode=code.value;
+			if (browser.isIE && !is_opera)
+			{
+				selcode=selcode.replace(/\r/g,'');
+			}
+			if (selL !== 0)
+			{
+				var selection=selcode.substring(selS,selS+selL);
+				var rows=selection.substring_count('\n')+1;
+				var startarray=selcode.substring(0,selS).split('\n');
+				var startcol=startarray[startarray.length-1].length;                               
+				var endarray=selcode.substring(0,selS+selL).split('\n');
+				var endcol=endarray[endarray.length-1].length;               
+				info+= rows+'&nbsp;x&nbsp;'+Math.abs(endcol-startcol)+'&nbsp;&nbsp;&nbsp;['+selection.length+']&nbsp;';   
+			}
+			else
+			{
+				var startarray=selcode.substring(0,selS).split('\n');
+				var startcol=startarray[startarray.length-1].length+1;
+				var startrow=startarray.length;
+				var endarray=selcode.split('\n');    
+				info+= startrow+'&nbsp;:&nbsp;'+startcol+'&nbsp;/&nbsp;'+endarray.length+'&nbsp;';                                           
+			}
+			document.getElementById('infobar').innerHTML=info+'&nbsp;&nbsp;&nbsp;'+selcode.charCodeAt(selS)+'&nbsp;(0x'+decimalToHex(selcode.charCodeAt(selS),2)+')';
+		}   
+	}
+	if ((savedCode.length) && (code.tagName.toLowerCase() === 'textarea'))
+	{
+		isdirty=(code.value !== savedCode);
+	}
+	else
+	{
+		isdirty=(document.getElementById('change_counter').value>0);
+	} 
+	if (isdirty)
+	{
+		document.getElementById('change_counter').value++;
+	}
+	document.getElementById('dirty_p').innerHTML=save_image(isdirty,true); 
+	if (code.tagName.toLowerCase() === 'textarea')
+	{
+		if (document.getElementById('infobar'))
+		{        
+			var charcode=selcode.charCodeAt(selS);
+			var ccodestr='';
+			if (charcode)
+			{
+				ccodestr=charcode+'&nbsp;(0x'+decimalToHex(charcode,2)+')';
+			}
+			document.getElementById('infobar').innerHTML=save_image(isdirty,false)+'&nbsp;&nbsp;&nbsp;'+info+'&nbsp;&nbsp;&nbsp;'+ccodestr;
+		}
+	}
+	return isdirty;
+}
+
+function checkDirtyCodeMirror() {
+    let isDirty = false;
+    let currentCode = "";
+    let cursor = { line: 0, ch: 0 };
+    let selLen = 0;
+    let info = "";
+    let ccodestr = "";
+    let lineCount = 0;
+
+    const elem = document.getElementById('code');
+
+    if (editor && typeof editor.getValue === 'function') {
+        currentCode = editor.getValue();
+        if (savedCode.length > 0) {
+            isDirty = currentCode !== savedCode;
+        } else {
+            isDirty = (document.getElementById('change_counter').value > 0);
         }
-        //if (!document.getElementById('code'))
-        //{
-        //    return;
-        //}
-        if ((savedCode.length) && (code.tagName.toLowerCase()=='textarea'))
-        {
-            isdirty=(code.value!=savedCode);
+		if (isDirty)
+		{
+			document.getElementById('change_counter').value++;
+		}
+
+        const selText = editor.getSelection();
+        selLen = selText.length;
+        cursor = editor.getCursor();
+        lineCount = editor.lineCount();
+
+        if (selLen > 0) {
+            const selectedLines = selText.split("\n").length;
+            const start = editor.getCursor("from");
+            const end = editor.getCursor("to");
+
+            const startCol = start.ch + 1;
+            const endCol = end.ch + 1;
+            const colDiff = Math.abs(endCol - startCol);
+
+            info = `${selectedLines}&nbsp;x&nbsp;${colDiff}&nbsp;&nbsp;&nbsp;[${selLen}]`;
+        } else {
+            info = `${cursor.line + 1}&nbsp;:&nbsp;${cursor.ch + 1}&nbsp;/&nbsp;${lineCount}`;
         }
-        else
-        {
-            isdirty=(document.getElementById('change_counter').value>0);
-        } 
-        if (isdirty)
-        {
-            document.getElementById('change_counter').value++;
+
+        let charcode = currentCode.charCodeAt(editor.indexFromPos(cursor));
+        if (!isNaN(charcode)) {
+            ccodestr = `${charcode}&nbsp;(0x${decimalToHex(charcode, 2)})`;
         }
-        document.getElementById('dirty_p').innerHTML=save_image(isdirty,true); 
-        if (code.tagName.toLowerCase()=='textarea')
-        {
-            if (document.getElementById('infobar'))
-            {        
-                var charcode=selcode.charCodeAt(selS);
-                var ccodestr='';
-                if (charcode)
-                {
-                    ccodestr=charcode+'&nbsp;(0x'+decimalToHex(charcode,2)+')';
-                }
-                document.getElementById('infobar').innerHTML=save_image(isdirty,false)+'&nbsp;&nbsp;&nbsp;'+info+'&nbsp;&nbsp;&nbsp;'+ccodestr;
-            }
-        }
-        return isdirty;
-    //}
-    //return false;
+    }
+    // Uppdatera UI
+    document.getElementById('dirty_p').innerHTML = save_image(isDirty, true);
+    if (document.getElementById('infobar')) {
+        document.getElementById('infobar').innerHTML =
+            save_image(isDirty, false) + '&nbsp;&nbsp;&nbsp;' + info + '&nbsp;&nbsp;&nbsp;' + ccodestr;
+    }
+
+    return isDirty;
 }
 
 function save_image(dirty,large)
@@ -449,7 +555,7 @@ function checkEnter(e)
 {
     var evt = e ? e : window.event;
 	var c = evt.which ? evt.which : evt.keyCode;
-    if (c==13)
+    if (c === 13)
     {   
         document.main_form.action.value='eval_change';
         var evalbutton=document.getElementById('submit_eval');
@@ -476,17 +582,17 @@ function change_inc(c)
     {
         return;
     } 
-    if (c==27){return;}
-    if (c==45){return;}       
-    if (c==91){return;}
-    if (c==93){return;}    
-    if (c==144){return;} 
+    if (c === 27){return;}
+    if (c === 45){return;}       
+    if (c === 91){return;}
+    if (c === 93){return;}    
+    if (c === 144){return;} 
     inc_changecount();       
 }
 
 function inc_changecount(reset)
 {
-    if (typeof(reset)=='undefined')
+    if (typeof reset ==='undefined')
     {
         reset=false;
     }      
@@ -502,27 +608,10 @@ function inc_changecount(reset)
     }      
 }
 
-/*
-function setSelectionRange(input, selectionStart, selectionEnd) {
-  if (input.setSelectionRange) {
-    input.focus();
-    input.setSelectionRange(selectionStart, selectionEnd);
-  }
-  else if (input.createTextRange) {
-    var range = input.createTextRange();
-    range.collapse(true);
-    range.moveEnd('character', selectionEnd);
-    range.moveStart('character', selectionStart);
-    range.select();
-  }
-}
-
-*/
-
 function reset_width()
 {
     var elem=document.getElementById('code');
-    if (elem.tagName.toLowerCase()=='textarea') 
+    if (elem.tagName.toLowerCase() === 'textarea') 
     {  
         elem.style.width=((elem.parentNode.offsetWidth)-34)+'px';
         var st=parseInt(elem.scrollTop,10);    
@@ -537,79 +626,43 @@ function opera_scroll()
     document.getElementById('code_numbers').style.top= (st * -1) +'px';   
     setTimeout('opera_scroll()', 50);
 }    
-/*
-function scroll_timeout()
-{
-    var elem=document.getElementById('code');
-    var st=parseInt(elem.scrollTop,10);
-    document.getElementById('code_numbers').style.top='-'+st+'px';   
-    document.main_form.scrollposy.value=st;
-    document.main_form.scrollposx.value=parseInt(elem.scrollLeft,10);
-}
-*/
-/*
-function code_scroll()
-{
-    if (do_scroll_loop)
-    {
-        return true;
-    }   
-    setTimeout('scroll_timeout()', 0);
-    return true;
-}
-*/
 
-function replaceSelection (input, replaceString) {
-    if (replaceString.length==0)
+function replaceSelection(input, replaceString) {
+    if (replaceString.length === 0)
     {
-    //var st=input.scrollTop;
-    //var sl=input.scrollLeft;  
-  
-	if (input.setSelectionRange) {
-		var selectionStart = input.selectionStart;
-		var selectionEnd = input.selectionEnd;	
-		input.value = input.value.substring(0, selectionStart)+ replaceString + input.value.substring(selectionEnd);
-    
-		if (selectionStart != selectionEnd){ 
-			setSelectionRange(input, selectionStart, selectionStart + replaceString.length);
-		}else{
-			setSelectionRange(input, selectionStart + replaceString.length, selectionStart + replaceString.length);
-		}
-	}else if (document.selection) {
-		var range = document.selection.createRange();
-		if (range.parentElement() == input) {
-			var isCollapsed = range.text == '';
-			range.text = replaceString;
-
-			 if (!isCollapsed)  {
-				range.moveStart('character', -replaceString.length);
-				range.select();
+		if (input.setSelectionRange) {
+			var selectionStart = input.selectionStart;
+			var selectionEnd = input.selectionEnd;	
+			input.value = input.value.substring(0, selectionStart)+ replaceString + input.value.substring(selectionEnd);
+		
+			if (selectionStart !== selectionEnd){ 
+				setSelectionRange(input, selectionStart, selectionStart + replaceString.length);
+			}else{
+				setSelectionRange(input, selectionStart + replaceString.length, selectionStart + replaceString.length);
 			}
-		}		
-	}
-	checkDirty();
-    return;
+		}else if (document.selection) {
+			var range = document.selection.createRange();
+			if (range.parentElement() === input) {
+				var isCollapsed = range.text === '';
+				range.text = replaceString;
+	
+				 if (!isCollapsed)  {
+					range.moveStart('character', -replaceString.length);
+					range.select();
+				}
+			}		
+		}
+		checkDirty();
+		return;
     }
-	//input.scrollTop=st;
-	//input.scrollLeft=sl;	
-        //for (var i=0;i<replaceString.length;i++)
-        //{        
-            setTimeout("create_text_event('"+replaceString+"','"+input.id+"');",0);	            
-        //}
-    
-        //inc_changecount();              
-    
+    setTimeout("create_text_event('"+replaceString+"','"+input.id+"');",0);	            
 }
 
-function selStart (input,trueCharCount) {
+function selStart(input,trueCharCount) {
 	if (input.setSelectionRange) {
-	    /*if (is_opera)
-	    {
-            return input.selectionStart-input.value.substring(0,input.selectionStart).substring_count('\n');
-        }*/
 		return input.selectionStart;
-	}else if (document.selection) {
-        if (typeof(trueCharCount)=='undefined')
+	} else if (document.selection) {
+        if (typeof trueCharCount ==='undefined')
         {
             trueCharCount=false;
         }	
@@ -618,7 +671,7 @@ function selStart (input,trueCharCount) {
             input.focus(); 
 
             var r = document.selection.createRange(); 
-            if (r == null) { 
+            if (!r) { 
                 return 0; 
             } 
 
@@ -627,7 +680,6 @@ function selStart (input,trueCharCount) {
             re.moveToBookmark(r.getBookmark()); 
             rc.setEndPoint('EndToStart', re); 	
 	
-            //var j=input.value.substr(0,rc.text.length).split('\n').length-1;
             return rc.text.length;// + j;
         }
         input.focus();
@@ -644,15 +696,11 @@ function selStart (input,trueCharCount) {
 	}
 }
 
-function selEnd (input,trueCharCount) {
+function selEnd(input,trueCharCount) {
 	if (input.setSelectionRange) {
-	    /*if (is_opera)
-	    {
-            return input.selectionEnd-input.value.substring(0,input.selectionEnd).substring_count('\n');
-        }*/	
 		return input.selectionEnd;
-	}else if (document.selection) {
-        if (typeof(trueCharCount)=='undefined')
+	} else if (document.selection) {
+        if (typeof trueCharCount === 'undefined')
         {
             trueCharCount=false;
         }	
@@ -662,7 +710,7 @@ function selEnd (input,trueCharCount) {
             input.focus(); 
 
             var r = document.selection.createRange(); 
-            if (r == null) { 
+            if (!r) { 
                 return 0; 
             } 
 
@@ -678,15 +726,11 @@ function selEnd (input,trueCharCount) {
 	}
 }
 
-function selLen (input,trueCharCount) {
+function selLen(input,trueCharCount) {
 	if (input.setSelectionRange) {
-	    /*if (is_opera)
-	    {
-            return selEnd(input)-selStart(input);
-        }*/
 		return input.selectionEnd-input.selectionStart;
-	}else if (document.selection) {
-        if (typeof(trueCharCount)=='undefined')
+	} else if (document.selection) {
+        if (typeof trueCharCount === 'undefined')
         {
             trueCharCount=false;
         }	
@@ -718,25 +762,17 @@ function selLen (input,trueCharCount) {
 function catchTab(item,e){        
     var evt = e ? e : window.event;      
 	c = evt.which ? evt.which : evt.keyCode;
-	if (c==114) //f3
+	if (c === 114) //f3
 	{
         search_textarea(false);
         return false;
     }	
-	//change_inc(c);	
-	if(c==9){  //tab
-		//replaceSelection(item,String.fromCharCode(9));
-		//setTimeout("document.getElementById('"+item.id+"').focus();",0);
-		/*
-		setTimeout("create_keyPress_event(9,'"+item.id+"');",0);
-        inc_changecount();
-        */
+	if(c === 9){  //tab
         replaceSelection(item,String.fromCharCode(9));	
 		return false;
 	} 
-    if (c==13)   // enter
+    if (c === 13)   // enter
     {   
-        //inc_changecount();    
         var code=document.getElementById(item.id);
         var SE=selEnd(item);
         var line_array=code.value.substring(0,SE).split('\n');   
@@ -756,15 +792,15 @@ function create_text_event(str,id)
 		var selectionEnd = input.selectionEnd;	
 		input.value = input.value.substring(0, selectionStart)+ str + input.value.substring(selectionEnd);
     
-		if (selectionStart != selectionEnd){ 
+		if (selectionStart !== selectionEnd){ 
 			setSelectionRange(input, selectionStart, selectionStart + str.length);
 		}else{
 			setSelectionRange(input, selectionStart + str.length, selectionStart + str.length);
 		}
 	}else if (document.selection) { //IE
 		var range = document.selection.createRange();
-		if (range.parentElement() == input) {
-			var isCollapsed = range.text == '';
+		if (range.parentElement() === input) {
+			var isCollapsed = range.text === '';
 			range.text = str;
 
 			 if (!isCollapsed)  {
@@ -804,7 +840,7 @@ function submit_dir(dir)
 function submit_file(file)
 {
     var elem=document.getElementById('code');
-    if (elem.tagName.toLowerCase()=='textarea')
+    if (elem.tagName.toLowerCase() === 'textarea')
     {
         setSelectionRange(elem,0,0);
     }
@@ -823,7 +859,7 @@ function submit_file(file)
 
 function submit_file_callback(returncode,id,value)
 {
-    if (returncode != 1)
+    if (returncode !== 1)
     {
         main_submit("load_browse_discard");
         return;
@@ -838,9 +874,9 @@ function chmod_file(file,value)
 
 function chmod_callback(returncode,id,value)
 {
-    if (returncode==1)
+    if (returncode === 1)
     {
-        if (value != '' && value != null)
+        if (value !== '' && value !== null)
         {
             document.getElementById('some_file_name').value=id;    
             document.getElementById('chmod_value').value=""+value+"";
@@ -858,9 +894,9 @@ function save_as(file)
 function prompt_callback(returncode,id,value)
 {
     //var answer = prompt ('Save as ',""+file+"");
-    if (returncode==1)
+    if (returncode === 1)
     {      
-        if (value != '' && value != null)
+        if (value !== '' && value !== null)
         {    
             document.getElementById('save_as_filename').value=""+value+"";    
             main_submit(id);
@@ -912,7 +948,7 @@ function copy_file(path)
 
 function copy_file_callback(returncode,id,value)
 {
-    if (returncode != 1)
+    if (returncode !== 1)
     {
         main_submit("set_copy_discard");
     }
@@ -921,7 +957,7 @@ function copy_file_callback(returncode,id,value)
 
 function callback_submit(returncode,act)
 {
-    if (returncode != 0)
+    if (returncode !== 0)
     {
         main_submit(act);    
     }
@@ -979,13 +1015,13 @@ function search_textarea(showDialog)
         var code=document.getElementById('code');    
         searchSelStart=selStart(document.getElementById('code'));
         searchSelEnd=selEnd(document.getElementById('code'));  
-        if (searchSelStart != searchSelEnd)
+        if (searchSelStart !== searchSelEnd)
         {
             searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
         }
-        var caseChecked=((searchMatchCase==true) ? 'checked':'');
-        var wordChecked=((searchWholeWord==true) ? 'checked':'');
-        var selectedChecked=((searchSelected==true) ? 'checked':'');                
+        var caseChecked=(searchMatchCase ? 'checked':'');
+        var wordChecked=(searchWholeWord ? 'checked':'');
+        var selectedChecked=(searchSelected ? 'checked':'');                
         ae_prompt(search_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');    
     }
     else
@@ -997,13 +1033,13 @@ function search_textarea(showDialog)
 function search_callback(returncode,id,value)
 {
     var code=document.getElementById('code');
-    if (returncode==1)
+    if (returncode === 1)
     {
         value_array=value.split('|¤|');
         searchTerm=value_array[0];
-        searchMatchCase=(value_array[1]=='true') ? true:false;
-        searchWholeWord=(value_array[2]=='true') ? true:false;
-        searchSelected=(value_array[3]=='true') ? true:false;          
+        searchMatchCase=(value_array[1] === 'true') ? true:false;
+        searchWholeWord=(value_array[2] === 'true') ? true:false;
+        searchSelected=(value_array[3] === 'true') ? true:false;          
         if (!searchSelected)
         {
             searchSelStart=0;
@@ -1011,11 +1047,11 @@ function search_callback(returncode,id,value)
         }
         searchPos=searchSelStart;                     
     }
-    if (returncode == 0)
+    if (returncode === 0)
     {
         return;
     }
-    if (searchTerm != '' && searchTerm != null)
+    if (searchTerm !== '' && searchTerm !== null)
     {    
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
@@ -1032,7 +1068,7 @@ function search_callback(returncode,id,value)
         while (1)
         {
             start=code.value.substring(searchPos,searchSelEnd).search(regex);
-            if (start != -1)
+            if (start !== -1)
             {
                 if (searchWholeWord)
                 {
@@ -1055,7 +1091,7 @@ function search_callback(returncode,id,value)
                 }
             }
         }
-        if (start == -1)
+        if (start === -1)
         {
             ae_alert(searchTerm + ' not found');        
         }
@@ -1071,13 +1107,13 @@ function replace_textarea()
         var code=document.getElementById('code');    
         searchSelStart=selStart(document.getElementById('code'));
         searchSelEnd=selEnd(document.getElementById('code'));    
-        if (searchSelStart != searchSelEnd)
+        if (searchSelStart !== searchSelEnd)
         {
             searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
         }    
-    var caseChecked=((searchMatchCase==true) ? 'checked':'');
-    var wordChecked=((searchWholeWord==true) ? 'checked':'');        
-        var selectedChecked=((searchSelected==true) ? 'checked':'');    
+    var caseChecked=(searchMatchCase ? 'checked':'');
+    var wordChecked=(searchWholeWord ? 'checked':'');        
+        var selectedChecked=(searchSelected ? 'checked':'');    
     ae_prompt(replace_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|textarea%¤%Replace with%¤%'+replaceTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');    
 }
 
@@ -1085,16 +1121,16 @@ function replace_callback(returncode,id,value)
 {
     var replacements=0;
     var code=document.getElementById('code');   
-    if (returncode==1)
+    if (returncode === 1)
     {
         value_array=value.split('|¤|');
         searchTerm=value_array[0];
         replaceTerm=value_array[1];        
-        searchMatchCase=(value_array[2]=='true') ? true:false;
-        searchWholeWord=(value_array[3]=='true') ? true:false;    
-        searchSelected=(value_array[4]=='true') ? true:false;          
+        searchMatchCase=(value_array[2] === 'true') ? true:false;
+        searchWholeWord=(value_array[3] === 'true') ? true:false;    
+        searchSelected=(value_array[4] === 'true') ? true:false;          
     }
-    if (returncode == 0)
+    if (returncode === 0)
     {
         return;
     }
@@ -1104,7 +1140,7 @@ function replace_callback(returncode,id,value)
         searchSelEnd=code.value.length;            
     }
     searchPos=searchSelStart;                           
-    if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
+    if (searchTerm !== '' && searchTerm !== null && replaceTerm !== '' && replaceTerm !== null)
     {     
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
@@ -1121,7 +1157,7 @@ function replace_callback(returncode,id,value)
         while (1)
         {
             start=code.value.substring(searchPos,searchSelEnd).search(regex);
-            if (start != -1)
+            if (start !== -1)
             {
                 if (searchWholeWord)
                 {
@@ -1138,7 +1174,7 @@ function replace_callback(returncode,id,value)
                 break;
             }
         }
-        if (replacements==0)
+        if (replacements === 0)
         {
             ae_alert(searchTerm + ' not found');        
         }
@@ -1169,7 +1205,7 @@ function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
      else if(input.createTextRange) {
         var i = input.createTextRange();
         i.collapse(true);
-        if (typeof(trueCharCount)=='undefined')
+        if (typeof trueCharCount === 'undefined')
         {
             trueCharCount=false;
         }
@@ -1244,22 +1280,12 @@ function clearAuthenticationCache(page) {
 
     function clearAuthenticationCache_callback(returncode,page,value)
     {
-        if (returncode == 1)
+        if (returncode === 1)
         {
-            //maybe another way
-            /*
-            document.body.innerHTML+="<iframe width='500' height='500' src='http://logout:logout@go.musiker.nu/idephp/index.php' style='position:absolute;z-index:5000;'><iframe>";
-                document.main_form.action.value="logout"; 
-                document.main_form.submit();
-                return;            
-            */
-            
-            // Default to a non-existing page (give error 500).
-            // An empty page is better, here.
-            if (page.length==0) page = '.force_logout';
+            if (page.length === 0) page = '.force_logout';
             try{
                 var agt=navigator.userAgent.toLowerCase();
-                if (agt.indexOf("msie") != -1) {
+                if (agt.indexOf("msie") !== -1) {
                     // IE clear HTTP Authentication
                     document.execCommand("ClearAuthenticationCache");
                 }
@@ -1283,48 +1309,21 @@ function clearAuthenticationCache(page) {
     }  
     
 function createXMLObject() {
-/*
-  try {
-    if (window.XMLHttpRequest) {
-      xmlhttp = new XMLHttpRequest();
-    }
-    // code for IE
-    else if (window.ActiveXObject) {
-      xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-    }
-  } catch (e) {
-    xmlhttp=false
-  }
-*/
-var xmlhttp=false;
-/*@cc_on @*/
-/*@if (@_jscript_version >= 5)
-// JScript gives us Conditional compilation, we can cope with old IE versions.
-// and security blocked creation of the objects.
- try {
-  xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
- } catch (e) {
-  try {
-   xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-  } catch (E) {
-   xmlhttp = false;
-  }
- }
-@end @*/
-if (!xmlhttp && typeof(XMLHttpRequest)!='undefined') {
-	try {
-		xmlhttp = new XMLHttpRequest();
-	} catch (e) {
-		xmlhttp=false;
+	var xmlhttp=false;
+	if (!xmlhttp && typeof XMLHttpRequest !== 'undefined') {
+		try {
+			xmlhttp = new XMLHttpRequest();
+		} catch (e) {
+			xmlhttp=false;
+		}
 	}
-}
-if (!xmlhttp && window.createRequest) {
-	try {
-		xmlhttp = window.createRequest();
-	} catch (e) {
-		xmlhttp=false;
+	if (!xmlhttp && window.createRequest) {
+		try {
+			xmlhttp = window.createRequest();
+		} catch (e) {
+			xmlhttp=false;
+		}
 	}
-}
 
   return xmlhttp;
 }
@@ -1349,14 +1348,14 @@ function validatePass()
 	
 	for (var i=0;i<usernames.length;i++)
 	{
-        if (document.main_form.username.value==usernames[i])
+        if (document.main_form.username.value === usernames[i])
         {
     		ae_alert('User already exists.');
 	   	    return false;
         }
     }
 	// check for a value in both fields.
-	if (pw1 == '' || pw2 == '') {
+	if (pw1 === '' || pw2 === '') {
 		ae_alert('Please enter your password twice.');
 		return false;
 	}
@@ -1366,11 +1365,11 @@ function validatePass()
 		return false;
 	}
 	// check for spaces
-	if (pw1.indexOf(invalid) != -1) {
+	if (pw1.indexOf(invalid) !== -1) {
 		ae_alert("Sorry, spaces are not allowed.");
 		return false;
 	}
-	if (pw1 != pw2) {
+	if (pw1 !== pw2) {
 		ae_alert("You did not enter the same new password twice. Please re-enter your password.");
 		return false;
 	}
@@ -1384,7 +1383,7 @@ function getElementsByClassName(node,classname) {
 	var testClass = new RegExp("(^|\\s)" + classname + "(\\s|$)");
 	var tag = "*";
 	var node = node || document;
-	var elements = (tag == "*" && node.all)? node.all : node.getElementsByTagName(tag);
+	var elements = (tag === "*" && node.all)? node.all : node.getElementsByTagName(tag);
 	var returnElements = [];
 	var current;
 	var length = elements.length;
@@ -1459,7 +1458,7 @@ var tds2;
 
 function window_size()
 {
-  if( typeof( window.innerWidth ) == 'number' ) {
+  if( typeof window.innerWidth === 'number' ) {
     //Non-IE
     winwidth = window.innerWidth;
     winheight = window.innerHeight;
@@ -1507,16 +1506,12 @@ function dragStart(event,id, td1) {
 
     // If this is a text node, use its parent element.
 
-    if (dragObj.elNode.nodeType == 3)
+    if (dragObj.elNode.nodeType === 3)
       dragObj.elNode = dragObj.elNode.parentNode;
   }
 
   tds2=new Array();
-  //td_array=td2.split('%');
-  //for (var i=0;i<td_array.length;i++)
-  //{
     tds2[0]=dragObj.elNode.parentNode.parentNode;
-  //}
 
   // Get cursor position with respect to the page.
 
@@ -1544,9 +1539,6 @@ function dragStart(event,id, td1) {
   dragObj.elStartLeftPercent=((x-padding_left)*100)/(winwidth-(padding_left+padding_right));
   dragObj.elStartTopPercent=((y-padding_top)*100)/(winheight-(padding_top+padding_bottom));
 
-  // Update element's z-index.
-  //alert(dragObj);
-
   var splitbg=document.getElementById('splitter_bg');
 
   if (!splitbg)
@@ -1558,11 +1550,8 @@ function dragStart(event,id, td1) {
     splitbg.style.width='100%';
     splitbg.style.height='100%';
     splitbg.style.position='fixed';
-    //splitbg.style.backgroundColor='#ffffff';
     splitbg.style.display='block';
     splitbg.innerHTML='&nbsp;';
-    //splitbg.onmousemove=new Function("dragGo(event);");
-    //splitbg.onmouseup=new Function("dragStop(event);");
     document.body.appendChild(splitbg);    
   }
   splitbg.style.zIndex=8000;
@@ -1605,11 +1594,11 @@ function dragGo(event) {
   }
 
   // Move drag element by the same amount the cursor has moved.
-  if (dragObj.elNode.className != 'horiz_split')
+  if (dragObj.elNode.className !== 'horiz_split')
   {
     dragObj.elNode.style.left = (dragObj.elStartLeft + (x - dragObj.cursorStartX)) + "px";
   }
-  if (dragObj.elNode.className!= 'vert_split')
+  if (dragObj.elNode.className!== 'vert_split')
   {
     dragObj.elNode.style.top  = (dragObj.elStartTop  + (y - dragObj.cursorStartY)) + "px";
   }
@@ -1637,7 +1626,7 @@ function dragStop(event) {
     y = event.clientY + window.scrollY;
   }
 
-  if (dragObj.elNode.className == 'horiz_split')
+  if (dragObj.elNode.className === 'horiz_split')
   {
     var y_percent=((y-(padding_top+cell_padding))*100)/(winheight-(padding_top+padding_bottom+(cell_padding*2)));
     var y_diff=Math.round(y_percent-dragObj.elStartTopPercent);
@@ -1690,7 +1679,7 @@ function dragStop(event) {
     dragObj.elNode.style.top=(dragObj.elStartTop-cell_padding)+'px';
   }
 
-  if (dragObj.elNode.className== 'vert_split')
+  if (dragObj.elNode.className === 'vert_split')
   {
     var x_percent=((x-(padding_left+cell_padding))*100)/(winwidth-(padding_left+padding_right+(cell_padding*2)));
     var x_diff=Math.round(x_percent-dragObj.elStartLeftPercent);

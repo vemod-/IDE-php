@@ -172,6 +172,11 @@ div.relative,.fixed_window {
 	height:100%;
 }
 
+.CodeMirror {
+    height: 100% !important;
+    width: 100% !important;
+}
+
 .absolute{
 	padding:0px;
 	margin:0px;

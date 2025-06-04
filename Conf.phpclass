@@ -59,6 +59,7 @@ class Conf {
    var $UIdata                =""; 
    var $ftp_path			  ="";
    var $ftp_system_path		  ="";
+   var $UseCodeMirror		  = true;
          
    /* Option defaults go here */
    var $Allow_browse_below_root=0;

@@ -45,6 +45,10 @@ include('./Conf.phpclass');
 
 $Ide = new Ide;
 
+function php_alert_safe($data) {
+    echo "<script>alert(JSON.stringify(" . json_encode($data) . "));</script>";
+}
+
 class Ide
 {
 	//var $code; 
@@ -68,7 +72,9 @@ class Ide
 		$this->recentdirs=new RecentList($this->Conf->recentdirs,$this->Conf->Dir_path);
 		$this->recentevals=new RecentList($this->Conf->recentevals,$this->Conf->Eval_path);        		
         	
-		if ($_POST['prev_submit']==$this->Conf->Previous_submit) {
+        //php_alert_safe($_POST);
+        	
+		if (isset($_POST['prev_submit']) && $_POST['prev_submit']==$this->Conf->Previous_submit) {
 			$_POST=array();
 		}
 		if (count($_POST)) {
@@ -85,7 +91,7 @@ class Ide
 		    $this->Edit->createFromCode($_POST['code']);
 		}
         //code is not in $_POST
-		if (! $this->Edit->dataSet()) {
+		if (!$this->Edit->dataSet()) {
 			if (file_exists($this->Conf->Code_file)) {
 				$this->Edit->createFromCodeFile($this->Conf->Code_file);
 			} else {
@@ -315,9 +321,7 @@ class Ide
 				}
 				$this->recentevals->append($this->Conf->Eval_path);
 				$this->Conf->Phpnet=0;
-			}
-			elseif($_POST['action'] == 'save')
-			{
+			} elseif($_POST['action'] == 'save') {
 				$this->save_file($this->Conf->Current_file);
 			} elseif($_POST['action'] == 'save_as') {
 				if (file_exists($_POST['save_as_filename'])) {
@@ -936,7 +940,7 @@ class Ide
 		$menu = $this->Out->menu_item('Download file...','main_form.save_as_filename.value="'.$this->Conf->Current_file.'";main_submit("set_download");');
 		$menu .=$this->Out->menu_item('Upload file...','upload_file();');
 		$menu .=$this->Out->menu_item('Get file from URL...','get_url_file();');
-		$menu .=$this->Out->menu_item('Give permissions','chmod_file("'.$this->Conf->Current_file.'","0666");',!file_exists($this->Conf->Current_file));		
+		//$menu .=$this->Out->menu_item('Give permissions','chmod_file("'.$this->Conf->Current_file.'","0666");',!file_exists($this->Conf->Current_file));		
 		$menu .=$this->Out->menu_item('File to ftp...','ftp_file("'.$this->Conf->ftp_path.'")');
         $menu .= "<hr/>";                
 		$menu .=$this->Out->menu_item('New file...','new_file("'.$newfilename.'");');	
@@ -1095,7 +1099,20 @@ class Ide
 	function code_window($borderstyle)
 	{
 		$ret ="<div class='fixed_window'>\n";
-        if (!$this->Conf->IsBinary)
+		if ($this->Conf->UseCodeMirror) {
+		    $ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
+
+			$ret .= '<textarea class="absolute" name="CodeMirrorTextArea" id="code" data-mode="'.$this->Edit->detectCodeMirrorMode($this->Conf->Current_file).'" style="'.$this->code_style().'">'.$this->Edit->getTextareaCode().'</textarea>';
+			$ret .= "<div id='infobarborder'></div>";
+			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>&nbsp;&nbsp;'.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'>&nbsp;<img src='images/lock.gif'>&nbsp;</a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).'&nbsp;';
+			$ret .= "</div>";
+
+			$ret.='</div>';
+
+		}
+        else if (!$this->Conf->IsBinary)
         {
     		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
 	       	if ($this->Conf->Fancy==0) {
@@ -1744,6 +1761,9 @@ class Editor
    
     function createFromFile($file)
     {
+        if (filesize($file) == 0) {
+    		return;
+    	}
 		$handle = fopen($file, 'r');
 		$this->data = fread($handle, filesize($file));
 		fclose($handle);
@@ -1788,19 +1808,21 @@ class Editor
     
     function createFromCodeFile($file)
     {   
+    	if (filesize($file) == 0) {
+    		return;
+    	}
 		$handle = fopen($file, 'r');
 		$code = fread($handle, filesize($file));
 		fclose($handle);
-        
+        /*
 		if (!$this->isbinary)
         {		
-			/*
         	if (get_magic_quotes_runtime()) {
 				$code = stripslashes($code);	//??	        
 			
 			}
-			*/
-        }		
+        }
+        */		
         $this->createFromCode($code,true);    
     }
     
@@ -1930,6 +1952,21 @@ class Editor
          return count(preg_split('/[\n]/',$this->data));
          
     }
+    function detectCodeMirrorMode($filename) {
+		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		return match ($ext) {
+			'js'   => 'javascript',
+			'php'  => 'application/x-httpd-php',
+			'html' => 'text/html',
+			'css'  => 'css',
+			'json' => 'application/json',
+			'xml'  => 'application/xml',
+			'py'   => 'python',
+			'c', 'h' => 'text/x-csrc',
+			'cpp', 'hpp' => 'text/x-c++src',
+			default => 'text/plain',
+		};
+	}
 } 
 
 class Beautifier
