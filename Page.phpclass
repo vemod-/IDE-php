@@ -228,7 +228,7 @@ class Page {
 		$ret.="</div>";
 		return $ret;
 	}
-	
+
 	function select_list($name,$value,$items)
 	{
 		$ret ="<select name='$name'>";
@@ -239,6 +239,17 @@ class Page {
 			$ret.="<option value='$j'$selected>{$items[$i]}</option>";
 		}
 		$ret.="</select>";
+		return $ret;
+	}
+
+	function select_list_associated($name, $selectedValue, $items)
+	{
+		$ret = "<select name='$name'>";
+		foreach ($items as $value => $label) {
+			$selected = ($value === $selectedValue) ? ' selected' : '';
+			$ret .= "<option value='$value'$selected>$label</option>";
+		}
+		$ret .= "</select>";
 		return $ret;
 	}
 	

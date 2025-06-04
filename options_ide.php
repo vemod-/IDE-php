@@ -16,7 +16,7 @@ class options
 		$this->Conf=new Conf;
 		if (isSet($_POST['action']) && $_POST['action'] == "save_options") {
 			$this->options_page_save(array('Protect_entities',
-			'Eval_executable', 'Unix_newlines','Overwrite_original','Phpneturl','Allow_browse_below_root','UseCodeMirror','Right_trim','Eval_suffix_list','editorfont','editorfontsize','editorlinespace'));
+			'Eval_executable', 'Unix_newlines','Overwrite_original','Phpneturl','Allow_browse_below_root','UseCodeMirror','CodeMirrorTheme','Right_trim','Eval_suffix_list','editorfont','editorfontsize','editorlinespace'));
 		}
 		if (isSet($_POST['options_action'])) {
 			if ($_POST['options_action'] == "add_suffix") {
@@ -46,6 +46,20 @@ class options
 	function options_page()
 	{
 		//$fancy_view_line_numbers_checked = $this->Conf->Fancy_view_line_numbers ? "CHECKED" : "";
+		$themes = array(
+			'default', '3024-day', '3024-night', 'abbott', 'abcdef', 'ambiance', 'ayu-dark', 'ayu-mirage',
+			'base16-dark', 'base16-light', 'bespin', 'blackboard', 'cobalt', 'colorforth', 'darcula',
+			'dracula', 'duotone-dark', 'duotone-light', 'eclipse', 'elegant', 'erlang-dark',
+			'gruvbox-dark', 'hopscotch', 'icecoder', 'idea', 'isotope', 'lesser-dark', 'liquibyte',
+			'lucario', 'material', 'material-darker', 'material-palenight', 'material-ocean',
+			'mbo', 'mdn-like', 'midnight', 'monokai', 'moxer', 'neat', 'neo', 'night', 'nord',
+			'oceanic-next', 'panda-syntax', 'paraiso-dark', 'paraiso-light', 'pastel-on-dark',
+			'railscasts', 'rubyblue', 'seti', 'shadowfox', 'solarized', 'ssms', 'the-matrix',
+			'tomorrow-night-bright', 'tomorrow-night-eighties', 'ttcn', 'twilight', 'vibrant-ink',
+			'xq-dark', 'xq-light', 'yeti', 'yonce', 'zenburn'
+		);
+		$themes = array_combine($themes, $themes);
+		$themeSelect = $this->Out->select_list_associated('CodeMirrorTheme', $this->Conf->CodeMirrorTheme, $themes) . " CodeMirror Theme";
 		$protect_entities_checked = $this->Conf->Protect_entities ? "CHECKED" : "";
 		$eval_executable_checked = $this->Conf->Eval_executable ? "CHECKED" : "";
 		$unix_newlines_checked = $this->Conf->Unix_newlines ? "CHECKED" : "";
@@ -66,7 +80,8 @@ class options
 		<INPUT TYPE='CHECKBOX' NAME='Unix_newlines' VALUE='1' $unix_newlines_checked>
 		Use UNIX newlines(CGI on UNIX)<br/>
 		<INPUT TYPE='CHECKBOX' NAME='UseCodeMirror' VALUE='1' $UseCodeMirror_checked>
-		Use CodeMirror Editor
+		Use CodeMirror Editor<br/>
+		{$themeSelect}
 		</P>",
 		"<P CLASS='indentall'>Suffix list:&nbsp;&nbsp;<b><I>&nbsp;" . join(" &nbsp;", $this->Conf->Eval_suffix_list) . "</I></b></P>\n
 		<P CLASS='indentall'><INPUT TYPE='text' NAME='add_remove_suffix' SIZE='8'> Add/remove suffix
@@ -102,6 +117,7 @@ class options
 		$this->Conf->Overwrite_original = $_POST['Overwrite_original'] ? 1 : 0;
 		$this->Conf->Allow_browse_below_root = $_POST['Allow_browse_below_root'] ? 1 : 0;
 		$this->Conf->UseCodeMirror = $_POST['UseCodeMirror'] ? 1 : 0;
+		$this->Conf->CodeMirrorTheme = $_POST['CodeMirrorTheme'];
 		$this->Conf->Protect_entities = $_POST['Protect_entities'] ? 1 : 0;
 		$this->Conf->Eval_executable = $_POST['Eval_executable'] ? 1 : 0;
 		$this->Conf->Unix_newlines = $_POST['Unix_newlines'] ? 1 : 0;

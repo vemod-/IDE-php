@@ -1090,6 +1090,8 @@ class Ide
 	{
 		$ret ="<div class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror) {
+			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
+			$ret .= "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/theme/{$theme}.css\">";
 			$ret .= "
 				<!-- CSS och JS -->
 				<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.css\">
@@ -1106,20 +1108,18 @@ class Ide
 				let editor = null;
 				document.addEventListener(\"DOMContentLoaded\", function() {
 					if (typeof(CodeMirror) !== 'undefined') {
-						if (document.getElementsByName('CodeMirrorTextArea').length > 0) {
-							editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {
-								lineNumbers: true,
-								mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
-								theme: \"default\",  // Du kan ladda in andra teman också
-								indentUnit: 4,
-								tabSize: 4
-							});
-							editor.on(\"change\", () => checkDirtyCodeMirror());
-							editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
-							editor.on(\"focus\", () => checkDirtyCodeMirror());
-							editor.on(\"refresh\", () => checkDirtyCodeMirror());
-							checkDirtyCodeMirror();
-						}
+						editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {
+							lineNumbers: true,
+							mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
+							theme: \"$theme\", // <--- här sätts temat
+							indentUnit: 4,
+							tabSize: 4
+						});
+						editor.on(\"change\", () => checkDirtyCodeMirror());
+						editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
+						editor.on(\"focus\", () => checkDirtyCodeMirror());
+						editor.on(\"refresh\", () => checkDirtyCodeMirror());
+						checkDirtyCodeMirror();
 					}
 				});
 				</script>";
