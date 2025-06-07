@@ -187,7 +187,7 @@ div.relative,.fixed_window {
 	width:100%;
 	height:100%;
 }
-  
+/*  
 .boldtable, .boldtable TD, .boldtable TH
 {
     font-family: "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
@@ -204,9 +204,9 @@ div.relative,.fixed_window {
     border-bottom:1px solid #bbbbbb;
     border-right:1px solid #bbbbbb;
     color:#181818;
-    /*background-color:#f5f5f5;*/
+    //background-color:#f5f5f5;
     background:url(../images/colbg.jpg) repeat-x left top;
-    /*filter: DropShadow(Color=ffffff, OffX=0, OffY=1, Positive=1);*/
+    //filter: DropShadow(Color=ffffff, OffX=0, OffY=1, Positive=1);
     text-shadow: #ffffff 0px 1px 0px;  
     text-indent:8px;
     cursor:default; 
@@ -218,7 +218,7 @@ div.relative,.fixed_window {
 .boldtable TH img{
 	float:right;
 	clear:both;
-	/*margin-top:-11px;*/
+	//margin-top:-11px;
 	margin-right:3px;
 	display:inline;
 }
@@ -258,7 +258,7 @@ div.relative,.fixed_window {
    A:HOVER {
       color: #0000CC;
    }
-
+*/
 .top_window_z1000,.top_window,.top_window_no_border {
     padding:0px;
     margin:0px;

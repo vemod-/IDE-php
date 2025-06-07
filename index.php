@@ -30,7 +30,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'set_download') {
     header("Content-Disposition: attachment; filename=\"".basename($_POST['save_as_filename'])."\";" );
     header("Content-Transfer-Encoding: binary");
     header("Content-Length: ".filesize($_POST['save_as_filename']));
-    readfile($_POST['save_as_filename']);            
+    readfile($_POST['save_as_filename']);
 }
 
 if (!file_exists('./.htpwd')) {
@@ -51,7 +51,7 @@ function php_alert_safe($data) {
 
 class Ide
 {
-	//var $code; 
+	//var $code;
     var $alert_message, $success_message;
 	var $IDE_homepage_url	= "http://www.ekenberg.se/php/ide/";
 	var $GPL_link		= "<A HREF='http://www.gnu.org/copyleft/gpl.html'>GNU General Public License</A>";
@@ -63,17 +63,17 @@ class Ide
 	var $Conf,$Out,$Edit;
 
 	function __construct()
-	{	
+	{
 		global $_POST,$_FILES;//, $HTTP_GET_VARS;
 		$this->Conf = new Conf;
-		$this->Out  = new Page;	
+		$this->Out  = new Page;
         $this->Edit= new Editor($this->Conf->IsBinary,$this->Conf->Protect_entities,$this->Conf->Unix_newlines,$this->Conf->Encoding);
 		$this->recentfiles=new RecentList($this->Conf->recentfiles,$this->Conf->Current_file);
 		$this->recentdirs=new RecentList($this->Conf->recentdirs,$this->Conf->Dir_path);
-		$this->recentevals=new RecentList($this->Conf->recentevals,$this->Conf->Eval_path);        		
-        	
+		$this->recentevals=new RecentList($this->Conf->recentevals,$this->Conf->Eval_path);
+
         //php_alert_safe($_POST);
-        	
+
 		if (isset($_POST['prev_submit']) && $_POST['prev_submit']==$this->Conf->Previous_submit) {
 			$_POST=array();
 		}
@@ -87,7 +87,7 @@ class Ide
 			$this->Conf->Dirtyfile=$_POST['change_counter'];
 		}
         //code is in $_POST
-		if (isset($_POST['code'])) { 
+		if (isset($_POST['code'])) {
 		    $this->Edit->createFromCode($_POST['code']);
 		}
         //code is not in $_POST
@@ -104,8 +104,8 @@ class Ide
 					$this->make_backup($this->Conf->Current_file);
 				}
 			}
-		}		
-		
+		}
+
 /*
 ** Check our environment.
 */
@@ -114,7 +114,7 @@ class Ide
 			print '<H3><BLOCKQUOTE>'.$error.'</BLOCKQUOTE></H2>';
 			print $this->Out->html_bottom();
 			exit;
-		}		
+		}
 		/*
 ** Always save the code in our code and tmp files
 */
@@ -188,21 +188,21 @@ class Ide
 			} elseif($_POST['action']=='set_new_replace') {
 				$newfile=fopen($_POST['save_as_filename'], 'w');
 				fputs($newfile,'');
-				fclose($newfile);			
+				fclose($newfile);
 			} elseif($_POST['action']=='set_upload') {
 				if (! strlen($_FILES['uploadedfile']['name'])) {
 					$this->alert_message = 'Can\'t upload file without a filename!!';
 				} else {
-				
+
 					$target_path = $this->Conf->Dir_path . '/' . basename( $_FILES['uploadedfile']['name']);
 					if(file_exists($target_path)) {
 						$overwriting=true;
-					} 
-	
+					}
+
 					if(move_uploaded_file($_FILES['uploadedfile']['tmp_name'], $target_path)) {
 						if ($overwriting)
 						{
-							$this->success_message= "The file ".  basename( $_FILES['uploadedfile']['name']). " was uploaded overwriting an existing file";    
+							$this->success_message= "The file ".  basename( $_FILES['uploadedfile']['name']). " was uploaded overwriting an existing file";
 						}
 						else
 						{
@@ -222,17 +222,17 @@ class Ide
 				if (! strlen($_POST['save_as_filename'])) {
 					$this->alert_message = 'Can\'t get file without an URL!!';
 				} else if(file_exists($this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']))) {
-					$_POST['overwrite_ok']=1;				
+					$_POST['overwrite_ok']=1;
 				} else {
-					$fh = fopen($this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']), "w");    
+					$fh = fopen($this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']), "w");
 					fputs($fh,$this->getRemoteFile($_POST['save_as_filename']));
-					fclose($fh);            			
+					fclose($fh);
 					$this->success_message= "The file ".  $this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']). " was saved";
-				} 
+				}
 			} elseif($_POST['action']=='set_file_from_url_replace') {
-					$fh = fopen($this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']), "w");    
+					$fh = fopen($this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']), "w");
 					fputs($fh,$this->getRemoteFile($_POST['save_as_filename']));
-					fclose($fh);            			
+					fclose($fh);
 					$this->success_message= "The file ".  $this->Conf->Dir_path.'/'.basename($_POST['save_as_filename']). " was saved";
 			} elseif($_POST['action']=='set_new_directory') {
 				if (! strlen($_POST['save_as_filename'])) {
@@ -241,7 +241,7 @@ class Ide
 					mkdir($_POST['save_as_filename']);
 				}
 			} elseif(($_POST['action']=='set_copy') || ($_POST['action']=='set_copy_discard') || ($_POST['action']=='set_copy_save')) {
-				if (!$this->Conf->IsBinary)	{	
+				if (!$this->Conf->IsBinary)	{
 					if ($_POST['action']=='set_copy_discard') {
 						$this->undo_file($this->Conf->Current_file);
 					} elseif ($_POST['action']=='set_copy_save') {
@@ -312,7 +312,7 @@ class Ide
 					}
 				}
 				if (substr($this->Conf->Syncmode,0,4) == 'temp') {
-					$this->save_code_files();			
+					$this->save_code_files();
 				}
 			} elseif($_POST['action'] == 'eval_change') {
 				$this->Conf->Eval_path=$_POST['eval_path'];
@@ -340,7 +340,7 @@ class Ide
 				$this->open_file($filepath);
 				$this->recentfiles->append($filepath);
 			} elseif(($_POST['action']=='load_browse_file') || ($_POST['action']=='load_browse_discard') || ($_POST['action']=='load_browse_save')) {
-				if (!$this->Conf->IsBinary)	{	
+				if (!$this->Conf->IsBinary)	{
 					if ($_POST['action']=='load_browse_discard') {
 						$this->undo_file($this->Conf->Current_file);
 					} elseif ($_POST['action']=='load_browse_save') {
@@ -365,17 +365,17 @@ class Ide
 				$zippath=realpath($this->Conf->Dir_path);
 				exec("cd $zippath; unzip ".realpath($this->Conf->Current_file),$output,$return_var);
 				if ($return_var==0)
-				{ 
+				{
 					$this->success_message .= 'Archive '.basename($this->Conf->Current_file).' was unzipped';
 				}
 				else
 				{
 					$this->alert_message .= 'Could not unzip archive '.basename($this->Conf->Current_file);
-				}	
+				}
 			} */elseif ($_POST['action'] == 'set_unzip') {
 				$zippath = realpath($this->Conf->Dir_path);
 				$zipfile = realpath($this->Conf->Current_file);
-			
+
 				$zip = new ZipArchive();
 				if ($zip->open($zipfile) === TRUE) {
 					$zip->extractTo($zippath);
@@ -389,7 +389,7 @@ class Ide
 				$zipname=$zippath.'/'.basename($this->Conf->Dir_path).'.zip';
 				exec("cd $zippath; zip -r $zipname ./".basename($this->Conf->Dir_path),$output,$return_var);
 				if ($return_var==0)
-				{ 
+				{
 					$this->success_message .= 'Archive '.$zipname.' was created';
 					$reldir="{$this->Conf->Dir_path}/..";
 					$reldir=$this->shorten_reldir($reldir);
@@ -406,23 +406,23 @@ class Ide
 				$zippath = realpath($this->Conf->Dir_path . '/..');
 				$sourceDir = realpath($this->Conf->Dir_path);
 				$zipname = $zippath . '/' . basename($sourceDir) . '.zip';
-			
+
 				$zip = new ZipArchive();
 				if ($zip->open($zipname, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
 					$files = new RecursiveIteratorIterator(
 						new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
 						RecursiveIteratorIterator::LEAVES_ONLY
 					);
-			
+
 					foreach ($files as $file) {
 						$filePath = $file->getRealPath();
 						$relativePath = substr($filePath, strlen($sourceDir) + 1);
 						$zip->addFile($filePath, $relativePath);
 					}
-			
+
 					$zip->close();
 					$this->success_message .= 'Archive ' . basename($zipname) . ' was created';
-			
+
 					$reldir = "{$this->Conf->Dir_path}/..";
 					$reldir = $this->shorten_reldir($reldir);
 					$this->Conf->Dir_path = $reldir;
@@ -437,14 +437,14 @@ class Ide
 			} elseif($_POST['action'] == 'set_ftp_file') {
 				if ($this->file_to_ftp($_POST['save_as_filename'],$this->Conf->Current_file))
 				{
-					$this->Conf->ftp_path=$_POST['save_as_filename'];	
+					$this->Conf->ftp_path=$_POST['save_as_filename'];
 				}
 			} elseif($_POST['action'] == 'set_ftp_system') {
 				$this->systemZip();
 				if ($this->file_to_ftp($_POST['save_as_filename'],'./systemzip/idephp.zip'))
 				{
 					$this->Conf->ftp_system_path=$_POST['save_as_filename'];
-				}			
+				}
 			}
 		}
     	if (substr($this->Conf->Syncmode,0,4) == 'temp') {
@@ -456,12 +456,12 @@ class Ide
             }
             else {
                 chmod ($this->current_eval(), 0644);
-            }			
-	   }		
+            }
+	   }
 		/*
 ** Print top of page
 */
-		print $this->Out->html_top($this->Conf->Encoding);		
+		print $this->Out->html_top($this->Conf->Encoding);
 		/*
 ** Print the main page and exit
 */
@@ -479,17 +479,17 @@ class Ide
 		if ($conn_id != null)
 		{
 			if (ftp_put($conn_id, basename($file), realpath($file), FTP_BINARY)) {
-				$this->success_message .= basename($file) .' was uploaded to '. $uri;	
+				$this->success_message .= basename($file) .' was uploaded to '. $uri;
 				$retval=true;
 			} else {
-				$this->alert_message .= 'Could not upload to '.$uri;	
-			}				
+				$this->alert_message .= 'Could not upload to '.$uri;
+			}
 			// close the connection
 			ftp_close($conn_id);
 		}
 		else
 		{
-			$this->alert_message .= 'Could not connect to '.$uri;	
+			$this->alert_message .= 'Could not connect to '.$uri;
 		}
 		return $retval;
 	}
@@ -528,8 +528,8 @@ class Ide
 	function systemZip()
 	{
 		$sysdir=realpath('./');
-		mkdir("$sysdir/systemzip"); 
-		mkdir("$sysdir/systemzip/idephp"); 
+		mkdir("$sysdir/systemzip");
+		mkdir("$sysdir/systemzip/idephp");
 		$tempdir=realpath('./systemzip/idephp');
 		mkdir("$tempdir/data");
 		$sysfiles=array('index.php','about_ide.php','admin_ide.php','Changes.txt','Conf.phpclass','encoding_ide.php','http_authenticate.php','license.txt','options_ide.php','Page.phpclass','readme.txt','web_about_ide.php','data/example');
@@ -553,42 +553,42 @@ class Ide
 		$zipDir = $sysdir . '/systemzip';
 		$tempDir = $zipDir . '/idephp';
 		$zipFile = $zipDir . '/idephp.zip';
-	
+
 		// Skapa tempstruktur
 		if (!is_dir($tempDir . '/data')) {
 			mkdir($tempDir . '/data', 0777, true);
 		}
-	
+
 		// Kopiera specifika filer
 		$sysfiles = [
 			'index.php', 'about_ide.php', 'admin_ide.php', 'Changes.txt', 'Conf.phpclass',
 			'encoding_ide.php', 'http_authenticate.php', 'license.txt', 'options_ide.php',
 			'Page.phpclass', 'readme.txt', 'web_about_ide.php', 'data/example'
 		];
-	
+
 		foreach ($sysfiles as $file) {
 			$source = $sysdir . '/' . $file;
 			$destination = $tempDir . '/' . $file;
-	
+
 			// Se till att undermappar finns (t.ex. data/)
 			if (!is_dir(dirname($destination))) {
 				mkdir(dirname($destination), 0777, true);
 			}
-	
+
 			copy($source, $destination);
 		}
-	
+
 		// Kopiera kataloger (rekursivt)
 		$sysdirs = ['images', 'javascript', 'css'];
 		foreach ($sysdirs as $dir) {
 			$sourceDir = $sysdir . '/' . $dir;
 			$targetDir = $tempDir . '/' . $dir;
-	
+
 			$iterator = new RecursiveIteratorIterator(
 				new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
 				RecursiveIteratorIterator::SELF_FIRST
 			);
-	
+
 			foreach ($iterator as $item) {
 				$destPath = $targetDir . '/' . $iterator->getSubPathName();
 				if ($item->isDir()) {
@@ -601,7 +601,7 @@ class Ide
 				}
 			}
 		}
-	
+
 		// Skapa ZIP
 		$zip = new ZipArchive();
 		if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
@@ -609,13 +609,13 @@ class Ide
 				new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS),
 				RecursiveIteratorIterator::LEAVES_ONLY
 			);
-	
+
 			foreach ($files as $file) {
 				$filePath = $file->getRealPath();
 				$relativePath = substr($filePath, strlen($tempDir) + 1);
 				$zip->addFile($filePath, $relativePath);
 			}
-	
+
 			$zip->close();
 		} else {
 			$this->alert_message .= "ZipArchive: Kunde inte skapa zipfil.";
@@ -776,7 +776,7 @@ class Ide
 		}
 		return true;
 	}
-	
+
 	function dir_is_empty($dir)
 	{
 		//return(count(glob('$dir/*')) === 0) ? true : false;
@@ -814,7 +814,7 @@ class Ide
 	function shorten_reldir($reldir, $base = __DIR__) {
 		return str_replace($base, '.', realpath($reldir));
 	}
-	
+
 	function undo_file($filepath)
 	{
 		if (!file_exists($this->Conf->Backup_file)) {
@@ -832,7 +832,7 @@ class Ide
 	}
 
 	function save_file($filepath,$silent=false)
-	{  
+	{
 		if (! strlen($filepath)) {
 			if (!$silent) {
 				$this->alert_message = 'Can\'t save file without a filename!!';
@@ -841,12 +841,12 @@ class Ide
 			if (!$silent) {
 				$this->alert_message = 'The file is read only. Change permissions.';
 			}
-		} else {  
+		} else {
 			$this->Edit->saveFile($filepath,$this->Conf->Right_trim);
-			$this->Conf->Dirtyfile=0;		
+			$this->Conf->Dirtyfile=0;
 			if (!$silent) {
 				$this->success_message .= "Current code was saved to file: {$filepath}";
-			}            	
+			}
 			$this->open_file($this->Conf->Current_file);
 		}
 	}
@@ -854,7 +854,7 @@ class Ide
 	function save_code_files()
 	{
 		$this->Edit->saveCode($this->Conf->Code_file);
-		$this->Edit->saveFile($this->temp_file());		
+		$this->Edit->saveFile($this->temp_file());
 	}
 
 	function open_file($filepath)
@@ -867,24 +867,24 @@ class Ide
 		$this->Conf->Encoding=$this->Edit->encoding;
         if ($this->Conf->IsBinary)
         {
-            if (substr($this->Conf->Syncmode,0,4)=='temp') 
+            if (substr($this->Conf->Syncmode,0,4)=='temp')
             {
                 $this->Conf->Syncmode='temp';
             }
-        }		
+        }
 		$this->Conf->Dirtyfile='0';
 		$_POST['code_file_name']=$filepath;
 		$_POST['save_as_filename'] = $filepath;
 		// make backup
 		$this->make_backup($filepath);
-        $this->save_code_files();	
+        $this->save_code_files();
 	}
 
 	function toolbar_left()
 	{
 		$ret ="<div class='top_window_no_border' style='width:18%;'>";
-		//$ret .= $this->Out->menu_button('&nbsp;&nbsp;I&nbsp;D&nbsp;E&nbsp;.&nbsp;P&nbsp;H&nbsp;P&nbsp;&nbsp;','window.location = "'.$_SERVER[PHP_SELF].'";');
-		$ret .= $this->Out->menu_button('&nbsp;&nbsp;I&nbsp;D&nbsp;E&nbsp;.&nbsp;P&nbsp;H&nbsp;P&nbsp;&nbsp;', 'window.location = "'.$_SERVER['PHP_SELF'].'";');
+		//$ret .= $this->Out->menu_button('  I D E . P H P  ','window.location = "'.$_SERVER[PHP_SELF].'";');
+		$ret .= $this->Out->menu_button('  I D E . P H P  ', 'window.location = "'.$_SERVER['PHP_SELF'].'";');
 		$ret .= $this->Out->menu_button($_SERVER['PHP_AUTH_USER'],'clearAuthenticationCache("'.$_SERVER['PHP_SELF'].'");');
 		$ret .= "</div>";
 		return $ret;
@@ -902,7 +902,7 @@ class Ide
 						<span style='color: {$this->Conf->Alert_message_color};'>{$this->alert_message}</span>
 					 </div>\n";
 		}
-		
+
 		if (!empty($this->success_message)) {
 			$ret .= "<div style='line-height:1; display:inline-flex; align-items:center; gap:4px;'>
 						<img src='./images/success.png' style='height:1em; vertical-align:middle;'>
@@ -937,15 +937,15 @@ class Ide
 		while (file_exists($newfilename))
 		{
 		    $i++;
-            $newfilename=$this->Conf->Dir_path.'/new_'.$i.'.php';    
+            $newfilename=$this->Conf->Dir_path.'/new_'.$i.'.php';
         }
 		$menu = $this->Out->menu_item('Download file...','main_form.save_as_filename.value="'.$this->Conf->Current_file.'";main_submit("set_download");');
 		$menu .=$this->Out->menu_item('Upload file...','upload_file();');
 		$menu .=$this->Out->menu_item('Get file from URL...','get_url_file();');
-		//$menu .=$this->Out->menu_item('Give permissions','chmod_file("'.$this->Conf->Current_file.'","0666");',!file_exists($this->Conf->Current_file));		
+		//$menu .=$this->Out->menu_item('Give permissions','chmod_file("'.$this->Conf->Current_file.'","0666");',!file_exists($this->Conf->Current_file));
 		$menu .=$this->Out->menu_item('File to ftp...','ftp_file("'.$this->Conf->ftp_path.'")');
-        $menu .= "<hr/>";                
-		$menu .=$this->Out->menu_item('New file...','new_file("'.$newfilename.'");');	
+        $menu .= "<hr/>";
+		$menu .=$this->Out->menu_item('New file...','new_file("'.$newfilename.'");');
 		$menu .=$this->Out->menu_item('Delete file','ae_confirm(callback_submit,"Delete '.$this->Conf->Current_file.' ? <b>This can NOT be undone!!!</b>","set_kill")',!file_exists($this->Conf->Current_file));
 		$menu .="<hr/>";
 		$newfilename=$this->Conf->Dir_path.'/newdir';
@@ -953,8 +953,8 @@ class Ide
 		while (file_exists($newfilename))
 		{
 		    $i++;
-            $newfilename=$this->Conf->Dir_path.'/newdir_'.$i;    
-        }		
+            $newfilename=$this->Conf->Dir_path.'/newdir_'.$i;
+        }
 		$menu .=$this->Out->menu_item('New directory...','new_directory("'.$newfilename.'");');
 		$menu .=$this->Out->menu_item('Delete directory','ae_confirm(callback_submit,"Delete '.$this->Conf->Dir_path.' ?","set_kill_directory")',!$this->dir_is_empty($this->Conf->Dir_path));
 		$menu .="<hr/>";
@@ -972,7 +972,7 @@ class Ide
 		$menu .=$this->Out->menu_item('Copy file','copy_file("'.$this->Conf->Current_file.'");',!file_exists($this->Conf->Current_file));
 		$menu .=$this->Out->menu_item('Paste file','main_submit("set_paste");',!file_exists($this->Conf->Copy_file));
 		$menu .=$this->Out->menu_item('Rename file...','rename_file("'.basename($this->Conf->Current_file).'");',!file_exists($this->Conf->Current_file));
-		$ret .= $this->Out->menu_create('File',$menu);		
+		$ret .= $this->Out->menu_create('File',$menu);
 		//$menu .= $this->Out->menu_bottom();
 		//$ret .= $this->Out->menu_top($this->Conf->Dir_path);
 		$menu='';
@@ -981,13 +981,13 @@ class Ide
 			$menu .=$this->Out->menu_item($this->recentdirs->item($i),'submit_dir("'.$relpath.'")',!file_exists($this->recentdirs->item($i)));
 			if ($i==$this->recentdirs->count()-1) {
 				if ($this->recentdirs->count()>1)
-                {   
+                {
                     $menu.="<hr/>";
                 }
 			}
 		}
 		//$ret .= $this->Out->menu_bottom();
-		$ret .= $this->Out->menu_create($this->Conf->Dir_path,$menu);		
+		$ret .= $this->Out->menu_create($this->Conf->Dir_path,$menu);
 		return $ret;
 	}
 
@@ -1016,7 +1016,7 @@ class Ide
 			$menu .=$this->Out->menu_item($this->recentfiles->item($i),'submit_file("'.$this->recentfiles->item($i).'")',!file_exists($this->recentfiles->item($i)));
 			if ($i==$this->recentfiles->count()-1) {
 				if ($this->recentfiles->count()>1)
-                {   
+                {
                     $menu.="<hr/>";
                 }
 			}
@@ -1024,7 +1024,7 @@ class Ide
 		$ret .= $this->Out->menu_create($this->Conf->Current_file,$menu);
 		$ret .= "<div class='inside_menu'>";
 		$ret .= "<span id='dirty_p'>\n";
-		$ret .=($this->Conf->Dirtyfile>0) ? '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save">&nbsp;<img src="images/savel.png"/>&nbsp;</a>':'';
+		$ret .=($this->Conf->Dirtyfile>0) ? '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save"> <img src="images/savel.png"/> </a>':'';
 		$ret .="</span>\n";
 		$ret .= "</div>\n";
 		$ret .="</div>\n";
@@ -1037,7 +1037,7 @@ class Ide
 		$ret ="<div class='top_window_z1000'>";
 		//$ret .= $this->Out->menu_button('- RUN -','main_form.phpnet.value=0;main_submit("eval");',(strlen($this->Conf->Eval_path)==0));
 		$ret .= "<div class='inside_menu'>";
-		$ret .= "<a href='#' class='imgbutton' onClick='main_form.phpnet.value=0;main_submit(\"eval\");' title='Run'>&nbsp;&nbsp;<img src='images/play.png'/>&nbsp;&nbsp;</a>";
+		$ret .= "<a href='#' class='imgbutton' onClick='main_form.phpnet.value=0;main_submit(\"eval\");' title='Run'>  <img src='images/play.png'/>  </a>";
 		$ret .= "</div>";
 		//$ret.=$this->Out->menu_top('Evaluate');
 		$menu = $this->Out->menu_item('Sync','main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="sync"){main_form.syncmode.value="";}else{main_form.syncmode.value="sync";}main_submit("eval_sync");',!file_exists($this->Conf->Current_file),$this->Conf->Syncmode=='sync');
@@ -1057,7 +1057,7 @@ class Ide
 			$menu .=$this->Out->menu_item($this->recentevals->item($i),'main_form.syncmode.value="";main_form.phpnet.value=0;main_form.eval_path.value="'.$this->recentevals->item($i).'";main_submit("eval_change");',(!file_exists($this->recentevals->item($i))) && (!$this->is_url($this->recentevals->item($i))));
 			if ($i==$this->recentevals->count()-1) {
 				if ($this->recentevals->count()>1)
-                {   
+                {
                     $menu.="<hr/>";
                 }
 			}
@@ -1076,11 +1076,35 @@ class Ide
 
 	function file_window($borderstyle)
 	{
-	    $filetable=new FileTable($this->Conf->Dir_path,$this->Conf->Current_file,$this->Conf->Dir_sortorder,$this->Conf->Allow_browse_below_root);
+
+		require 'filetable/filetable.php';
+	    $filetable = new FileTable($this->Conf->Dir_path,$this->Conf->Current_file,$this->Conf->Dir_sortorder,$this->Conf->Allow_browse_below_root);
 		$ret ="<div class='fixed_window'>\n";
 		$ret .="<div class='scroll_window' style='$borderstyle'>\n";
-		//$ret .= $this->file_table();
 		$ret .= $filetable->file_table();
+		$ret .= "<script type=\"text/javascript\">
+			document.addEventListener(\"DOMContentLoaded\", function () {
+				if (typeof FileTableEvents !== 'undefined') {
+					FileTableEvents.onFileClick = function (path) {
+						//alert(path);
+						submit_file(path);
+					};
+					FileTableEvents.onFolderClick = function (path) {
+						//alert(path);
+						submit_dir(path);
+					};
+					FileTableEvents.onChangeSortOrder = function (sortorder) {
+						//alert(sortorder);
+						submit_sort(sortorder);
+					}
+					FileTableEvents.onPermissionsClick = function (file,value)
+					{
+						//alert(file + value);
+						submit_chmod(file,value);
+					}
+				}
+			});
+			</script>";
 		$ret .="</div>\n";
 		$ret .="</div>\n";
 		return $ret;
@@ -1091,12 +1115,14 @@ class Ide
 		$ret ="<div class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
-			$ret .= "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/theme/{$theme}.css\">";
+			if ($theme !== 'default') {
+				$ret .= "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/theme/{$theme}.css\">\n";
+			}			
 			$ret .= "
 				<!-- CSS och JS -->
 				<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.css\">
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.js\"></script>
-				
+
 				<!-- Språkmoduler -->
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/javascript/javascript.js\"></script>
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/php/php.js\"></script>
@@ -1108,12 +1134,25 @@ class Ide
 				let editor = null;
 				document.addEventListener(\"DOMContentLoaded\", function() {
 					if (typeof(CodeMirror) !== 'undefined') {
-						editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {
+						editor = CodeMirror.fromTextArea(document.getElementById('code'), {
 							lineNumbers: true,
-							mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
+							//mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
+							mode: document.getElementById('code').dataset.mode,
 							theme: \"$theme\", // <--- här sätts temat
 							indentUnit: 4,
-							tabSize: 4
+							tabSize: 4,
+							extraKeys: {
+								\"Ctrl-S\": function(cm) {
+									// Din sparlogik här
+									console.log(\"Ctrl+S pressed\");
+									main_submit('save'); // Om du har en sådan funktion
+								},
+								\"Cmd-S\": function(cm) {
+									// För Mac
+									console.log(\"Cmd+S pressed\");
+									main_submit('save');
+								}
+							}
 						});
 						editor.on(\"change\", () => checkDirtyCodeMirror());
 						editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
@@ -1135,7 +1174,7 @@ class Ide
 			$ret .= "<div id='infobarborder'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>&nbsp;&nbsp;'.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'>&nbsp;<img src='images/lock.gif'>&nbsp;</a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).'&nbsp;';
+			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
 			$ret .= "</div>";
 			$ret .= '</div>';
 
@@ -1165,37 +1204,37 @@ class Ide
 		      	$ret .= "<div id='infobarborder'></div>";
        			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 	       		$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-		      	$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>&nbsp;&nbsp;'.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'>&nbsp;<img src='images/lock.gif'>&nbsp;</a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).'&nbsp;';
+		      	$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
     			$ret .= "</div>";
 	       	}
-    		$ret .="</div>\n";		
+    		$ret .="</div>\n";
         }
         else
         {
-    		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";               
-            $ret.='<div class="leftwrapper" style="border-left:0px solid #e5e5e5;'.$this->code_style().'">';  
-            
+    		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
+            $ret.='<div class="leftwrapper" style="border-left:0px solid #e5e5e5;'.$this->code_style().'">';
+
    			$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
 
 	       	$ret.='</div>';
-	       	
+
     		$ret.='<div class="leftheader" style="'.$this->code_style().'">';
 	       	$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:157px;'.$this->code_style().'">';
     		$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:32px;text-align:right;'.$this->code_style().'">';
-    		
+
             for($i = 0; $i <= $this->Edit->getlen(); $i += 16)
             {
                 $ret .= dechex($i).'<br/>';
-            }    		
-    		
+            }
+
             $ret.= '</code>';
-		    $ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';            
+		    $ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';
             $ret.=str_replace(chr(0x0d),'<br/>',$this->Edit->getAscii());
-	       	$ret.='</div>';            
+	       	$ret.='</div>';
 	       	$ret.= '</div>';
     		$ret.= '</div>';
-	       	
-	       	$ret.='</div>';                                          
+
+	       	$ret.='</div>';
         }
 		$ret .="</div>\n";
 		return $ret;
@@ -1204,7 +1243,7 @@ class Ide
 	function current_eval()
 	{
 		$evalpath=$this->Conf->Eval_path;
-		if (substr($this->Conf->Syncmode,0,4)=='temp') { 
+		if (substr($this->Conf->Syncmode,0,4)=='temp') {
 			$evalpath=$this->temp_file();
 		}
 		if ($this->Conf->Syncmode=='sync') {
@@ -1347,7 +1386,7 @@ class Ide
 		$this->Conf->save_to_file();
 		$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
 		$ret.="syncTextarea('{$this->Conf->UIdata}');";
-		$ret .= "</SCRIPT>\n";		
+		$ret .= "</SCRIPT>\n";
 		if ($_POST['overwrite_ok']) {
 			$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
 			$ret .= "ae_confirm(callback_submit,'The file {$_POST['save_as_filename']} already exists, replace?','{$_POST['action']}_replace');\n";
@@ -1370,9 +1409,9 @@ class Ide
 	function main_page()
 	{
 		global $_POST;
-	
+
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
-	
+
 		$ret = <<<HTML
 	<form name="main_form" id="main_form" enctype="multipart/form-data" method="POST" action="{$h($_SERVER['PHP_SELF'])}">
 	<input type="hidden" name="action" id="action" value="">
@@ -1390,7 +1429,7 @@ class Ide
 	<input name="some_file_name" id="some_file_name" type="hidden" value="">
 	<input name="chmod_value" id="chmod_value" type="hidden" value="">
 	HTML;
-	
+
 		// Layout style values, using fallback from POST
 		foreach ([
 			'td_left_style' => 'tdleftstyle',
@@ -1403,10 +1442,10 @@ class Ide
 			$this->Conf->$confProp = $_POST[$postKey] ?? $this->Conf->$confProp;
 			$ret .= "<input type='hidden' name='{$h($postKey)}' id='{$h($postKey)}' value='{$h($this->Conf->$confProp)}'>\n";
 		}
-	
+
 		// Start wrapper div
 		$ret .= "<div class='wrapper' id='wrapper_div'><div class='relative'>";
-	
+
 		if ($this->Conf->LayoutStyle == 1) {
 			// 3-column layout
 			$ret .= <<<HTML
@@ -1450,7 +1489,7 @@ class Ide
 	</tr></table>
 	HTML;
 		}
-	
+
 		// Global toolbar
 		$ret .= <<<HTML
 	</div></div>
@@ -1461,7 +1500,7 @@ class Ide
 	</div>
 	</form>
 	HTML;
-	
+
 		// Save UI data
 		$this->Conf->recentfiles = $this->recentfiles->save();
 		$this->Conf->recentdirs = $this->recentdirs->save();
@@ -1470,28 +1509,28 @@ class Ide
 			$this->Conf->UIdata = $_POST['UIdata'];
 		}
 		$this->Conf->save_to_file();
-	
+
 		// JavaScript block
 		$ret .= "<script>\nsyncTextarea(" . json_encode($this->Conf->UIdata) . ");\n</script>\n";
-	
+
 		// Confirm overwrite if needed
 		if (!empty($_POST['overwrite_ok'])) {
 			$fileName = $h($_POST['save_as_filename']);
 			$action = $h($_POST['action']) . '_replace';
 			$ret .= "<script>\nae_confirm(callback_submit,'The file {$fileName} already exists, replace?','{$action}');\n</script>\n";
 		}
-	
+
 		// Start download on load
 		if (isSet($_POST['action']) && $_POST['action'] === 'download_system') {
 			$ret .= "<script>window.onload = startdownload;</script>\n";
 			echo $ret;
 		}
-	
+
 		return $ret;
 	}
 
 }
-
+/*
 class FileTable
 {
     var $dir;
@@ -1505,18 +1544,18 @@ class FileTable
     var $header3;
     var $sortimage1;
     var $sortimage2;
-    var $sortimage3;                
-    
+    var $sortimage3;
+
     function __construct($reldir,$currentfile,$sortorder,$browsebelowroot)
     {
         $this->reldir=$reldir;
 		//$this->dir=realpath(dirname(__FILE__)."/$reldir");
-        $this->dir=realpath($reldir);        
+        $this->dir=realpath($reldir);
         $this->currentfile=$currentfile;
         $this->sortorder=$sortorder;
         $this->browsebelowroot=$browsebelowroot;
     }
-	
+
 	function getFiles()
 	{
 		$dir_handle = @opendir($this->dir);
@@ -1535,7 +1574,7 @@ class FileTable
 		}
 		//closing the directory
 		closedir($dir_handle);
-        return true;    
+        return true;
     }
 
     function createHeaders()
@@ -1588,9 +1627,9 @@ class FileTable
 			$this->header2="onClick='submit_sort(3)'";
 			$this->header3="onClick='submit_sort(5)'";
 			break;
-		}    
+		}
     }
-    
+
     function writeHeaders()
     {
         $ret ="<tr><th align='left' $this->header1 style='text-indent:30px;'>\n";
@@ -1598,7 +1637,7 @@ class FileTable
 		$ret .="</th><th align='left' $this->header2>";
 		$ret.=$this->sortimage2.'Date';
 		$ret .="</th><th  align='right' $this->header3>";
-		$ret.=$this->sortimage3.'Size&nbsp;';//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp
+		$ret.=$this->sortimage3.'Size ';//       
 		$ret .="</th><th style='border-right:0px;'></th></tr>\n";
 		return $ret;
     }
@@ -1612,27 +1651,27 @@ class FileTable
 			$perms=substr(sprintf('%o', fileperms(realpath($path))), -3);
 			if ($file['name']=='..') {
 				$perms='';
-			}			
+			}
 			$ret.=($path==$this->currentfile) ? "<tr class='selrow'><td>\n" : "<tr class='row$k'><td>\n";
 			if (is_dir(realpath($this->dir."/".$file['name']))) {
 				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="&nbsp;&nbsp;&nbsp;<a href='#' onClick='javascript:submit_dir(\"{$file['name']}\");return false;'><img src='images/folder.png'/>&nbsp;".$file['name']."</a>\n";
+					$ret .="   <a href='#' onClick='javascript:submit_dir(\"{$file['name']}\");return false;'><img src='images/folder.png'/> ".$file['name']."</a>\n";
 				} else {
-					$ret .="&nbsp;&nbsp;&nbsp;<img src='images/file.png'/>&nbsp;".$file['name'];
+					$ret .="   <img src='images/file.png'/> ".$file['name'];
 				}
-				$ret.="</td>\n<td>&nbsp;".date("Y-m-d",$file['date'])."&nbsp;</td>\n<td align='right' style='padding-right:7px;'>&nbsp;</td>\n<td>\n<a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
+				$ret.="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'> </td>\n<td>\n<a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			} else {
 				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="&nbsp;&nbsp;&nbsp;<a href='#' onClick='javascript:submit_file(\"{$path}\");return false;'><img src='images/file.png'/>&nbsp;".$file['name']."</a>\n";
+					$ret .="   <a href='#' onClick='javascript:submit_file(\"{$path}\");return false;'><img src='images/file.png'/> ".$file['name']."</a>\n";
 				} else {
-					$ret .="&nbsp;&nbsp;&nbsp;<img src='images/file.png'/>&nbsp;".$file['name'];
+					$ret .="   <img src='images/file.png'/> ".$file['name'];
 				}
-				$ret .="</td>\n<td>&nbsp;".date("Y-m-d",$file['date'])."&nbsp;</td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
+				$ret .="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			}
 			$ret .="</td></tr>\n";
 			$k=1-$k;
 		}
-        return $ret;    
+        return $ret;
     }
 
 	function file_table()
@@ -1642,8 +1681,8 @@ class FileTable
 	    {
 			$ret .="<table width='100%' cellpadding='0' border='0' cellspacing='0' CLASS='boldtable'><tr><td align='left'>\n";
 			$ret .="Unable to read $dir<br>";
-			$ret .="<a href='#' onClick='javascript:submit_dir(\"./\");return false;'><img src='images/folder.png'/>&nbsp;Home</a>\n";
-			$ret .="</td></tr></table>";        
+			$ret .="<a href='#' onClick='javascript:submit_dir(\"./\");return false;'><img src='images/folder.png'/> Home</a>\n";
+			$ret .="</td></tr></table>";
             return $ret;
         }
         $this->createHeaders();
@@ -1653,16 +1692,16 @@ class FileTable
             $ret.=$this->writeFiles();
 			$ret .="</table>\n";
 		}
-	    return $ret;		
+	    return $ret;
 	}
-	
+
 	function sortFiles(&$files, $Key, $Desc)
 	{
 		$dirs = [];
 		$plainfiles = [];
-	
+
 		if (!is_array($files)) return;
-	
+
 		foreach ($files as $file) {
 			if (is_dir(realpath($file['path'] ?? ''))) {
 				$dirs[] = $file;
@@ -1670,12 +1709,12 @@ class FileTable
 				$plainfiles[] = $file;
 			}
 		}
-	
+
 		$this->sortFileChunk($dirs, $Key, $Desc, 0, count($dirs));
 		$this->sortFileChunk($plainfiles, $Key, $Desc, 0, count($plainfiles));
 		$files = array_merge($dirs, $plainfiles);
 	}
-	
+
     function sortFileChunk(&$files,$Key,$Desc,$min,$max)
     {
 	    for ($i=$min; $i<$max; $i++) {
@@ -1704,21 +1743,21 @@ class FileTable
     	$pow = floor(($bytes ? log($bytes) : 0) / log(1024));
     	$pow = min($pow, count($units) - 1);
     	$bytes /= pow(1024, $pow);
-    	return round($bytes, $precision) . '&nbsp;' . $units[$pow];
-    }	
+    	return round($bytes, $precision) . ' ' . $units[$pow];
+    }
 }
-
+*/
 class Editor
 {
 
     var $hex;
     var $data;
-    var $ascii;  
+    var $ascii;
     var $isbinary;
     var $protocthtml;
     var $unixnewlines;
     var $encoding;
-    
+
     function __construct($isbinary,$protecthtml,$unixnewlines,$encoding)
     {
         $this->isbinary=$isbinary;
@@ -1726,46 +1765,46 @@ class Editor
         $this->unixnewlines=$unixnewlines;
         $this->encoding=$encoding;
     }
-   
+
 	function make_textarea_safe($code)
 	{
 		$safe_code = preg_replace("/<\/(TEXTAREA)>/i", "</ide\\1>", $code);
 
 		if ($this->protecthtml) {
-			$safe_code = preg_replace("/&/", "&amp;", $safe_code);
+			$safe_code = preg_replace("/&/", "&", $safe_code);
 		}
-		
+
 		return $safe_code;
 	}
-       
-    function dataIsBinary() 
-    { 
+
+    function dataIsBinary()
+    {
         return preg_match('/[\x00-\x08\x0b-\x0c\x0e\x1f]/', $this->data);
-    }    
-    
+    }
+
     function dataSet()
     {
         return isset($this->data);
     }
-    
+
     function modifyCode()
     {
         if (!$this->isbinary)
-        {         
-            /*  
+        {
+            /*
             ** Since the code is displayed in a <TEXTAREA>, it can't contain the tag </TEXTAREA>,
             ** since that would break our editor :/ Thus we replace it with </TEXTAREA>
             ** and put it in $this->textarea_safe_code. The reverse substitution is first
             ** performed on $this->code, to restore any previous replacements.
-            */  
+            */
 			$this->data = preg_replace("/<\/ide(TEXTAREA)>/i", "</\\1>", $this->data);
 		    //$this->textarea_safe_code	= $this->make_textarea_safe($this->code);
             /*
             ** Htmlentities are not literally shown inside TEXTAREA in some (all?) browsers.
             */
-			
+
 			if ($this->protecthtml) {
-				$this->data = preg_replace("/(&amp;)+&/", "&", $this->data);
+				$this->data = preg_replace("/(&)+&/", "&", $this->data);
 		    }
             /*
             ** Remove \r\f if desired, needed for cgi on UNIX
@@ -1775,19 +1814,19 @@ class Editor
 		    }
 		}
     }
-    
+
     function createFromData($data)
     {
         $this->data=$data;
-        $this->isbinary=$this->dataIsBinary(); 
+        $this->isbinary=$this->dataIsBinary();
         if (!$this->isbinary)
-        {     
+        {
             $this->encoding = mb_detect_encoding($data,'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1, WINDOWS-1252');
-            $this->modifyCode();                  
-        }  
-        return $this->isbinary;     
-    }    
-   
+            $this->modifyCode();
+        }
+        return $this->isbinary;
+    }
+
     function createFromFile($file)
     {
         if (filesize($file) == 0) {
@@ -1796,17 +1835,17 @@ class Editor
 		$handle = fopen($file, 'r');
 		$this->data = fread($handle, filesize($file));
 		fclose($handle);
-        
-		$this->isbinary=$this->dataIsBinary(); 
+
+		$this->isbinary=$this->dataIsBinary();
         if (!$this->isbinary)
-        {		
+        {
 			/*
         	if (get_magic_quotes_runtime()) {
 				$this->data = stripslashes($this->data);	//??
 			}
 			*/
-        }		
-        return $this->createFromData($this->data);      
+        }
+        return $this->createFromData($this->data);
     }
 
     function createFromCode($code,$isfile=false)
@@ -1814,14 +1853,14 @@ class Editor
         if ($this->isbinary)
         {
             $hexcode= preg_replace('/[\x00-\x20]/','',$code);
-            $this->data=pack('H*',$hexcode);      
+            $this->data=pack('H*',$hexcode);
         }
         else
-        {  
+        {
     		/*
             ** Remove slashes if necessary, put code in $this->code
             */
-            
+
             if (!$isfile)
 			{
 			/*
@@ -1829,14 +1868,14 @@ class Editor
 					$code = stripslashes($code);
 				}
 				*/
-            }        
+            }
             $this->data=$code;
-            $this->modifyCode();            
-        }       
+            $this->modifyCode();
+        }
     }
-    
+
     function createFromCodeFile($file)
-    {   
+    {
     	if (filesize($file) == 0) {
     		return;
     	}
@@ -1845,73 +1884,73 @@ class Editor
 		fclose($handle);
         /*
 		if (!$this->isbinary)
-        {		
+        {
         	if (get_magic_quotes_runtime()) {
-				$code = stripslashes($code);	//??	        
-			
+				$code = stripslashes($code);	//??
+
 			}
         }
-        */		
-        $this->createFromCode($code,true);    
+        */
+        $this->createFromCode($code,true);
     }
-    
+
     function trimData()
     {
     	$this->data=preg_replace('/[ \t]+([\n\r])/','\\1',$this->data);
-	    $this->data=preg_replace('/(\s+$)/','',$this->data);            
+	    $this->data=preg_replace('/(\s+$)/','',$this->data);
     }
-    
+
     function saveCode($file,$trim=false)
     {
          $handle = fopen($file, 'w+');
          if ($this->isbinary)
          {
-            $hex=$this->getHex();         
-            fwrite($handle, $hex);            
+            $hex=$this->getHex();
+            fwrite($handle, $hex);
          }
          else
          {
             if ($trim)
             {
-				$this->trimData();            
+				$this->trimData();
             }
-            fwrite($handle, $this->data);         
+            fwrite($handle, $this->data);
          }
-         fclose($handle);    
+         fclose($handle);
     }
-    
+
     function getCode()
     {
          if ($this->isbinary)
          {
-            return $this->getHex();            
+            return $this->getHex();
          }
          else
          {
-            return $this->data;         
-         }    
+            return $this->data;
+         }
     }
     function getTextareaCode()
     {
          if ($this->isbinary)
          {
-            return $this->getHex();            
+            return $this->getHex();
          }
          else
          {
-            return $this->make_textarea_safe($this->data);         
-         }        
+            return $this->make_textarea_safe($this->data);
+         }
     }
-    
+
     function getHighlightCode()
     {
 		ob_start();
 		highlight_string($this->getCode());
 		$fancy_code_str = ob_get_contents();
 		ob_end_clean();
-		return $fancy_code_str;    
+		return $fancy_code_str;
     }
-    
+
     function saveFile($file,$trim=false)
     {
    		if (!is_writable($file)) {
@@ -1921,7 +1960,7 @@ class Editor
          $handle = fopen($file, 'w+');
          if ($this->isbinary)
          {
-            fwrite($handle, $this->data);            
+            fwrite($handle, $this->data);
          }
          else
          {
@@ -1929,11 +1968,11 @@ class Editor
             {
 				$this->trimData();
             }
-            fwrite($handle, $this->data);         
+            fwrite($handle, $this->data);
          }
-         fclose($handle);    
+         fclose($handle);
     }
-    
+
     /*
     function saveFile($file, $trim = false)
 	{
@@ -1942,35 +1981,35 @@ class Editor
 			$this->alert_message = 'The file \"$file\" is read only.\\nChange permissions.';
 			return;
 		}
-	
+
 		$handle = @fopen($file, 'w+');
 		if (!$handle) {
 			$this->alert_message = 'Could not open file \"$file\" for write access.';
 			return;
 		}
-	
+
 		if ($this->isbinary) {
-			fwrite($handle, $this->data);            
+			fwrite($handle, $this->data);
 		} else {
 			if ($trim) {
 				$this->trimData();
 			}
-			fwrite($handle, $this->data);         
+			fwrite($handle, $this->data);
 		}
-	
+
 		fclose($handle);
 	}
-    */   
+    */
     function getHex()
     {
          $tmp=unpack('H*',$this->data);
          $this->hex=trim(chunk_split(chunk_split($tmp[1],2,' '),48,chr(0x0d)));
-         return $this->hex;             
+         return $this->hex;
     }
     function getAscii()
     {
-         $this->ascii.=trim(preg_replace('/([\x80-\xff])/e',"'&#'.ord('\\1').';'",htmlentities(chunk_split(preg_replace('/[\x00-\x20\x80-\xaf]/','.',$this->data),16,chr(0x0d))) )); 
-         return $this->ascii;  
+         $this->ascii.=trim(preg_replace('/([\x80-\xff])/e',"'&#'.ord('\\1').';'",htmlentities(chunk_split(preg_replace('/[\x00-\x20\x80-\xaf]/','.',$this->data),16,chr(0x0d))) ));
+         return $this->ascii;
     }
     function getlen()
     {
@@ -1979,24 +2018,129 @@ class Editor
              return strlen($this->data);
          }
          return count(preg_split('/[\n]/',$this->data));
-         
+
     }
     function detectCodeMirrorMode($filename) {
-		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-		return match ($ext) {
-			'js'   => 'javascript',
-			'php'  => 'application/x-httpd-php',
-			'html' => 'text/html',
-			'css'  => 'css',
-			'json' => 'application/json',
-			'xml'  => 'application/xml',
-			'py'   => 'python',
-			'c', 'h' => 'text/x-csrc',
-			'cpp', 'hpp' => 'text/x-c++src',
-			default => 'text/plain',
-		};
-	}
-} 
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+    $modeMap = [
+        "groovy" => "groovy",
+        "ini" => "properties",
+        "properties" => "properties",
+        "css" => "css",
+        "scss" => "css",
+        "html" => "htmlmixed",
+        "htm" => "htmlmixed",
+        "shtm" => "htmlmixed",
+        "shtml" => "htmlmixed",
+        "xhtml" => "htmlmixed",
+        "cfm" => "htmlmixed",
+        "cfml" => "htmlmixed",
+        "cfc" => "htmlmixed",
+        "dhtml" => "htmlmixed",
+        "xht" => "htmlmixed",
+        "tpl" => "htmlmixed",
+        "twig" => "htmlmixed",
+        "hbs" => "htmlmixed",
+        "handlebars" => "htmlmixed",
+        "kit" => "htmlmixed",
+        "jsp" => "htmlmixed",
+        "aspx" => "htmlmixed",
+        "ascx" => "htmlmixed",
+        "asp" => "htmlmixed",
+        "master" => "htmlmixed",
+        "cshtml" => "htmlmixed",
+        "vbhtml" => "htmlmixed",
+        "ejs" => "htmlembedded",
+        "dust" => "htmlembedded",
+        "erb" => "htmlembedded",
+        "js" => "javascript",
+        "jsx" => "javascript",
+        "jsm" => "javascript",
+        "_js" => "javascript",
+        "vbs" => "vbscript",
+        "vb" => "vb",
+        "json" => "javascript",
+        "xml" => "xml",
+        "svg" => "xml",
+        "wxs" => "xml",
+        "wxl" => "xml",
+        "wsdl" => "xml",
+        "rss" => "xml",
+        "atom" => "xml",
+        "rdf" => "xml",
+        "xslt" => "xml",
+        "xsl" => "xml",
+        "xul" => "xml",
+        "xbl" => "xml",
+        "mathml" => "xml",
+        "config" => "xml",
+        "plist" => "xml",
+        "xaml" => "xml",
+        "php" => "php",
+        "php3" => "php",
+        "php4" => "php",
+        "php5" => "php",
+        "phtm" => "php",
+        "phtml" => "php",
+        "ctp" => "php",
+        "c" => "clike",
+        "h" => "clike",
+        "i" => "clike",
+        "cc" => "clike",
+        "cp" => "clike",
+        "cpp" => "clike",
+        "c++" => "clike",
+        "cxx" => "clike",
+        "hh" => "clike",
+        "hpp" => "clike",
+        "hxx" => "clike",
+        "h++" => "clike",
+        "ii" => "clike",
+        "ino" => "clike",
+        "cs" => "clike",
+        "asax" => "clike",
+        "ashx" => "clike",
+        "java" => "clike",
+        "scala" => "clike",
+        "sbt" => "clike",
+        "coffee" => "coffeescript",
+        "cf" => "coffeescript",
+        "cson" => "coffeescript",
+        "_coffee" => "coffeescript",
+        "clj" => "clojure",
+        "cljs" => "clojure",
+        "cljx" => "clojure",
+        "pl" => "perl",
+        "pm" => "perl",
+        "rb" => "ruby",
+        "ru" => "ruby",
+        "gemspec" => "ruby",
+        "rake" => "ruby",
+        "py" => "python",
+        "pyw" => "python",
+        "wsgi" => "python",
+        "sass" => "sass",
+        "lua" => "lua",
+        "sql" => "sql",
+        "diff" => "diff",
+        "patch" => "diff",
+        "md" => "markdown",
+        "markdown" => "markdown",
+        "mdown" => "markdown",
+        "mkdn" => "markdown",
+        "yaml" => "yaml",
+        "yml" => "yaml",
+        "hx" => "haxe",
+        "sh" => "shell",
+        "command" => "shell",
+        "bash" => "shell"
+    ];
+
+    return $modeMap[$ext] ?? 'text/plain';
+}
+
+}
 
 class Beautifier
 {
@@ -2100,9 +2244,9 @@ class RecentList
 		$this->items=unserialize($list);
 		if ($this->items=='') {
 		    $this->items=array($current);
-		}    
+		}
     }
-    
+
 	function append($item)
 	{
 		$this->remove($item);
@@ -2133,13 +2277,13 @@ class RecentList
 			$this->items=array($this->items);
 		}
 		$this->items=array_values($this->items);
-	} 
-    
+	}
+
     function count()
     {
         return count($this->items);
-    } 
-    
+    }
+
 	function is_url($url)
 	{
 		$UrlElements = parse_url($url);
@@ -2151,15 +2295,15 @@ class RecentList
 		}
 		return true;
 	}
-    
+
     function item($i)
     {
         return $this->items[$i];
     }
-    
+
     function save()
     {
-		return serialize($this->items);    
-    }      
+		return serialize($this->items);
+    }
 }
 ?>

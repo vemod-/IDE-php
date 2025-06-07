@@ -99,13 +99,12 @@ function main_submit(action) {
             UIdata['selStart'] = Math.min(startPos, endPos);
             UIdata['selEnd'] = Math.max(startPos, endPos);
         }
-        var codeData = editor.getValue();
         var elem = document.getElementById('code');
 		elem.disabled = true;
 		var newElem = document.createElement('textarea');
 		newElem.name = 'code';
 		newElem.style.display = 'none'; // Dölj det
-		newElem.value = codeData;
+		newElem.value = editor.getValue();;
 		document.main_form.appendChild(newElem);
     }
 
@@ -838,22 +837,22 @@ function submit_dir(dir)
 }
 function submit_file(file)
 {
-    var elem=document.getElementById('code');
-    if (elem.tagName.toLowerCase() === 'textarea')
-    {
-        setSelectionRange(elem,0,0);
-    }
-    elem.scrollTop=0;
-    elem.scrollLeft=0;
-    document.getElementById('some_file_name').value=""+file+"";
-    //document.main_form.action.value='load_browse_file';    
-    if (checkDirty())
-    {   
-        var currfile=document.getElementById('Current_filename').value;       
-        ae_confirm_yes_no(submit_file_callback,"Save changes to "+currfile);
-        return;        
-    }
-    main_submit('load_browse_file');
+		var elem=document.getElementById('code');
+		if (elem.tagName.toLowerCase() === 'textarea')
+		{
+			setSelectionRange(elem,0,0);
+		}
+		elem.scrollTop=0;
+		elem.scrollLeft=0;
+		document.getElementById('some_file_name').value=""+file+"";
+		//document.main_form.action.value='load_browse_file';    
+		if (checkDirty())
+		{   
+			var currfile=document.getElementById('Current_filename').value;       
+			ae_confirm_yes_no(submit_file_callback,"Save changes to "+currfile);
+			return;        
+		}
+		main_submit('load_browse_file');
 }
 
 function submit_file_callback(returncode,id,value)
@@ -1189,38 +1188,46 @@ function replace_callback(returncode,id,value)
 
 function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount) 
 {
-     input.focus();
-     if(input.setSelectionRange)
-     {
-        /*
-        if (is_opera)
-        {
-            input.setSelectionRange(selectionStart+(input.value.substring(0,selectionStart).substring_count('\n')), selectionEnd+(input.value.substring(0,selectionEnd).substring_count('\n')));
-            return;
-        }
-        */
-        input.setSelectionRange(selectionStart, selectionEnd);                
-     }  
-     else if(input.createTextRange) {
-        var i = input.createTextRange();
-        i.collapse(true);
-        if (typeof trueCharCount === 'undefined')
-        {
-            trueCharCount=false;
-        }
-        var j1=0;
-        var j2=0;
-        if (!trueCharCount)
-        {
-            //j1=input.value.substring(0,selectionEnd).split('\n').length;
-            //j2=input.value.substring(0,selectionStart).split('\n').length;
-            j1=input.value.substring(0,selectionEnd).substring_count('\n');
-            j2=input.value.substring(0,selectionStart).substring_count('\n');
-        }            
-        i.moveEnd('character', selectionEnd-j1);       
-        i.moveStart('character', selectionStart-j2);
-        i.select();
-        input.focus();
+     if (editor && typeof editor.setSelection === 'function') {
+		var startPos = editor.posFromIndex(selectionStart);
+		var endPos = editor.posFromIndex(selectionEnd);
+		editor.setSelection(startPos, endPos);
+    // === Fallback till vanlig <textarea> ===
+    }
+    else {
+         input.focus();
+		 if(input.setSelectionRange)
+		 {
+			/*
+			if (is_opera)
+			{
+				input.setSelectionRange(selectionStart+(input.value.substring(0,selectionStart).substring_count('\n')), selectionEnd+(input.value.substring(0,selectionEnd).substring_count('\n')));
+				return;
+			}
+			*/
+			input.setSelectionRange(selectionStart, selectionEnd);                
+		 }  
+		 else if(input.createTextRange) {
+			var i = input.createTextRange();
+			i.collapse(true);
+			if (typeof trueCharCount === 'undefined')
+			{
+				trueCharCount=false;
+			}
+			var j1=0;
+			var j2=0;
+			if (!trueCharCount)
+			{
+				//j1=input.value.substring(0,selectionEnd).split('\n').length;
+				//j2=input.value.substring(0,selectionStart).split('\n').length;
+				j1=input.value.substring(0,selectionEnd).substring_count('\n');
+				j2=input.value.substring(0,selectionStart).substring_count('\n');
+			}            
+			i.moveEnd('character', selectionEnd-j1);       
+			i.moveStart('character', selectionStart-j2);
+			i.select();
+			input.focus();
+		 }
      }
 }
 
