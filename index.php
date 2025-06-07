@@ -1112,7 +1112,8 @@ class Ide
 
 	function code_window($borderstyle)
 	{
-		$ret ="<div class='fixed_window'>\n";
+		$ret = "<script>let editor = null;</script>";
+		$ret .= "<div class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
 			if ($theme !== 'default') {
@@ -1131,7 +1132,6 @@ class Ide
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/clike/clike.js\"></script>
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/css/css.js\"></script>
 				<script>
-				let editor = null;
 				document.addEventListener(\"DOMContentLoaded\", function() {
 					if (typeof(CodeMirror) !== 'undefined') {
 						editor = CodeMirror.fromTextArea(document.getElementById('code'), {
@@ -1212,7 +1212,7 @@ class Ide
         else
         {
     		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-            $ret.='<div class="leftwrapper" style="border-left:0px solid #e5e5e5;'.$this->code_style().'">';
+            $ret.='<div class="leftwrapper" style="border-left:34px solid #e5e5e5;'.$this->code_style().'">';
 
    			$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
 

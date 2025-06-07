@@ -1,12 +1,12 @@
 var is_opera=(navigator.userAgent.toLowerCase().indexOf("opera")!=-1);
 var is_safari=(navigator.userAgent.toLowerCase().indexOf("safari")!=-1);
 var is_IE6=((navigator.userAgent.toLowerCase().indexOf('msie 6') != -1) && (navigator.userAgent.toLowerCase().indexOf('msie 7') == -1) && (navigator.userAgent.toLowerCase().indexOf('msie 8') == -1));
-var do_scroll_loop=is_opera; 
+var do_scroll_loop=is_opera;
 
 var browser = new Browser();
 var savedCode='';
 
-if (!String.prototype.substring_count) String.prototype.substring_count=function(substring){ 
+if (!String.prototype.substring_count) String.prototype.substring_count=function(substring){
      var count = 0;
      var idx = 0;
 
@@ -19,7 +19,7 @@ if (!String.prototype.substring_count) String.prototype.substring_count=function
      return count;
 }
 
-if (!String.prototype.explode) String.prototype.explode=function(separator){ 
+if (!String.prototype.explode) String.prototype.explode=function(separator){
      if (this.indexOf(separator) === -1)
      {
         var retval=new Array();
@@ -157,9 +157,10 @@ function UItimeout() {
 
         // Återställ markering
         if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
-            var startPos = editor.posFromIndex(UIdata['selStart']);
-            var endPos = editor.posFromIndex(UIdata['selEnd']);
-            editor.setSelection(startPos, endPos);
+            //var startPos = editor.posFromIndex(UIdata['selStart']);
+            //var endPos = editor.posFromIndex(UIdata['selEnd']);
+            //editor.setSelection(startPos, endPos);
+            setSelectionRange(elem, UIdata['selStart'], UIdata['selEnd'], true);
         }
 
     // === Fallback till vanlig <textarea> ===
@@ -184,38 +185,38 @@ function syncTextarea (UIstr) {
     var elem=document.getElementById('code');
     var UIfield=document.createElement('input');
     UIfield.id='UIdata';
-    UIfield.name='UIdata';    
+    UIfield.name='UIdata';
     UIfield.type='hidden';
-    UIfield.value=UIstr; 
-    document.main_form.appendChild(UIfield);  
+    UIfield.value=UIstr;
+    document.main_form.appendChild(UIfield);
     if (UIstr.length)
     {
         setTimeout('UItimeout()',0);
-    } 
+    }
     if (browser.isIE)
     {
         if (!is_opera)
         {
-            if (elem.tagName.toLowerCase() === 'textarea') 
+            if (elem.tagName.toLowerCase() === 'textarea')
             {
                 elem.style.width=((elem.parentNode.offsetWidth)-34)+'px';
                 document.getElementById('code_numbers').style.paddingTop='1px';
             }
-        }    
+        }
     }
-    init_splitters();     
+    init_splitters();
     var elem1 = document.getElementById('code_numbers');
     elem.onscroll = function (evt) {
-    //var st=parseInt(this.scrollTop,10);      
-    elem1.style.top = (parseInt(this.scrollTop,10) * -1) + 'px';
-    //document.main_form.scrollposy.value=st;
-    //document.main_form.scrollposx.value=parseInt(elem.scrollLeft,10);      
-   };
-   if (elem.tagName.toLowerCase() !== 'textarea')
-   {
-    return;
-   }
-       if (Number(document.getElementById('change_counter').value) === 0)
+        //var st=parseInt(this.scrollTop,10);
+        elem1.style.top = (parseInt(this.scrollTop,10) * -1) + 'px';
+        //document.main_form.scrollposy.value=st;
+        //document.main_form.scrollposx.value=parseInt(elem.scrollLeft,10);
+    };
+    if (elem.tagName.toLowerCase() !== 'textarea')
+    {
+        return;
+    }
+    if (Number(document.getElementById('change_counter').value) === 0)
     {
     	if (editor && typeof editor.getValue === 'function') {
     		savedCode = editor.getValue();
@@ -223,30 +224,30 @@ function syncTextarea (UIstr) {
 		else {
         	savedCode = elem.value;
         }
-    }     
+    }
     elem.onkeydown = function (evt) {
-    var retval=catchTab(this,evt);
-    //setTimeout("checkDirty()",0);
-    return retval;
-   };
+        var retval=catchTab(this,evt);
+        //setTimeout("checkDirty()",0);
+        return retval;
+    };
     elem.onkeyup = function (evt) {
-    setTimeout("checkDirty()",0);
-   };   
+        setTimeout("checkDirty()",0);
+   	};
     elem.onmouseup = function (evt) {
-    setTimeout("checkDirty()",0);
-   };
+        setTimeout("checkDirty()",0);
+   	};
     elem.onchange = function (evt) {
-    setTimeout("checkDirty()",0);
-   }; 
+    	setTimeout("checkDirty()",0);
+   	};
     elem.onfocus = function (evt) {
-    setTimeout("checkDirty()",0);
-   }; 	
-   if (elem1) {
-		elem1.onmousedown = function (evt) 
+    	setTimeout("checkDirty()",0);
+   	};
+   	if (elem1) {
+		elem1.onmousedown = function (evt)
 		{
 			sel_line_num=line_number(evt,this);
 			var splitbg=document.getElementById('splitter_bg');
-	
+
 			if (!splitbg)
 			{
 				splitbg=document.createElement('div');
@@ -258,32 +259,32 @@ function syncTextarea (UIstr) {
 				splitbg.style.position='fixed';
 				//splitbg.style.backgroundColor='#ffffff';
 				splitbg.style.display='block';
-				splitbg.innerHTML='&nbsp;';
+				splitbg.innerHTML=' ';
 				//splitbg.onmousemove=new Function("dragGo(event);");
 				//splitbg.onmouseup=new Function("dragStop(event);");
-				document.body.appendChild(splitbg);    
+				document.body.appendChild(splitbg);
 			}
 			splitbg.style.zIndex=8000;
-			this.parentNode.style.zIndex=8001;        
-			splitbg.style.cursor='default';        
+			this.parentNode.style.zIndex=8001;
+			splitbg.style.cursor='default';
 			splitbg.style.visibility='visible';
-			
-			if (browser.isIE) 
+
+			if (browser.isIE)
 			{
 				document.attachEvent("onmousemove", lines_dragGo);
 				document.attachEvent("onmouseup",   lines_dragStop);
 				window.event.cancelBubble = true;
 				window.event.returnValue = false;
 			}
-			if (browser.isNS) 
+			if (browser.isNS)
 			{
 				document.addEventListener("mousemove", lines_dragGo,   true);
 				document.addEventListener("mouseup",   lines_dragStop, true);
 				event.preventDefault();
-			}        			
+			}
 	   };
-	} 		         
-   elem.focus(); 
+	}
+   	elem.focus();
 }
 
 function lines_dragGo(event)
@@ -291,7 +292,7 @@ function lines_dragGo(event)
     var elem=document.getElementById('code');
     var elem1=document.getElementById('code_numbers');
     select_lines(elem,sel_line_num,line_number(event,elem1));
-    if (browser.isIE) 
+    if (browser.isIE)
     {
         window.event.cancelBubble = true;
         window.event.returnValue = false;
@@ -299,7 +300,7 @@ function lines_dragGo(event)
     if (browser.isNS)
     {
         event.preventDefault();
-    }    
+    }
 }
 
 function lines_dragStop(event)
@@ -315,11 +316,11 @@ function lines_dragStop(event)
     if (browser.isNS) {
         document.removeEventListener("mousemove", lines_dragGo,   true);
         document.removeEventListener("mouseup",   lines_dragStop, true);
-    }    
+    }
     elem1.parentNode.style.zIndex='auto';
     var splitbg=document.getElementById('splitter_bg');
-    splitbg.style.visibility='hidden';    
-    checkDirty();    
+    splitbg.style.visibility='hidden';
+    checkDirty();
 }
 
 function line_number(event,elem)
@@ -334,7 +335,7 @@ function line_number(event,elem)
     if (isNaN(top))
     {
     	top=0;
-    }        
+    }
 	var y_rel=(y-top)-50;
 	return parseInt(y_rel/parseInt(elem.style.lineHeight,10),10);
 }
@@ -360,7 +361,7 @@ function select_lines(elem,startLine,endLine)
     if (startLine<0)
     {
         startLine=0;
-    }        
+    }
     if (endLine>=lines.length)
     {
         endLine=lines.length-1;
@@ -368,34 +369,32 @@ function select_lines(elem,startLine,endLine)
     if (endLine<0)
     {
         endLine=0;
-    }    
+    }
     var selS=0;
     for (var i=0;i<startLine;i++)
     {
     	selS+=lines[i].length+1;
     }
-    var selE=selS;    
+    var selE=selS;
     for (var i= startLine;i<=endLine;i++)
     {
     	selE+=lines[i].length+1;
-    } 
-    setSelectionRange(elem,selS,selE-1,true);   
+    }
+    setSelectionRange(elem,selS,selE-1,true);
 }
- 
+
 function showHideLayer() {
     const menu = document.getElementById(sub_id);
-   if (show)
-   {     
-      menu.style.visibility = "visible";
-      menu.style.display = "block";
-      menu.style.zIndex = 99999; 
-      //menu.style.position = "absolute";           
-   }
-   else
-   {
+    if (show)
+    {
+		menu.style.visibility = "visible";
+		menu.style.display = "block";
+		menu.style.zIndex = 99999;
+    }
+    else
+    {
    		menu.style.display = "none";
-      //menu.style.visibility = "hidden";
-   }
+    }
 }
 
 function decimalToHex(d, padding) {
@@ -421,7 +420,7 @@ function checkDirty()
 		if (document.getElementById('infobar'))
 		{
 			var selS=selStart(code,true);
-			var selL=selLen(code,true); 
+			var selL=selLen(code,true);
 			var info='';
 			var selcode=code.value;
 			if (browser.isIE && !is_opera)
@@ -433,21 +432,21 @@ function checkDirty()
 				var selection=selcode.substring(selS,selS+selL);
 				var rows=selection.substring_count('\n')+1;
 				var startarray=selcode.substring(0,selS).split('\n');
-				var startcol=startarray[startarray.length-1].length;                               
+				var startcol=startarray[startarray.length-1].length;
 				var endarray=selcode.substring(0,selS+selL).split('\n');
-				var endcol=endarray[endarray.length-1].length;               
-				info+= rows+'&nbsp;x&nbsp;'+Math.abs(endcol-startcol)+'&nbsp;&nbsp;&nbsp;['+selection.length+']&nbsp;';   
+				var endcol=endarray[endarray.length-1].length;
+				info+= rows+' x '+Math.abs(endcol-startcol)+'   ['+selection.length+'] ';
 			}
 			else
 			{
 				var startarray=selcode.substring(0,selS).split('\n');
 				var startcol=startarray[startarray.length-1].length+1;
 				var startrow=startarray.length;
-				var endarray=selcode.split('\n');    
-				info+= startrow+'&nbsp;:&nbsp;'+startcol+'&nbsp;/&nbsp;'+endarray.length+'&nbsp;';                                           
+				var endarray=selcode.split('\n');
+				info+= startrow+' : '+startcol+' / '+endarray.length+' ';
 			}
-			document.getElementById('infobar').innerHTML=info+'&nbsp;&nbsp;&nbsp;'+selcode.charCodeAt(selS)+'&nbsp;(0x'+decimalToHex(selcode.charCodeAt(selS),2)+')';
-		}   
+			document.getElementById('infobar').innerHTML=info+'   '+selcode.charCodeAt(selS)+' (0x'+decimalToHex(selcode.charCodeAt(selS),2)+')';
+		}
 	}
 	if ((savedCode.length) && (code.tagName.toLowerCase() === 'textarea'))
 	{
@@ -456,23 +455,23 @@ function checkDirty()
 	else
 	{
 		isdirty=(Number(document.getElementById('change_counter').value) > 0);
-	} 
+	}
 	if (isdirty)
 	{
 		document.getElementById('change_counter').value++;
 	}
-	document.getElementById('dirty_p').innerHTML=save_image(isdirty,true); 
+	document.getElementById('dirty_p').innerHTML=save_image(isdirty,true);
 	if (code.tagName.toLowerCase() === 'textarea')
 	{
 		if (document.getElementById('infobar'))
-		{        
+		{
 			var charcode=selcode.charCodeAt(selS);
 			var ccodestr='';
 			if (charcode)
 			{
-				ccodestr=charcode+'&nbsp;(0x'+decimalToHex(charcode,2)+')';
+				ccodestr=charcode+' (0x'+decimalToHex(charcode,2)+')';
 			}
-			document.getElementById('infobar').innerHTML=save_image(isdirty,false)+'&nbsp;&nbsp;&nbsp;'+info+'&nbsp;&nbsp;&nbsp;'+ccodestr;
+			document.getElementById('infobar').innerHTML=save_image(isdirty,false)+'   '+info+'   '+ccodestr;
 		}
 	}
 	return isdirty;
@@ -515,21 +514,21 @@ function checkDirtyCodeMirror() {
             const endCol = end.ch + 1;
             const colDiff = Math.abs(endCol - startCol);
 
-            info = `${selectedLines}&nbsp;x&nbsp;${colDiff}&nbsp;&nbsp;&nbsp;[${selLen}]`;
+            info = `${selectedLines} x ${colDiff}   [${selLen}]`;
         } else {
-            info = `${cursor.line + 1}&nbsp;:&nbsp;${cursor.ch + 1}&nbsp;/&nbsp;${lineCount}`;
+            info = `${cursor.line + 1} : ${cursor.ch + 1} / ${lineCount}`;
         }
 
         let charcode = currentCode.charCodeAt(editor.indexFromPos(cursor));
         if (!isNaN(charcode)) {
-            ccodestr = `${charcode}&nbsp;(0x${decimalToHex(charcode, 2)})`;
+            ccodestr = `${charcode} (0x${decimalToHex(charcode, 2)})`;
         }
     }
     // Uppdatera UI
     document.getElementById('dirty_p').innerHTML = save_image(isDirty, true);
     if (document.getElementById('infobar')) {
         document.getElementById('infobar').innerHTML =
-            save_image(isDirty, false) + '&nbsp;&nbsp;&nbsp;' + info + '&nbsp;&nbsp;&nbsp;' + ccodestr;
+            save_image(isDirty, false) + '   ' + info + '   ' + ccodestr;
     }
     return isDirty;
 }
@@ -540,7 +539,7 @@ function save_image(dirty,large)
     {
         if (large)
         {
-            return '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save">&nbsp;<img src="images/savel.png"/>&nbsp;</a>';
+            return '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save"> <img src="images/savel.png"/> </a>';
         }
         else
         {
@@ -549,16 +548,17 @@ function save_image(dirty,large)
     }
     return '';
 }
+
 function checkEnter(e)
 {
     var evt = e ? e : window.event;
 	var c = evt.which ? evt.which : evt.keyCode;
     if (c == 13)
-    {   
+    {
         document.main_form.action.value='eval_change';
         var evalbutton=document.getElementById('submit_eval');
-        evalbutton.click(); 
-        return true;   
+        evalbutton.click();
+        return true;
     }
 }
 
@@ -575,17 +575,17 @@ function change_inc(c)
     if ((c>=173) && (c<=178))
     {
         return;
-    }    
+    }
     if ((c>=112) && (c<=123))
     {
         return;
-    } 
+    }
     if (c == 27){return;}
-    if (c == 45){return;}       
+    if (c == 45){return;}
     if (c == 91){return;}
-    if (c == 93){return;}    
-    if (c == 144){return;} 
-    inc_changecount();       
+    if (c == 93){return;}
+    if (c == 144){return;}
+    inc_changecount();
 }
 
 function inc_changecount(reset)
@@ -593,47 +593,47 @@ function inc_changecount(reset)
     if (typeof reset ==='undefined')
     {
         reset=false;
-    }      
+    }
     if (!reset)
     {
         document.getElementById('change_counter').value++;
-        document.getElementById('dirty_p').innerHTML='*';        
+        document.getElementById('dirty_p').innerHTML='*';
     }
     else
     {
         document.getElementById('change_counter').value = 0;
         document.getElementById('dirty_p').innerHTML='';
-    }      
+    }
 }
 
 function reset_width()
 {
     var elem=document.getElementById('code');
-    if (elem.tagName.toLowerCase() === 'textarea') 
-    {  
+    if (elem.tagName.toLowerCase() === 'textarea')
+    {
         elem.style.width=((elem.parentNode.offsetWidth)-34)+'px';
-        var st=parseInt(elem.scrollTop,10);    
-        document.getElementById('code_numbers').style.top = (st * -1) + 'px';       
-    }    
+        var st=parseInt(elem.scrollTop,10);
+        document.getElementById('code_numbers').style.top = (st * -1) + 'px';
+    }
 }
 
 function opera_scroll()
 {
     var elem=document.getElementById('code');
     var st=parseInt(elem.scrollTop,10);
-    document.getElementById('code_numbers').style.top= (st * -1) +'px';   
+    document.getElementById('code_numbers').style.top= (st * -1) +'px';
     setTimeout('opera_scroll()', 50);
-}    
+}
 
 function replaceSelection(input, replaceString) {
     if (replaceString.length === 0)
     {
 		if (input.setSelectionRange) {
 			var selectionStart = input.selectionStart;
-			var selectionEnd = input.selectionEnd;	
+			var selectionEnd = input.selectionEnd;
 			input.value = input.value.substring(0, selectionStart)+ replaceString + input.value.substring(selectionEnd);
-		
-			if (selectionStart != selectionEnd){ 
+
+			if (selectionStart != selectionEnd){
 				setSelectionRange(input, selectionStart, selectionStart + replaceString.length);
 			}else{
 				setSelectionRange(input, selectionStart + replaceString.length, selectionStart + replaceString.length);
@@ -643,17 +643,17 @@ function replaceSelection(input, replaceString) {
 			if (range.parentElement() == input) {
 				var isCollapsed = range.text === '';
 				range.text = replaceString;
-	
+
 				 if (!isCollapsed)  {
 					range.moveStart('character', -replaceString.length);
 					range.select();
 				}
-			}		
+			}
 		}
 		checkDirty();
 		return;
     }
-    setTimeout("create_text_event('"+replaceString+"','"+input.id+"');",0);	            
+    setTimeout("create_text_event('"+replaceString+"','"+input.id+"');",0);
 }
 
 function selStart(input,trueCharCount) {
@@ -663,21 +663,21 @@ function selStart(input,trueCharCount) {
         if (typeof trueCharCount ==='undefined')
         {
             trueCharCount=false;
-        }	
+        }
         if (!trueCharCount)
         {
-            input.focus(); 
+            input.focus();
 
-            var r = document.selection.createRange(); 
-            if (!r) { 
-                return 0; 
-            } 
+            var r = document.selection.createRange();
+            if (!r) {
+                return 0;
+            }
 
-            var re = input.createTextRange(), 
-            rc = re.duplicate(); 
-            re.moveToBookmark(r.getBookmark()); 
-            rc.setEndPoint('EndToStart', re); 	
-	
+            var re = input.createTextRange(),
+            rc = re.duplicate();
+            re.moveToBookmark(r.getBookmark());
+            rc.setEndPoint('EndToStart', re);
+
             return rc.text.length;// + j;
         }
         input.focus();
@@ -689,8 +689,8 @@ function selStart(input,trueCharCount) {
         {
             Sel2.moveStart('character');
             CaretPos++;
-        }   
-        return CaretPos;            
+        }
+        return CaretPos;
 	}
 }
 
@@ -701,26 +701,26 @@ function selEnd(input,trueCharCount) {
         if (typeof trueCharCount === 'undefined')
         {
             trueCharCount=false;
-        }	
+        }
         if (!trueCharCount)
         {
 
-            input.focus(); 
+            input.focus();
 
-            var r = document.selection.createRange(); 
-            if (!r) { 
-                return 0; 
-            } 
+            var r = document.selection.createRange();
+            if (!r) {
+                return 0;
+            }
 
-            var re = input.createTextRange(), 
-            rc = re.duplicate(); 
-            re.moveToBookmark(r.getBookmark()); 
-            rc.setEndPoint('EndToStart', re); 	
-	
+            var re = input.createTextRange(),
+            rc = re.duplicate();
+            re.moveToBookmark(r.getBookmark());
+            rc.setEndPoint('EndToStart', re);
+
             //var j=input.value.substr(0,rc.text.length+r.text.length).split('\n').length-1;
             return rc.text.length+r.text.length;// + j;
         }
-        return selLen(input,trueCharCount)+selStart(input,trueCharCount);                                       
+        return selLen(input,trueCharCount)+selStart(input,trueCharCount);
 	}
 }
 
@@ -731,13 +731,12 @@ function selLen(input,trueCharCount) {
         if (typeof trueCharCount === 'undefined')
         {
             trueCharCount=false;
-        }	
+        }
         if (!trueCharCount)
         {
+            input.focus();
 
-            input.focus(); 
-
-            var r = document.selection.createRange(); 
+            var r = document.selection.createRange();
             return r.text.length;// + j;
         }
         input.focus();
@@ -751,35 +750,35 @@ function selLen(input,trueCharCount) {
         {
             Sel2.moveStart('character');
             CaretPos++;
-        }   
-        return CaretPos;                                       
+        }
+        return CaretPos;
 	}
 }
 
 // We are going to catch the TAB key so that we can use it, Hooray!
-function catchTab(item,e){        
-    var evt = e ? e : window.event;      
+function catchTab(item,e){
+    var evt = e ? e : window.event;
 	c = evt.which ? evt.which : evt.keyCode;
 	if (c == 114) //f3
 	{
         search_textarea(false);
         return false;
-    }	
+    }
 	if(c == 9){  //tab
-        replaceSelection(item,String.fromCharCode(9));	
+        replaceSelection(item,String.fromCharCode(9));
 		return false;
-	} 
+	}
     if (c == 13)   // enter
-    {   
+    {
         var code=document.getElementById(item.id);
         var SE=selEnd(item);
-        var line_array=code.value.substring(0,SE).split('\n');   
+        var line_array=code.value.substring(0,SE).split('\n');
         var occur = line_array[line_array.length-1].match(/^([ \t]+)/g);
         if (occur)
         {
             replaceSelection(item,occur[0]);
         }
-    }   
+    }
 }
 
 function create_text_event(str,id)
@@ -787,10 +786,10 @@ function create_text_event(str,id)
     var input=document.getElementById(id);
 	if (is_opera) {
 		var selectionStart = input.selectionStart;
-		var selectionEnd = input.selectionEnd;	
+		var selectionEnd = input.selectionEnd;
 		input.value = input.value.substring(0, selectionStart)+ str + input.value.substring(selectionEnd);
-    
-		if (selectionStart != selectionEnd){ 
+
+		if (selectionStart != selectionEnd){
 			setSelectionRange(input, selectionStart, selectionStart + str.length);
 		}else{
 			setSelectionRange(input, selectionStart + str.length, selectionStart + str.length);
@@ -806,51 +805,56 @@ function create_text_event(str,id)
 				range.select();
 			}
 		}
-	}   
+	}
     else if (is_safari)
     {
         var eventObject = document.createEvent('TextEvent');
-        eventObject.initTextEvent('textInput', true, true, null, str);   
+        eventObject.initTextEvent('textInput', true, true, null, str);
         input.dispatchEvent(eventObject);
     }
     else
     {
         for (var i=0;i<str.length;i++)
-        { 
+        {
             var ev = document.createEvent ('KeyEvents');
             ev.initKeyEvent('keypress', true, true, window,false, false, false, false, 0,str.charCodeAt(i));
             input.dispatchEvent(ev); // causes the scrolling
         }
     }
-    setTimeout("checkDirty()",0);    
+    setTimeout("checkDirty()",0);
 }
-           
+
 function submit_sort(order)
 {
     document.getElementById('sortorder').value=order;
     main_submit('set_sortorder');
 }
+
 function submit_dir(dir)
 {
     document.getElementById('current_directory').value=dir;
     main_submit('set_directory');
 }
+
 function submit_file(file)
 {
 		var elem=document.getElementById('code');
-		if (elem.tagName.toLowerCase() === 'textarea')
+	   	if (editor) {
+	   		setSelectionRange(elem,0,0);
+	   	}
+		else if (elem.tagName.toLowerCase() === 'textarea')
 		{
 			setSelectionRange(elem,0,0);
+			elem.scrollTop=0;
+			elem.scrollLeft=0;
 		}
-		elem.scrollTop=0;
-		elem.scrollLeft=0;
 		document.getElementById('some_file_name').value=""+file+"";
-		//document.main_form.action.value='load_browse_file';    
+		//document.main_form.action.value='load_browse_file';
 		if (checkDirty())
-		{   
-			var currfile=document.getElementById('Current_filename').value;       
+		{
+			var currfile=document.getElementById('Current_filename').value;
 			ae_confirm_yes_no(submit_file_callback,"Save changes to "+currfile);
-			return;        
+			return;
 		}
 		main_submit('load_browse_file');
 }
@@ -876,9 +880,9 @@ function chmod_callback(returncode,id,value)
     {
         if (value != '' && value != null)
         {
-            document.getElementById('some_file_name').value=id;    
+            document.getElementById('some_file_name').value=id;
             document.getElementById('chmod_value').value=""+value+"";
-    
+
             main_submit('chmod_file');
         }
     }
@@ -893,10 +897,10 @@ function prompt_callback(returncode,id,value)
 {
     //var answer = prompt ('Save as ',""+file+"");
     if (returncode == 1)
-    {      
+    {
         if (value != '' && value != null)
-        {    
-            document.getElementById('save_as_filename').value=""+value+"";    
+        {
+            document.getElementById('save_as_filename').value=""+value+"";
             main_submit(id);
         }
     }
@@ -934,12 +938,12 @@ function new_directory(path)
 
 function copy_file(path)
 {
-    //document.main_form.action.value='set_copy';    
+    //document.main_form.action.value='set_copy';
     if (checkDirty())
-    {      
-        var currfile=document.getElementById('Current_filename').value;    
-        ae_confirm_yes_no(copy_file_callback,"Save changes to "+currfile);       
-        return;        
+    {
+        var currfile=document.getElementById('Current_filename').value;
+        ae_confirm_yes_no(copy_file_callback,"Save changes to "+currfile);
+        return;
     }
     main_submit('set_copy');
 }
@@ -957,7 +961,7 @@ function callback_submit(returncode,act)
 {
     if (returncode != 0)
     {
-        main_submit(act);    
+        main_submit(act);
     }
 }
 
@@ -977,7 +981,7 @@ function runeval()
 
 function eval_history(step)
 {
-   var evalwin=document.getElementById('evaluationwindow');  
+   var evalwin=document.getElementById('evaluationwindow');
    if (evalwin)
    {
         evalwin.contentWindow.history.go(step);
@@ -1010,17 +1014,17 @@ function search_textarea(showDialog)
 {
     if (showDialog)
     {
-        var code=document.getElementById('code');    
-        searchSelStart=selStart(document.getElementById('code'));
-        searchSelEnd=selEnd(document.getElementById('code'));  
+        var code=document.getElementById('code');
+        searchSelStart=selStart(code);
+        searchSelEnd=selEnd(code);
         if (searchSelStart != searchSelEnd)
         {
             searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
         }
         var caseChecked=(searchMatchCase ? 'checked':'');
         var wordChecked=(searchWholeWord ? 'checked':'');
-        var selectedChecked=(searchSelected ? 'checked':'');                
-        ae_prompt(search_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');    
+        var selectedChecked=(searchSelected ? 'checked':'');
+        ae_prompt(search_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');
     }
     else
     {
@@ -1037,30 +1041,30 @@ function search_callback(returncode,id,value)
         searchTerm=value_array[0];
         searchMatchCase=(value_array[1] == 'true') ? true:false;
         searchWholeWord=(value_array[2] == 'true') ? true:false;
-        searchSelected=(value_array[3] == 'true') ? true:false;          
+        searchSelected=(value_array[3] == 'true') ? true:false;
         if (!searchSelected)
         {
             searchSelStart=0;
-            searchSelEnd=code.value.length;            
+            searchSelEnd=code.value.length;
         }
-        searchPos=searchSelStart;                     
+        searchPos=searchSelStart;
     }
     if (returncode == 0)
     {
         return;
     }
     if (searchTerm != '' && searchTerm != null)
-    {    
+    {
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
         if (searchWholeWord)
         {
             RegExpStr='[^a-zA-Z0-9_]'+RegExpStr+'[^a-zA-Z0-9_]';
-        }            
+        }
         if (!searchMatchCase)
         {
-            RegExpModifier='i';               
-        }              
+            RegExpModifier='i';
+        }
         var regex = new RegExp(RegExpStr, RegExpModifier);
         var start=-1;
         while (1)
@@ -1076,12 +1080,12 @@ function search_callback(returncode,id,value)
                 searchPos=start+1;
                 scrollIntoView(code,start,start+searchTerm.length);
                 break;
-            }  
+            }
             else
             {
                 if (searchPos>0)
                 {
-                    searchPos=searchSelStart;                
+                    searchPos=searchSelStart;
                 }
                 else
                 {
@@ -1091,42 +1095,42 @@ function search_callback(returncode,id,value)
         }
         if (start == -1)
         {
-            ae_alert(searchTerm + ' not found');        
+            ae_alert(searchTerm + ' not found');
         }
         else
         {
-	        setTimeout("document.getElementById('code').focus();",0);        
+	        setTimeout("document.getElementById('code').focus();",0);
         }
-    }     
+    }
 }
 
 function replace_textarea()
 {
-        var code=document.getElementById('code');    
-        searchSelStart=selStart(document.getElementById('code'));
-        searchSelEnd=selEnd(document.getElementById('code'));    
-        if (searchSelStart != searchSelEnd)
-        {
-            searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
-        }    
+	var code=document.getElementById('code');
+	searchSelStart=selStart(code);
+	searchSelEnd=selEnd(code);
+	if (searchSelStart != searchSelEnd)
+	{
+		searchTerm=code.value.substring(searchSelStart,searchSelEnd).explode('\n')[0];
+	}
     var caseChecked=(searchMatchCase ? 'checked':'');
-    var wordChecked=(searchWholeWord ? 'checked':'');        
-        var selectedChecked=(searchSelected ? 'checked':'');    
-    ae_prompt(replace_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|textarea%¤%Replace with%¤%'+replaceTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');    
+    var wordChecked=(searchWholeWord ? 'checked':'');
+        var selectedChecked=(searchSelected ? 'checked':'');
+    ae_prompt(replace_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|textarea%¤%Replace with%¤%'+replaceTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');
 }
 
 function replace_callback(returncode,id,value)
 {
     var replacements=0;
-    var code=document.getElementById('code');   
+    var code=document.getElementById('code');
     if (returncode == 1)
     {
         value_array=value.split('|¤|');
         searchTerm=value_array[0];
-        replaceTerm=value_array[1];        
+        replaceTerm=value_array[1];
         searchMatchCase=(value_array[2] == 'true') ? true:false;
-        searchWholeWord=(value_array[3] == 'true') ? true:false;    
-        searchSelected=(value_array[4] == 'true') ? true:false;          
+        searchWholeWord=(value_array[3] == 'true') ? true:false;
+        searchSelected=(value_array[4] == 'true') ? true:false;
     }
     if (returncode == 0)
     {
@@ -1135,21 +1139,21 @@ function replace_callback(returncode,id,value)
     if (!searchSelected)
     {
         searchSelStart=0;
-        searchSelEnd=code.value.length;            
+        searchSelEnd=code.value.length;
     }
-    searchPos=searchSelStart;                           
+    searchPos=searchSelStart;
     if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
-    {     
+    {
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
         if (searchWholeWord)
         {
             RegExpStr='[^a-zA-Z0-9_]'+RegExpStr+'[^a-zA-Z0-9_]';
-        }            
+        }
         if (!searchMatchCase)
         {
-            RegExpModifier='i';               
-        }              
+            RegExpModifier='i';
+        }
         var regex = new RegExp(RegExpStr, RegExpModifier);
         var start=-1;
         while (1)
@@ -1166,7 +1170,7 @@ function replace_callback(returncode,id,value)
                 code.value=code.value.substring(0,start)+replaceTerm+code.value.substring(start+searchTerm.length);
                 searchSelEnd+=replaceTerm.length-searchTerm.length;
                 replacements++;
-            }  
+            }
             else
             {
                 break;
@@ -1174,19 +1178,19 @@ function replace_callback(returncode,id,value)
         }
         if (replacements == 0)
         {
-            ae_alert(searchTerm + ' not found');        
+            ae_alert(searchTerm + ' not found');
         }
         else
         {
             //inc_changecount();
-            checkDirty();            
+            checkDirty();
             ae_alert(searchTerm.toHtmlEntities() + ' was replaced '+replacements+' times');
-	        setTimeout("document.getElementById('code').focus();",0);                    
+	        setTimeout("document.getElementById('code').focus();",0);
         }
-    }       
+    }
 }
 
-function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount) 
+function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
 {
      if (editor && typeof editor.setSelection === 'function') {
 		var startPos = editor.posFromIndex(selectionStart);
@@ -1196,7 +1200,7 @@ function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
     }
     else {
          input.focus();
-		 if(input.setSelectionRange)
+		 if (input.setSelectionRange)
 		 {
 			/*
 			if (is_opera)
@@ -1205,9 +1209,9 @@ function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
 				return;
 			}
 			*/
-			input.setSelectionRange(selectionStart, selectionEnd);                
-		 }  
-		 else if(input.createTextRange) {
+			input.setSelectionRange(selectionStart, selectionEnd);
+		 }
+		 else if (input.createTextRange) {
 			var i = input.createTextRange();
 			i.collapse(true);
 			if (typeof trueCharCount === 'undefined')
@@ -1222,8 +1226,8 @@ function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
 				//j2=input.value.substring(0,selectionStart).split('\n').length;
 				j1=input.value.substring(0,selectionEnd).substring_count('\n');
 				j2=input.value.substring(0,selectionStart).substring_count('\n');
-			}            
-			i.moveEnd('character', selectionEnd-j1);       
+			}
+			i.moveEnd('character', selectionEnd-j1);
 			i.moveStart('character', selectionStart-j2);
 			i.select();
 			input.focus();
@@ -1234,86 +1238,84 @@ function setSelectionRange(input, selectionStart, selectionEnd, trueCharCount)
 function scrollIntoView(input, selectionStart, selectionEnd)
 {
      input.focus();
-     if(input.setSelectionRange)
+     if (input.setSelectionRange)
      {
         input.setSelectionRange(selectionEnd-1, selectionEnd);
         //element.setSelectionRange((i=index+needle.length)-1,i);
 
         if (is_safari)
         {
-            input.setSelectionRange(selectionEnd-1, selectionEnd);        
+            input.setSelectionRange(selectionEnd-1, selectionEnd);
             var eventObject = document.createEvent('TextEvent');
-            eventObject.initTextEvent('textInput', true, true, null, input.value.substring(selectionEnd-1,selectionEnd));   
+            eventObject.initTextEvent('textInput', true, true, null, input.value.substring(selectionEnd-1,selectionEnd));
             input.dispatchEvent(eventObject);
-        }    
+        }
         else if (is_opera)
         {
             //opera can't do it!
             //alert(input.value.substring(0,selectionEnd).split('\n').length);
-            input.scrollTop=((input.value.substring(0,selectionEnd).substring_count('\n'))*parseInt(input.style.lineHeight,10))-20;   //???         
-        } 
+            input.scrollTop=((input.value.substring(0,selectionEnd).substring_count('\n'))*parseInt(input.style.lineHeight,10))-20;   //???
+        }
         else
         {
-            input.setSelectionRange(selectionEnd-1, selectionEnd);        
+            input.setSelectionRange(selectionEnd-1, selectionEnd);
             var ev = document.createEvent ('KeyEvents');
             ev.initKeyEvent('keypress', true, true, window,false, false, false, false, 0,input.value.charCodeAt(selectionEnd-1));
             input.dispatchEvent(ev); // causes the scrolling
-        }                 
-        input.setSelectionRange(selectionStart, selectionEnd);                
-     }  
+        }
+        input.setSelectionRange(selectionStart, selectionEnd);
+     }
      else if(input.createTextRange) {
         var i = input.createTextRange();
         i.collapse(true);
         var j=input.value.substring(0,selectionEnd).substring_count('\n');
         i.moveEnd('character', selectionEnd-j);
-        j=input.value.substring(0,selectionStart).substring_count('\n');        
+        j=input.value.substring(0,selectionStart).substring_count('\n');
         i.moveStart('character', selectionStart-j);
         i.select();
         i.scrollIntoView();
         input.focus();
      }
-
-
 }
 
-        function setCaretToPos(input, pos) {
-            setSelectionRange(input, pos, pos);
-        }
+function setCaretToPos(input, pos) {
+	setSelectionRange(input, pos, pos);
+}
 
 function clearAuthenticationCache(page) {
     ae_confirm_yes_no(clearAuthenticationCache_callback,"Log out?",page);
 }
 
-    function clearAuthenticationCache_callback(returncode,page,value)
-    {
-        if (returncode == 1)
-        {
-            if (page.length === 0) page = '.force_logout';
-            try{
-                var agt=navigator.userAgent.toLowerCase();
-                if (agt.indexOf("msie") !== -1) {
-                    // IE clear HTTP Authentication
-                    document.execCommand("ClearAuthenticationCache");
-                }
-                else {                 
-                    // Let's create an xmlhttp object
-                    var xmlhttp = createXMLObject();
-                    // Let's prepare invalid credentials
-                    xmlhttp.open("GET", page, true, "logout", "logout");
-                    // Let's send the request to the server
-                    xmlhttp.send("");
-                    // Let's abort the request
-                    xmlhttp.abort();
-                }
-                main_submit("logout");
-                return;
-            } catch(e) {
-                // There was an error
-                ae_alert('Log out error, browser may not be supported');
-            }
-        }
-    }  
-    
+function clearAuthenticationCache_callback(returncode,page,value)
+{
+	if (returncode == 1)
+	{
+		if (page.length === 0) page = '.force_logout';
+		try{
+			var agt=navigator.userAgent.toLowerCase();
+			if (agt.indexOf("msie") !== -1) {
+				// IE clear HTTP Authentication
+				document.execCommand("ClearAuthenticationCache");
+			}
+			else {
+				// Let's create an xmlhttp object
+				var xmlhttp = createXMLObject();
+				// Let's prepare invalid credentials
+				xmlhttp.open("GET", page, true, "logout", "logout");
+				// Let's send the request to the server
+				xmlhttp.send("");
+				// Let's abort the request
+				xmlhttp.abort();
+			}
+			main_submit("logout");
+			return;
+		} catch(e) {
+			// There was an error
+			ae_alert('Log out error, browser may not be supported');
+		}
+	}
+}
+
 function createXMLObject() {
 	var xmlhttp=false;
 	if (!xmlhttp && typeof XMLHttpRequest !== 'undefined') {
@@ -1330,8 +1332,7 @@ function createXMLObject() {
 			xmlhttp=false;
 		}
 	}
-
-  return xmlhttp;
+    return xmlhttp;
 }
 
 function validatePass()
@@ -1349,9 +1350,9 @@ function validatePass()
     if (matches)
     {
     	ae_alert(matches[0]+' is not allowed in the username.');
-	   	return false;    
+	   	return false;
     }
-	
+
 	for (var i=0;i<usernames.length;i++)
 	{
         if (document.main_form.username.value === usernames[i])
@@ -1379,7 +1380,7 @@ function validatePass()
 		ae_alert("You did not enter the same new password twice. Please re-enter your password.");
 		return false;
 	}
-	return true;	
+	return true;
 }
 
 function getElementsByClassName(node,classname) {
@@ -1400,7 +1401,6 @@ function getElementsByClassName(node,classname) {
 		}
 	}
 	return returnElements;
-
 	}
 }
 
@@ -1486,7 +1486,7 @@ function dragStart(event,id, td1) {
   var id;
 
     dragObj=new Object();
-    dragObj.zIndex = 0;    
+    dragObj.zIndex = 0;
   tds1=new Array();
   td_array=td1.split('%');
   for (var i=0;i<td_array.length;i++)
@@ -1557,11 +1557,11 @@ function dragStart(event,id, td1) {
     splitbg.style.height='100%';
     splitbg.style.position='fixed';
     splitbg.style.display='block';
-    splitbg.innerHTML='&nbsp;';
-    document.body.appendChild(splitbg);    
+    splitbg.innerHTML=' ';
+    document.body.appendChild(splitbg);
   }
   splitbg.style.zIndex=8000;
-  splitbg.style.cursor='pointer';  
+  splitbg.style.cursor='pointer';
   splitbg.style.visibility='visible';
 
   dragObj.elNode.style.zIndex =8001;// ++dragObj.zIndex;
@@ -1671,7 +1671,7 @@ function dragStop(event) {
       if (styleelem)
       {
         styleelem.value='width:'+tds1[i].style.width+';height:'+tds1[i].style.height+';';
-      }      
+      }
     }
     for (var i=0;i<tds2.length;i++)
     {
@@ -1680,7 +1680,7 @@ function dragStop(event) {
       if (styleelem)
       {
         styleelem.value='width:'+tds2[i].style.width+';height:'+tds2[i].style.height+';';
-      }      
+      }
     }
     dragObj.elNode.style.top=(dragObj.elStartTop-cell_padding)+'px';
   }
@@ -1724,7 +1724,7 @@ function dragStop(event) {
       if (styleelem)
       {
         styleelem.value='width:'+tds1[i].style.width+';height:'+tds1[i].style.height+';';
-      }      
+      }
     }
     for (var i=0;i<tds2.length;i++)
     {
@@ -1752,11 +1752,11 @@ function dragStop(event) {
     document.removeEventListener("mousemove", dragGo,   true);
     document.removeEventListener("mouseup",   dragStop, true);
   }
-  
+
   splitbg.style.visibility='hidden';
   if (browser.isIE && !is_opera) {
     reset_width();
-  }  
+  }
 }
 
 function init_splitters()
