@@ -6,7 +6,7 @@ var olderBrowser;
 if (String.prototype.right==null) String.prototype.right=function(num){ 
       return this.substring(this.length-num);  // pull out right num
 }
-
+/*
 function closeFrame()
 {
     if (document.getElementById('is_submit').value != 0)
@@ -24,7 +24,9 @@ function closeFrame()
         if (!doc)
         {
             doc=document.getElementById('previewframe').document;
-        }                        
+        } 
+        alert(doc);
+        alert(doc.forms[0]);
         doc.forms[0].submit();
     }
     //document.getElementById('borderdiv').style.visibility="hidden";       
@@ -32,6 +34,39 @@ function closeFrame()
     //document.getElementById('framediv').style.visibility="hidden";
     //fadeoutdiv('framediv',90);
     hidedivs('framediv',100);
+}
+*/
+function closeFrame() {
+    const isSubmit = document.getElementById('is_submit');
+    if (isSubmit && isSubmit.value != "0") {
+        const previewFrame = document.getElementById('previewframe');
+
+        try {
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            if (doc && doc.forms.length > 0) {
+                doc.forms[0].submit();
+
+                // Vänta tills formuläret laddat klart, sen stäng och ladda om
+                previewFrame.onload = function () {
+                    hideFrame();
+                    window.location.reload();
+                };
+                return;
+            }
+        } catch (e) {
+            console.error("closeFrame(): Formulär kunde inte skickas.", e);
+        }
+    }
+
+    // Om inget formulär eller is_submit == 0, stäng bara
+    hideFrame();
+}
+
+function hideFrame() {
+    const borderdiv = document.getElementById('borderdiv');
+    const framediv = document.getElementById('framediv');
+    if (borderdiv) borderdiv.style.display = "none";
+    if (framediv) framediv.style.display = "none";
 }
 
 function showwindow(url,inf,title)
@@ -142,7 +177,6 @@ function showwindow(url,inf,title)
         document.getElementById('borderdiv').style.position="absolute";
         document.getElementById('borderdiv').style.position="fixed"; 
         document.getElementById('is_submit').value=is_submit ? 1 : 0;              
-
         if (previewframe)
         {
             if (url.length==0)

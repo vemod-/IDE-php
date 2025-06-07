@@ -537,7 +537,7 @@ class Ide
 		{
 			copy("$sysdir/$sysfile","$tempdir/$sysfile");
 		}
-		$sysdirs=array('images','javascript','css');
+		$sysdirs=array('images','javascript','css','filetable');
 		foreach ($sysdirs as $dir)
 		{
 			exec("cp -r -a $sysdir/$dir $tempdir/$dir 2>&1");
@@ -579,7 +579,7 @@ class Ide
 		}
 
 		// Kopiera kataloger (rekursivt)
-		$sysdirs = ['images', 'javascript', 'css'];
+		$sysdirs = ['images', 'javascript', 'css', 'filetable'];
 		foreach ($sysdirs as $dir) {
 			$sourceDir = $sysdir . '/' . $dir;
 			$targetDir = $tempDir . '/' . $dir;
