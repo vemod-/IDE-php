@@ -999,8 +999,8 @@ class Ide
 			$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
 			$menu .="<hr/>";
 		}
-		$menu .=$this->Out->menu_item('Search...','search_textarea(true);',($this->Conf->Fancy or $this->Conf->IsBinary));
-		$menu .=$this->Out->menu_item('Replace...','replace_textarea();',($this->Conf->Fancy or $this->Conf->IsBinary));
+		$menu .=$this->Out->menu_item('Search...','search_editor(true);',($this->Conf->Fancy or $this->Conf->IsBinary));
+		$menu .=$this->Out->menu_item('Replace...','replace_editor();',($this->Conf->Fancy or $this->Conf->IsBinary));
 		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',($this->Conf->Fancy or $this->Conf->IsBinary));
 		$menu .="<hr/>";
 		$menu .=$this->Out->menu_item('Open tpl','ae_confirm(callback_submit,"Replace current code with new template?","show_template")',($this->Conf->IsBinary));
@@ -1112,8 +1112,7 @@ class Ide
 
 	function code_window($borderstyle)
 	{
-		$ret = "<script>let editor = null;</script>";
-		$ret .= "<div class='fixed_window'>\n";
+		$ret = "<div class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
 			if ($theme !== 'default') {
@@ -1385,7 +1384,7 @@ class Ide
 		}
 		$this->Conf->save_to_file();
 		$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
-		$ret.="syncTextarea('{$this->Conf->UIdata}');";
+		$ret.="syncEditor('{$this->Conf->UIdata}');";
 		$ret .= "</SCRIPT>\n";
 		if ($_POST['overwrite_ok']) {
 			$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
@@ -1411,8 +1410,9 @@ class Ide
 		global $_POST;
 
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
-
-		$ret = <<<HTML
+		$ret = "<script type=\"text/javascript\" src=\"splitters/splitters.js\"></script>
+    		<link rel=\"stylesheet\" type=\"text/css\" href=\"splitters/splitters.css\">";
+		$ret .= <<<HTML
 	<form name="main_form" id="main_form" enctype="multipart/form-data" method="POST" action="{$h($_SERVER['PHP_SELF'])}">
 	<input type="hidden" name="action" id="action" value="">
 	<input type="hidden" name="prev_submit" value="{$h(md5(time() . session_id()))}">
@@ -1445,49 +1445,49 @@ class Ide
 
 		// Start wrapper div
 		$ret .= "<div class='wrapper' id='wrapper_div'><div class='relative'>";
+    require('splitters/splitters.php');
+    $f = new SplitterFactory;
+    $ret .= $f->buildAssets();
 
 		if ($this->Conf->LayoutStyle == 1) {
 			// 3-column layout
-			$ret .= <<<HTML
-	<table class='insidediv'><tr>
-	<td style="{$h($this->Conf->tdleftstyle)}" class="insidedivpad" id="td_left">
-	<div class="relative"><div class="insidewrapper">
-	{$this->file_window('border-left:0px;border-bottom:0px;')}
-	</div><div class="header">{$this->file_menu()}</div></div></td>
-	<td style="{$h($this->Conf->tdmiddlestyle)}" class="insidedivpad" id="td_middle">
-	<div class="vert_container"><div id="splitter1" class="vert_split" onmousedown="dragStart(event,this.id,'td_left')"></div></div>
-	<div class="relative"><div class="insidewrapper">
-	{$this->code_window('border-left:0px;border-bottom:0px;')}
-	</div><div class="header">{$this->code_menu()}</div></div></td>
-	<td style="{$h($this->Conf->tdrightstyle)}" class="insidedivpad" id="td_right">
-	<div class="vert_container"><div id="splitter2" class="vert_split" onmousedown="dragStart(event,this.id,'td_middle')"></div></div>
-	<div class="relative"><div class="insidewrapper">
-	{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
-	</div><div class="header">{$this->eval_menu()}</div></div></td>
-	</tr></table>
-	HTML;
+			$ret .= "<table class='insidediv'><tr>";
+			$ret .= $f->buildNeutralCell("td_left",$this->Conf->tdleftstyle,
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->file_window('border-left:0px;border-bottom:0px;')}
+			</div><div class=\"header\">{$this->file_menu()}</div></div>"
+			);
+			$ret .= $f->buildVertCell("td_middle",$this->Conf->tdmiddlestyle,"splitter1","td_left",
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->code_window('border-left:0px;border-bottom:0px;')}
+			</div><div class=\"header\">{$this->code_menu()}</div></div>"
+			);
+			$ret .= $f->buildVertCell("td_right",$this->Conf->tdrightstyle,"splitter2","td_middle",
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
+			</div><div class=\"header\">{$this->eval_menu()}</div></div>"
+			);
+			$ret .= "</tr></table>";
 		} else {
 			// Split top/bottom layout
-			$ret .= <<<HTML
-	<table class='insidediv'>
-	<tr>
-	<td class='insidedivpad' style="{$h($this->Conf->tdtopleftstyle)}" id="td_top_left">
-	<div class="relative"><div class="insidewrapper">
-	{$this->file_window('border-left:0px;')}
-	</div><div class="header">{$this->file_menu()}</div></div></td>
-	<td class='insidedivpad' style="{$h($this->Conf->tdtoprightstyle)}" id="td_top_right">
-	<div class="vert_container"><div id="splitter1" class="vert_split" onmousedown="dragStart(event,this.id,'td_top_left')"></div></div>
-	<div class="relative"><div class="insidewrapper">
-	{$this->code_window('border-left:0px;border-right:0px;')}
-	</div><div class="header">{$this->code_menu()}</div></div></td>
-	</tr><tr>
-	<td colspan="2" class='insidedivpad' style="{$h($this->Conf->tdbottomstyle)}" id="td_bottom">
-	<div class="horiz_container"><div id="splitter2" class="horiz_split" onmousedown="dragStart(event,this.id,'td_top_left%td_top_right')"></div></div>
-	<div class="relative"><div class="insidewrapper">
-	{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
-	</div><div class="header">{$this->eval_menu()}</div></div></td>
-	</tr></table>
-	HTML;
+			$ret .= "<table class='insidediv'><tr>";
+			$ret .= $f->buildNeutralCell("td_top_left",$this->Conf->tdtopleftstyle,
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->file_window('border-left:0px;border-bottom:0px;')}
+			</div><div class=\"header\">{$this->file_menu()}</div></div>"
+			);
+			$ret .= $f->buildVertCell("td_top_right",$this->Conf->tdtoprightstyle,"splitter1","td_top_left",
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->code_window('border-left:0px;border-bottom:0px;')}
+			</div><div class=\"header\">{$this->code_menu()}</div></div>"
+			);
+			$ret .= "</tr><tr>";
+			$ret .= $f->buildHorizCell("td_bottom",$this->Conf->tdbottomstyle,"splitter2","td_top_left%td_top_right",
+			"<div class=\"relative\"><div class=\"insidewrapper\">
+			{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
+			</div><div class=\"header\">{$this->eval_menu()}</div></div>"
+			);
+			$ret .= "</tr></table>";
 		}
 
 		// Global toolbar
@@ -1509,9 +1509,8 @@ class Ide
 			$this->Conf->UIdata = $_POST['UIdata'];
 		}
 		$this->Conf->save_to_file();
-
 		// JavaScript block
-		$ret .= "<script>\nsyncTextarea(" . json_encode($this->Conf->UIdata) . ");\n</script>\n";
+		$ret .= "<script>\nsyncEditor(" . json_encode($this->Conf->UIdata) . ");\n</script>\n";
 
 		// Confirm overwrite if needed
 		if (!empty($_POST['overwrite_ok'])) {
@@ -1530,223 +1529,7 @@ class Ide
 	}
 
 }
-/*
-class FileTable
-{
-    var $dir;
-    var $reldir;
-    var $currentfile;
-    var $sortorder;
-    var $browsebelowroot;
-    var $files;
-    var $header1;
-    var $header2;
-    var $header3;
-    var $sortimage1;
-    var $sortimage2;
-    var $sortimage3;
 
-    function __construct($reldir,$currentfile,$sortorder,$browsebelowroot)
-    {
-        $this->reldir=$reldir;
-		//$this->dir=realpath(dirname(__FILE__)."/$reldir");
-        $this->dir=realpath($reldir);
-        $this->currentfile=$currentfile;
-        $this->sortorder=$sortorder;
-        $this->browsebelowroot=$browsebelowroot;
-    }
-
-	function getFiles()
-	{
-		$dir_handle = @opendir($this->dir);
-		if (!$dir_handle) {
-			return false;
-		}
-		//running the while loop
-		$this->files=array();
-		while ($file = readdir($dir_handle)) {
-			if ($file!="." ) {
-				if ((realpath($_SERVER['DOCUMENT_ROOT'].'/..') != realpath($this->dir.'/'.$file)) || ($this->browsebelowroot != 0)) {
-					$fileitem=array('name'=>$file,'date'=>@filemtime($this->dir."/".$file),'size'=>@filesize($this->dir."/".$file),'path'=>$this->dir."/".$file);
-					$this->files[]=$fileitem;
-				}
-			}
-		}
-		//closing the directory
-		closedir($dir_handle);
-        return true;
-    }
-
-    function createHeaders()
-    {
-		switch ($this->sortorder) {
-		case 1:
-			$this->sortFiles($this->files,'name',false);
-			$this->header1="class='sortcol' onClick='submit_sort(2)'";
-			$this->header2="onClick='submit_sort(3)'";
-			$this->header3="onClick='submit_sort(5)'";
-			$this->sortimage1="<img src='images/sort_up.gif'/>";
-			break;
-		case 2:
-			$this->sortFiles($this->files,'name',true);
-			$this->header1="class='sortcol' onClick='submit_sort(1)'";
-			$this->header2="onClick='submit_sort(3)'";
-			$this->header3="onClick='submit_sort(5)'";
-			$this->sortimage1="<img src='images/sort_down.gif'/>";
-			break;
-		case 3:
-			$this->sortFiles($this->files,'date',false);
-			$this->header2="class='sortcol' onClick='submit_sort(4)'";
-			$this->header1="onClick='submit_sort(1)'";
-			$this->header3="onClick='submit_sort(5)'";
-			$this->sortimage2="<img src='images/sort_up.gif'/>";
-			break;
-		case 4:
-			$this->sortFiles($this->files,'data',true);
-			$this->header2="class='sortcol' onClick='submit_sort(3)'";
-			$this->header1="onClick='submit_sort(1)'";
-			$this->header3="onClick='submit_sort(5)'";
-			$this->sortimage2="<img src='images/sort_down.gif'/>";
-			break;
-		case 5:
-			$this->sortFiles($this->files,'size',false);
-			$this->header3="class='sortcol' onClick='submit_sort(6)'";
-			$this->header2="onClick='submit_sort(3)'";
-			$this->header1="onClick='submit_sort(1)'";
-			$this->sortimage3="<img src='images/sort_up.gif'/>";
-			break;
-		case 6:
-			$this->sortFiles($this->files,'size',true);
-			$this->header3="class='sortcol' onClick='submit_sort(5)'";
-			$this->header2="onClick='submit_sort(3)'";
-			$this->header1="onClick='submit_sort(1)'";
-			$this->sortimage3="<img src='images/sort_down.gif'/>";
-			break;
-			default:
-			$this->header1="class='sortcol' onClick='submit_sort(1)'";
-			$this->header2="onClick='submit_sort(3)'";
-			$this->header3="onClick='submit_sort(5)'";
-			break;
-		}
-    }
-
-    function writeHeaders()
-    {
-        $ret ="<tr><th align='left' $this->header1 style='text-indent:30px;'>\n";
-        $ret.=$this->sortimage1.'Name';
-		$ret .="</th><th align='left' $this->header2>";
-		$ret.=$this->sortimage2.'Date';
-		$ret .="</th><th  align='right' $this->header3>";
-		$ret.=$this->sortimage3.'Size ';//       
-		$ret .="</th><th style='border-right:0px;'></th></tr>\n";
-		return $ret;
-    }
-
-    function writefiles()
-    {
-		$k=0;
-		$ret = "";
-		foreach ($this->files as $file) {
-			$path="{$this->reldir}/{$file['name']}";
-			$perms=substr(sprintf('%o', fileperms(realpath($path))), -3);
-			if ($file['name']=='..') {
-				$perms='';
-			}
-			$ret.=($path==$this->currentfile) ? "<tr class='selrow'><td>\n" : "<tr class='row$k'><td>\n";
-			if (is_dir(realpath($this->dir."/".$file['name']))) {
-				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="   <a href='#' onClick='javascript:submit_dir(\"{$file['name']}\");return false;'><img src='images/folder.png'/> ".$file['name']."</a>\n";
-				} else {
-					$ret .="   <img src='images/file.png'/> ".$file['name'];
-				}
-				$ret.="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'> </td>\n<td>\n<a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
-			} else {
-				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="   <a href='#' onClick='javascript:submit_file(\"{$path}\");return false;'><img src='images/file.png'/> ".$file['name']."</a>\n";
-				} else {
-					$ret .="   <img src='images/file.png'/> ".$file['name'];
-				}
-				$ret .="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:chmod_file(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
-			}
-			$ret .="</td></tr>\n";
-			$k=1-$k;
-		}
-        return $ret;
-    }
-
-	function file_table()
-	{
-		$ret = "";
-	    if ($this->getFiles() === false)
-	    {
-			$ret .="<table width='100%' cellpadding='0' border='0' cellspacing='0' CLASS='boldtable'><tr><td align='left'>\n";
-			$ret .="Unable to read $dir<br>";
-			$ret .="<a href='#' onClick='javascript:submit_dir(\"./\");return false;'><img src='images/folder.png'/> Home</a>\n";
-			$ret .="</td></tr></table>";
-            return $ret;
-        }
-        $this->createHeaders();
-		if (count($this->files)) {
-			$ret .="<table width='100%' cellpadding='0' border='0' cellspacing='0' CLASS='boldtable'>\n";
-			$ret.=$this->writeHeaders();
-            $ret.=$this->writeFiles();
-			$ret .="</table>\n";
-		}
-	    return $ret;
-	}
-
-	function sortFiles(&$files, $Key, $Desc)
-	{
-		$dirs = [];
-		$plainfiles = [];
-
-		if (!is_array($files)) return;
-
-		foreach ($files as $file) {
-			if (is_dir(realpath($file['path'] ?? ''))) {
-				$dirs[] = $file;
-			} else {
-				$plainfiles[] = $file;
-			}
-		}
-
-		$this->sortFileChunk($dirs, $Key, $Desc, 0, count($dirs));
-		$this->sortFileChunk($plainfiles, $Key, $Desc, 0, count($plainfiles));
-		$files = array_merge($dirs, $plainfiles);
-	}
-
-    function sortFileChunk(&$files,$Key,$Desc,$min,$max)
-    {
-	    for ($i=$min; $i<$max; $i++) {
-		    for ($j=$min; $j<$max; $j++) {
-    			if ($Desc) {
-    				if (strtolower($files[$i][$Key])>strtolower($files[$j][$Key])) {
-    					$temp=$files[$i];
-    					$files[$i]=$files[$j];
-    					$files[$j]=$temp;
-    				}
-    			} else {
-    				if (strtolower($files[$i][$Key])<strtolower($files[$j][$Key])) {
-    					$temp=$files[$i];
-    					$files[$i]=$files[$j];
-    					$files[$j]=$temp;
-    				}
-    			}
-    		}
-    	}
-    }
-
-    function formatBytes($bytes, $precision = 2)
-    {
-    	$units = array('B', 'KB', 'MB', 'GB', 'TB');
-    	$bytes = max($bytes, 0);
-    	$pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-    	$pow = min($pow, count($units) - 1);
-    	$bytes /= pow(1024, $pow);
-    	return round($bytes, $precision) . ' ' . $units[$pow];
-    }
-}
-*/
 class Editor
 {
 

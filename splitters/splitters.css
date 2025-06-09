@@ -1,0 +1,55 @@
+table.insidediv{
+	position:absolute;
+	top:0px;
+	left:0px;
+	height:100%;
+	width:100%;
+	border-collapse: collapse;
+	table-layout:fixed;
+}
+td.insidediv, td.insidedivpad{
+	padding:0px;
+	margin:0px;
+	border:0px;
+	padding-top:4px;
+    vertical-align:top;
+    text-shadow: #dddddd 0px 1px 0px;
+    font-weight:500;
+    white-space: nowrap;
+}
+td.insidedivpad{
+    height:100%;
+	padding:0px;
+}
+div.horiz_container,div.vert_container{
+	position:relative;
+	border:0px;
+	top:0px;
+	left:0px;
+	height:0px;
+	width:100%;
+}
+div.vert_container{
+	height:100%;
+	width:0px;
+	float:left;
+	display:inline;
+	clear:right;
+}
+div.vert_split,div.horiz_split{
+	position:absolute;
+	z-index:1001;
+	left:-4px;
+	top:0px;
+	width:8px;
+	height:100%;
+	background:transparent;
+	cursor:col-resize;
+}
+div.horiz_split{
+	top:-4px;
+	left:0px;
+	height:8px;
+	width:100%;
+	cursor:row-resize;
+}

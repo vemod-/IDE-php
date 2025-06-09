@@ -29,7 +29,7 @@ img{
 iframe{
     float:left;
 }
-
+/*
 table.insidediv{
 	position:absolute;
 	top:0px;
@@ -53,6 +53,7 @@ td.insidedivpad{
     height:100%;
 	padding:0px;   
 }
+*/
 td.toolbar{
 	padding:0px;
 	margin:0px;
@@ -638,6 +639,7 @@ select:focus,textarea:focus,input:focus{
 	outline: none;
 	-moz-outline-style: none;
 }
+/*
 div.horiz_container,div.vert_container{
 	position:relative;
 	border:0px;
@@ -670,7 +672,7 @@ div.horiz_split{
 	width:100%;
 	cursor:row-resize;
 }
-
+*/
 #borderdiv {
 	position: fixed; 
     width: 100%; 

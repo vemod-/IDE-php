@@ -113,15 +113,17 @@ class options
 	function options_page_save($var_names_array)
 	{
 		global $_POST;
-		$this->Conf->Right_trim = $_POST['Right_trim'] ? 1 : 0;
-		$this->Conf->Overwrite_original = $_POST['Overwrite_original'] ? 1 : 0;
-		$this->Conf->Allow_browse_below_root = $_POST['Allow_browse_below_root'] ? 1 : 0;
-		$this->Conf->UseCodeMirror = $_POST['UseCodeMirror'] ? 1 : 0;
-		$this->Conf->CodeMirrorTheme = $_POST['CodeMirrorTheme'];
-		$this->Conf->Protect_entities = $_POST['Protect_entities'] ? 1 : 0;
-		$this->Conf->Eval_executable = $_POST['Eval_executable'] ? 1 : 0;
-		$this->Conf->Unix_newlines = $_POST['Unix_newlines'] ? 1 : 0;
-		$this->Conf->Phpneturl=$_POST['Phpneturl'];
+	
+		$this->Conf->Right_trim = isset($_POST['Right_trim']) ? 1 : 0;
+		$this->Conf->Overwrite_original = isset($_POST['Overwrite_original']) ? 1 : 0;
+		$this->Conf->Allow_browse_below_root = isset($_POST['Allow_browse_below_root']) ? 1 : 0;
+		$this->Conf->UseCodeMirror = isset($_POST['UseCodeMirror']) ? 1 : 0;
+		$this->Conf->CodeMirrorTheme = $_POST['CodeMirrorTheme'] ?? 'default';
+		$this->Conf->Protect_entities = isset($_POST['Protect_entities']) ? 1 : 0;
+		$this->Conf->Eval_executable = isset($_POST['Eval_executable']) ? 1 : 0;
+		$this->Conf->Unix_newlines = isset($_POST['Unix_newlines']) ? 1 : 0;
+		$this->Conf->Phpneturl = $_POST['Phpneturl'] ?? '';
+	
 		$this->Conf->save_to_file($var_names_array);
 	}
 }
