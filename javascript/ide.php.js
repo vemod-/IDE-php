@@ -16,7 +16,6 @@ function isTextAreaEditor() {
 	const el = document.getElementById('code');
 	return el && el.tagName && el.tagName.toLowerCase() === 'textarea';
 }
-
 // Läs innehåll
 function codeValue() {
 	if (isUsingCodeMirror()) {
@@ -25,7 +24,6 @@ function codeValue() {
 	const code = document.getElementById('code');
 	return code ? code.value : '';
 }
-
 // Sätt innehåll
 function setCodeValue(val) {
 	if (isUsingCodeMirror()) {
@@ -35,7 +33,6 @@ function setCodeValue(val) {
 		if (code) code.value = val;
 	}
 }
-
 // Scrollposition
 function getScrollPosition() {
 	if (isUsingCodeMirror()) {
@@ -49,7 +46,6 @@ function getScrollPosition() {
 		};
 	}
 }
-
 // Cursorposition och markering
 function getSelectionRange() {
 	if (isUsingCodeMirror()) {
@@ -67,6 +63,35 @@ function getSelectionRange() {
 		}
 		return { selStart: 0, selEnd: 0 };
 	}
+}
+
+function setSelectionRange(selectionStart, selectionEnd) {
+	if (isUsingCodeMirror()) {
+		const startPos = editor.posFromIndex(selectionStart);
+		const endPos = editor.posFromIndex(selectionEnd);
+		editor.setSelection(startPos, endPos);
+		editor.focus();
+	}
+    else if (isTextAreaEditor()) {
+		const input = document.getElementById('code');
+		input.focus();
+		input.setSelectionRange(selectionStart, selectionEnd);
+	}
+}
+
+function setScrollPosition(scrollLeft,scrollTop) {
+    if (isUsingCodeMirror()) {
+        editor.scrollTo(scrollLeft, scrollTop);
+	} else if (isTextAreaEditor()) {
+        const elem = document.getElementById('code');
+        elem.scrollTop = scrollTop;
+        elem.scrollLeft = scrollLeft;
+    }
+}
+
+function getSelectedCode() {
+	var selectionRange = getSelectionRange();
+	return codeValue().substring(selectionRange.selStart,selectionRange.selEnd);
 }
 
 if (!String.prototype.substring_count) String.prototype.substring_count=function(substring){
@@ -124,29 +149,15 @@ function main_submit(action) {
         UIdata = php.unserialize(uidataField.value);
     }
 
-    // === CodeMirror-variant ===
+	var scrollInfo = getScrollPosition();
+	UIdata['scrollTop'] = scrollInfo.top;
+	UIdata['scrollLeft'] = scrollInfo.left;
+	
+	var selectionRange = getSelectionRange();
+	UIdata['selStart'] = selectionRange.selStart;
+	UIdata['selEnd'] = selectionRange.selEnd;
+
     if (isUsingCodeMirror()) {
-        // Scrollposition
-        var scrollInfo = editor.getScrollInfo();
-        UIdata['scrollTop'] = scrollInfo.top;
-        UIdata['scrollLeft'] = scrollInfo.left;
-
-        // Markering / cursor
-        var sel = editor.listSelections();
-        if (sel.length > 0) {
-            var anchor = sel[0].anchor;
-            var head = sel[0].head;
-
-            UIdata['selAnchorLine'] = anchor.line;
-            UIdata['selAnchorCh'] = anchor.ch;
-            UIdata['selHeadLine'] = head.line;
-            UIdata['selHeadCh'] = head.ch;
-
-            var startPos = editor.indexFromPos(anchor);
-            var endPos = editor.indexFromPos(head);
-            UIdata['selStart'] = Math.min(startPos, endPos);
-            UIdata['selEnd'] = Math.max(startPos, endPos);
-        }
         var elem = document.getElementById('code');
 		elem.disabled = true;
 		var newElem = document.createElement('textarea');
@@ -155,24 +166,10 @@ function main_submit(action) {
 		newElem.value = editor.getValue();;
 		document.main_form.appendChild(newElem);
     }
-
-    // === Fallback till vanlig <textarea> ===
-    else if (isTextAreaEditor()) {
-        var elem = document.getElementById('code');
-        if (elem) {
-            UIdata['scrollTop'] = parseInt(elem.scrollTop, 10) || 0;
-            UIdata['scrollLeft'] = parseInt(elem.scrollLeft, 10) || 0;
-
-            UIdata['selStart'] = selStart(elem, true);
-            UIdata['selEnd'] = selEnd(elem, true);
-        }
-    }
-
     // Skriv tillbaka till dolt fält
     if (uidataField) {
         uidataField.value = php.serialize(UIdata);
-    }
-
+	}
     // Skicka formuläret
     document.main_form.action.value = action;
     document.main_form.submit();
@@ -197,19 +194,12 @@ function UItimeout() {
     if (!uidataField || !uidataField.value.length) return;
 
     var UIdata = php.unserialize(uidataField.value);
-    if (isUsingCodeMirror()) {
-        editor.scrollTo(UIdata['scrollLeft'] || 0, UIdata['scrollTop'] || 0);
-        if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
-            setSelectionRange(UIdata['selStart'], UIdata['selEnd'], true);
-        }
-	} else if (isTextAreaEditor()) {
-        if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
-            setSelectionRange(UIdata['selStart'], UIdata['selEnd'], true);
-        }
-        const elem = document.getElementById('code');
-        elem.scrollTop = UIdata['scrollTop'] || 0;
-        elem.scrollLeft = UIdata['scrollLeft'] || 0;
-    }
+	if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
+		setSelectionRange(UIdata['selStart'], UIdata['selEnd'], true);
+	}
+	if (UIdata['scrollLeft'] !== null && UIdata['scrollTop'] !== null) {
+		setScrollPosition(UIdata['scrollLeft'], UIdata['scrollTop']);
+	}
 }
 
 var sel_line_num=-1;
@@ -227,43 +217,20 @@ function syncEditor(UIstr) {
 	if (UIstr.length) {
 		setTimeout(UItimeout, 0);
 	}
+	if (Number(document.getElementById('change_counter').value) === 0) {
+        savedCode = codeValue();
+    }
     if (isUsingCodeMirror()) {
-		syncCodeMirrorEditor();
-    } else {
+	    syncCodeMirrorEditor();
+    }
+    else if (isTextAreaEditor()) {
 		syncTextAreaEditor();
 	}
-	init_splitters();
 }
 
 function syncTextAreaEditor() {
 	const elem = document.getElementById('code');
 	const elem1 = document.getElementById('code_numbers');
-	/*
-	if (browser.isIE && !is_opera && elem.tagName.toLowerCase() === 'textarea') {
-		elem.style.width = (elem.parentNode.offsetWidth - 34) + 'px';
-		document.getElementById('code_numbers').style.paddingTop = '1px';
-	}
-	*/
-	// Spara initial kod
-	if (Number(document.getElementById('change_counter').value) === 0) {
-		savedCode = elem.value;
-	}
-
-	// Händelser
-	elem.onkeydown = evt => catchTab(evt);
-	elem.onkeyup = () => setTimeout(checkDirty, 0);
-	elem.onmouseup = () => setTimeout(checkDirty, 0);
-	elem.onchange = () => setTimeout(checkDirty, 0);
-	elem.onfocus = () => setTimeout(checkDirty, 0);
-
-	// Scroll-synk
-	elem.onscroll = function () {
-		if (elem1) {
-			elem1.style.top = (parseInt(this.scrollTop, 10) * -1) + 'px';
-		}
-	};
-
-	// Linjenummerklick
 	if (elem1) {
 		elem1.onmousedown = function (evt) {
 			sel_line_num = line_number(evt, this);
@@ -288,38 +255,97 @@ function syncTextAreaEditor() {
 
 			splitbg.style.zIndex = 8000;
 			this.parentNode.style.zIndex = 8001;
-			/*
-			if (browser.isIE) {
-				document.attachEvent("onmousemove", lines_dragGo);
-				document.attachEvent("onmouseup", lines_dragStop);
-				window.event.cancelBubble = true;
-				window.event.returnValue = false;
-			}
-			*/
-			//if (browser.isNS) {
 			document.addEventListener("mousemove", lines_dragGo, true);
 			document.addEventListener("mouseup", lines_dragStop, true);
 			evt.preventDefault();
-			//}
 		};
 	}
-
 	elem.focus();
 }
 
 function syncCodeMirrorEditor() {
-    if (Number(document.getElementById('change_counter').value) === 0) {
-        savedCode = editor.getValue();
-    }
-	editor.on('keydown', (cm, evt) => {
-		catchTab(evt); // din catchTab hanterar troligen globalt
+	let gutterStartLine = null;
+
+	editor.getWrapperElement().addEventListener('mousedown', function (e) {
+		// Kontrollera om klicket sker på en radnummer-cell
+		if (!e.target.classList.contains('CodeMirror-linenumber')) return;
+
+		e.preventDefault(); // Förhindra textmarkering
+
+		const line = editor.lineAtHeight(e.clientY, 'client');
+		editor.setSelection(
+				{ line: line, ch: 0 },
+				{ line: line + 1, ch: 0 }
+			);
+		gutterStartLine = line;
+
+		const onMouseMove = function (e2) {
+			const currentLine = editor.lineAtHeight(e2.clientY, 'client');
+			const from = Math.min(gutterStartLine, currentLine);
+			const to = Math.max(gutterStartLine, currentLine) + 1;
+
+			editor.setSelection(
+				{ line: from, ch: 0 },
+				{ line: to, ch: 0 }
+			);
+		};
+
+		const onMouseUp = function () {
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', onMouseUp);
+		};
+
+		document.addEventListener('mousemove', onMouseMove);
+		document.addEventListener('mouseup', onMouseUp);
 	});
-	/*
-	editor.on('keyup', () => setTimeout(checkDirty, 0));
-	editor.on('mousedown', () => setTimeout(checkDirty, 0));
-	editor.on('change', () => setTimeout(checkDirty, 0));
-	editor.on('focus', () => setTimeout(checkDirty, 0));
-*/
+}
+
+function catchTab(e) {
+    const evt = e || window.event;
+    const code = document.getElementById('code');
+    const key = evt.which || evt.keyCode;
+
+    // Cmd/Ctrl + S (spara)
+    if ((evt.ctrlKey || evt.metaKey) && key === 83) { // S
+        evt.preventDefault();
+        main_submit('save');
+        return false;
+    }
+
+    // Cmd/Ctrl + F (sök)
+    if ((evt.ctrlKey || evt.metaKey) && key === 70) { // F
+        evt.preventDefault();
+        search_editor(false);
+        return false;
+    }
+
+    // F3
+    if (key === 114) {
+        evt.preventDefault();
+        search_editor(false);
+        return false;
+    }
+
+    // Tab
+    if (key === 9) {
+        evt.preventDefault(); //  blockera fokusbyte
+        replaceTextareaSelection('\t');
+        return false;
+    }
+
+    // Enter
+    if (key === 13) {
+        const { selEnd } = getSelectionRange();
+        const line_array = codeValue().substring(0, selEnd).split('\n');
+        const match = line_array[line_array.length - 1].match(/^([ \t]+)/);
+        if (match) {
+            evt.preventDefault();
+            replaceTextareaSelection("\n" + match[1]);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function showHideLayer() {
@@ -349,123 +375,54 @@ function decimalToHex(d, padding) {
 function checkDirty()
 {
 	var isdirty=false;
-	if (isUsingCodeMirror()) {
-		return checkDirtyCodeMirror();
-	}
-	else if (isTextAreaEditor()) {
-		if (document.getElementById('infobar'))
+	var selectionRange = getSelectionRange();
+	var currentCode = codeValue();
+	var charcode = currentCode.charCodeAt(selectionRange.selStart);
+	var info='';
+	var infobar = document.getElementById('infobar');
+	if (infobar)
+	{
+		var selection = getSelectedCode();
+		var startarray = currentCode.substring(0,selectionRange.selStart).split('\n');
+		var startcol = startarray[startarray.length-1].length;
+		if (selection.length != 0)
 		{
-			var selS=selStart();
-			var selL=selLen();
-			var info='';
-			var selcode=codeValue();
-			/*
-			if (browser.isIE && !is_opera)
-			{
-				selcode=selcode.replace(/\r/g,'');
-			}
-			*/
-			if (selL != 0)
-			{
-				var selection=selcode.substring(selS,selS+selL);
-				var rows=selection.substring_count('\n')+1;
-				var startarray=selcode.substring(0,selS).split('\n');
-				var startcol=startarray[startarray.length-1].length;
-				var endarray=selcode.substring(0,selS+selL).split('\n');
-				var endcol=endarray[endarray.length-1].length;
-				info+= rows+' x '+Math.abs(endcol-startcol)+'   ['+selection.length+'] ';
-			}
-			else
-			{
-				var startarray=selcode.substring(0,selS).split('\n');
-				var startcol=startarray[startarray.length-1].length+1;
-				var startrow=startarray.length;
-				var endarray=selcode.split('\n');
-				info+= startrow+' : '+startcol+' / '+endarray.length+' ';
-			}
-			document.getElementById('infobar').innerHTML=info+'   '+selcode.charCodeAt(selS)+' (0x'+decimalToHex(selcode.charCodeAt(selS),2)+')';
-		}
-		if (savedCode.length)
-		{
-			isdirty=(codeValue() !== savedCode);
+			var rows = selection.substring_count('\n')+1;
+			var endarray = currentCode.substring(0,selectionRange.selEnd).split('\n');
+			var endcol = endarray[endarray.length-1].length;
+			info+= rows+' x '+Math.abs(endcol-startcol)+'   ['+selection.length+'] ';
 		}
 		else
 		{
-			isdirty = (Number(document.getElementById('change_counter').value) > 0);
+			var startrow = startarray.length;
+			var endarray = currentCode.split('\n');
+			info+= startrow+' : '+startcol+' / '+endarray.length+' ';
 		}
-		if (isdirty)
+		infobar.innerHTML = info + '   '+charcode+' (0x'+decimalToHex(charcode,2)+')';
+	}
+	if (savedCode.length)
+	{
+		isdirty = (currentCode !== savedCode);
+	}
+	else
+	{
+		isdirty = (Number(document.getElementById('change_counter').value) > 0);
+	}
+	if (isdirty)
+	{
+		document.getElementById('change_counter').value++;
+	}
+	document.getElementById('dirty_p').innerHTML = save_image(isdirty,true);
+	if (infobar)
+	{
+		var ccodestr='';
+		if (charcode)
 		{
-			document.getElementById('change_counter').value++;
+			ccodestr = charcode+' (0x'+decimalToHex(charcode,2)+')';
 		}
-		document.getElementById('dirty_p').innerHTML=save_image(isdirty,true);
-		if (document.getElementById('infobar'))
-		{
-			var charcode=selcode.charCodeAt(selS);
-			var ccodestr='';
-			if (charcode)
-			{
-				ccodestr=charcode+' (0x'+decimalToHex(charcode,2)+')';
-			}
-			document.getElementById('infobar').innerHTML=save_image(isdirty,false)+'   '+info+'   '+ccodestr;
-		}
+		infobar.innerHTML = save_image(isdirty,false)+'   '+info+'   '+ccodestr;
 	}
 	return isdirty;
-}
-
-function checkDirtyCodeMirror() {
-    let isDirty = false;
-    //let currentCode = "";
-    let cursor = { line: 0, ch: 0 };
-    let selLen = 0;
-    let info = "";
-    let ccodestr = "";
-    let lineCount = 0;
-
-    const elem = document.getElementById('code');
-
-	if (isUsingCodeMirror()) {
-        //currentCode = editor.getValue();
-        if (savedCode.length > 0) {
-            isDirty = codeValue() !== savedCode;
-        } else {
-            isDirty = (Number(document.getElementById('change_counter').value) > 0);
-        }
-		if (isDirty)
-		{
-			document.getElementById('change_counter').value++;
-		}
-
-        const selText = editor.getSelection();
-        selLen = selText.length;
-        cursor = editor.getCursor();
-        lineCount = editor.lineCount();
-
-        if (selLen > 0) {
-            const selectedLines = selText.split("\n").length;
-            const start = editor.getCursor("from");
-            const end = editor.getCursor("to");
-
-            const startCol = start.ch + 1;
-            const endCol = end.ch + 1;
-            const colDiff = Math.abs(endCol - startCol);
-
-            info = `${selectedLines} x ${colDiff}   [${selLen}]`;
-        } else {
-            info = `${cursor.line + 1} : ${cursor.ch + 1} / ${lineCount}`;
-        }
-
-        let charcode = codeValue().charCodeAt(editor.indexFromPos(cursor));
-        if (!isNaN(charcode)) {
-            ccodestr = `${charcode} (0x${decimalToHex(charcode, 2)})`;
-        }
-    }
-    // Uppdatera UI
-    document.getElementById('dirty_p').innerHTML = save_image(isDirty, true);
-    if (document.getElementById('infobar')) {
-        document.getElementById('infobar').innerHTML =
-            save_image(isDirty, false) + '   ' + info + '   ' + ccodestr;
-    }
-    return isDirty;
 }
 
 function save_image(dirty,large)
@@ -497,62 +454,12 @@ function checkEnter(e)
     }
 }
 
-function selStart() {
-	if (isUsingCodeMirror()) {
-        return editor.getCursor("from");
-	} else if (isTextAreaEditor()) {
-    	return document.getElementById('code').selectionStart;
-    }
-}
-
-function selEnd() {
-	if (isUsingCodeMirror()) {
-        return editor.getCursor("to");
-	} else if (isTextAreaEditor()) {
-    	return document.getElementById('code').selectionEnd;
-    }
-}
-
-function selLen() {
-    return selEnd() - selStart();
-}
-
-function replaceEditorSelection(str) {
-	if (isUsingCodeMirror()) {
-		editor.replaceSelection(str, "around");
-		checkDirtyCodeMirror();
-	} else if (isTextAreaEditor()) {
-		const start = selStart();
-		const end = selEnd();
-		setCodeValue(codeValue().substring(0, start) + str + codeValue().substring(end));
-		const newPos = start + str.length;
-		setSelectionRange(newPos, newPos);
-		checkDirty();
-	}
-}
-
-function catchTab(e){
-    var evt = e ? e : window.event;
-	c = evt.which ? evt.which : evt.keyCode;
-	if (c == 114) //f3
-	{
-        search_editor(false);
-        return false;
-    }
-	if(c == 9){  //tab
-        replaceEditorSelection(String.fromCharCode(9));
-		return false;
-	}
-    if (c == 13)   // enter
-    {
-        var SE=selEnd();
-        var line_array=codeValue().substring(0,SE).split('\n');
-        var occur = line_array[line_array.length-1].match(/^([ \t]+)/g);
-        if (occur)
-        {
-            replaceEditorSelection(occur[0]);
-        }
-    }
+function replaceTextareaSelection(str) {
+	var selectionRange = getSelectionRange();
+	setCodeValue(codeValue().substring(0, selectionRange.selStart) + str + codeValue().substring(selectionRange.selEnd));
+	const newPos = selectionRange.selStart + str.length;
+	setSelectionRange(newPos, newPos);
+	checkDirty();
 }
 
 function submit_sort(order)
@@ -569,14 +476,8 @@ function submit_dir(dir)
 
 function submit_file(file)
 {
-	if (isUsingCodeMirror()) {
-        setSelectionRange(0,0);
-	} else if (isTextAreaEditor()) {
-        setSelectionRange(0,0);
-        const elem=document.getElementById('code');
-        elem.scrollTop=0;
-        elem.scrollLeft=0;
-    }
+    setSelectionRange(0,0);
+    setScrollPosition(0,0);
     document.getElementById('some_file_name').value=""+file+"";
     if (checkDirty())
     {
@@ -719,8 +620,7 @@ var searchTerm='';
 var searchMatchCase=false;
 var searchWholeWord=false;
 var replaceTerm='';
-var searchSelStart=0;
-var searchSelEnd=0;
+var searchSelection = { selStart: 0, selEnd: 0 };
 var searchSelected=false;
 
 RegExp.escape = function(text) {
@@ -740,12 +640,10 @@ function search_editor(showDialog)
 {
     if (showDialog)
     {
-        //var code=document.getElementById('code');
-        searchSelStart=selStart();
-        searchSelEnd=selEnd();
-        if (searchSelStart != searchSelEnd)
+        searchSelection = getSelectionRange();
+        if (searchSelection.selStart != searchSelection.selEnd)
         {
-            searchTerm=codeValue().substring(searchSelStart,searchSelEnd).explode('\n')[0];
+            searchTerm = getSelectedCode().explode('\n')[0];
         }
         var caseChecked=(searchMatchCase ? 'checked':'');
         var wordChecked=(searchWholeWord ? 'checked':'');
@@ -760,7 +658,6 @@ function search_editor(showDialog)
 
 function search_callback(returncode,id,value)
 {
-    //var code=document.getElementById('code');
     if (returncode == 1)
     {
         value_array=value.split('|¤|');
@@ -770,10 +667,9 @@ function search_callback(returncode,id,value)
         searchSelected=(value_array[3] == 'true') ? true:false;
         if (!searchSelected)
         {
-            searchSelStart=0;
-            searchSelEnd=codeValue().length;
+        	searchSelection = { selStart: 0, selEnd: codeValue().length };
         }
-        searchPos=searchSelStart;
+        searchPos = searchSelection.selStart;
     }
     if (returncode == 0)
     {
@@ -795,7 +691,7 @@ function search_callback(returncode,id,value)
         var start=-1;
         while (1)
         {
-            start=codeValue().substring(searchPos,searchSelEnd).search(regex);
+            start = codeValue().substring(searchPos,searchSelection.selEnd).search(regex);
             if (start != -1)
             {
                 if (searchWholeWord)
@@ -811,7 +707,7 @@ function search_callback(returncode,id,value)
             {
                 if (searchPos>0)
                 {
-                    searchPos=searchSelStart;
+                    searchPos = searchSelection.selStart;
                 }
                 else
                 {
@@ -832,12 +728,10 @@ function search_callback(returncode,id,value)
 
 function replace_editor()
 {
-	//var code=document.getElementById('code');
-	searchSelStart=selStart();
-	searchSelEnd=selEnd();
-	if (searchSelStart != searchSelEnd)
+	searchSelection = getSelectionRange();
+	if (searchSelection.selStart != searchSelection.selEnd)
 	{
-		searchTerm=codeValue().substring(searchSelStart,searchSelEnd).explode('\n')[0];
+		searchTerm = getSelectedCode().explode('\n')[0];
 	}
     var caseChecked=(searchMatchCase ? 'checked':'');
     var wordChecked=(searchWholeWord ? 'checked':'');
@@ -848,7 +742,6 @@ function replace_editor()
 function replace_callback(returncode,id,value)
 {
     var replacements=0;
-    //var code=document.getElementById('code');
     if (returncode == 1)
     {
         value_array=value.split('|¤|');
@@ -864,10 +757,9 @@ function replace_callback(returncode,id,value)
     }
     if (!searchSelected)
     {
-        searchSelStart=0;
-        searchSelEnd=codeValue().length;
+		searchSelection = { selStart: 0, selEnd: codeValue().length };
     }
-    searchPos=searchSelStart;
+    searchPos = searchSelection.selStart;
     if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
     {
         var RegExpStr=RegExp.escape(searchTerm);
@@ -884,7 +776,7 @@ function replace_callback(returncode,id,value)
         var start=-1;
         while (1)
         {
-            start=codeValue().substring(searchPos,searchSelEnd).search(regex);
+            start=codeValue().substring(searchPos,searchSelection.selEnd).search(regex);
             if (start != -1)
             {
                 if (searchWholeWord)
@@ -894,7 +786,7 @@ function replace_callback(returncode,id,value)
                 start+=searchPos;
                 searchPos=start+1;
                 setCodeValue(codeValue().substring(0,start)+replaceTerm+codeValue().substring(start+searchTerm.length));
-                searchSelEnd+=replaceTerm.length-searchTerm.length;
+                searchSelection.selEnd+=replaceTerm.length-searchTerm.length;
                 replacements++;
             }
             else
@@ -913,20 +805,6 @@ function replace_callback(returncode,id,value)
 	        setTimeout("document.getElementById('code').focus();",0);
         }
     }
-}
-
-function setSelectionRange(selectionStart, selectionEnd) {
-	if (isUsingCodeMirror()) {
-		const startPos = editor.posFromIndex(selectionStart);
-		const endPos = editor.posFromIndex(selectionEnd);
-		editor.setSelection(startPos, endPos);
-		editor.focus();
-	}
-    else if (isTextAreaEditor()) {
-		const input = document.getElementById('code');
-		input.focus();
-		input.setSelectionRange(selectionStart, selectionEnd);
-	}
 }
 /*
 function scrollIntoView(selectionStart, selectionEnd)

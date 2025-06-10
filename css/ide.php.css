@@ -264,6 +264,7 @@ div.relative,.fixed_window {
     padding:0px;
     margin:0px;
     display:block;
+    white-space: nowrap;
     overflow:visible;
     position:absolute;
     top:0px;
@@ -272,7 +273,6 @@ div.relative,.fixed_window {
     min-height:25px;
     max-height:25px;    
     width:100%;
-    white-space: nowrap;
     border-bottom:1px solid #666666;
     border-top:1px solid #dddddd;      
 }
@@ -479,21 +479,22 @@ display:none;
     -moz-opacity: 0.85;
     opacity: 0.85;    
 }*/
+/*
 .navsubboxold {
     position:absolute;
-    min-width:88px !important;     /* <--- För firefox */
-    min-width:90px;                /* <--- Så bred man vill ha menyn / antalet root menyer */
+    min-width:88px !important;     
+    min-width:90px;               
     visibility:hidden;
     padding-left:0px;
     padding-right:0px;
     padding-bottom:3px;
     padding-top:2px;
     text-indent: 2px;
-    /*filter:alpha(opacity=85);*/
     -moz-opacity: 0.95;
     opacity: 0.95;
     white-space: nowrap;
 } 
+*/
 /*
 .navsubboxAI {
     position: absolute;
@@ -512,13 +513,11 @@ display:none;
 .navsubbox{
     font-weight:bold;
 	position:absolute;
-	//visibility:hidden;
 	display:none;
 	left:-25px;
     filter:alpha(opacity=85);
     -moz-opacity: 0.85;
     opacity: 0.85;
-    //z-index: 1000;
     z-index: 99999;
 	border:solid transparent;
 	border-width:9px 31px 46px 31px;

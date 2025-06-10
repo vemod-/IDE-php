@@ -1142,7 +1142,6 @@ class Ide
 							tabSize: 4,
 							extraKeys: {
 								\"Ctrl-S\": function(cm) {
-									// Din sparlogik här
 									console.log(\"Ctrl+S pressed\");
 									main_submit('save'); // Om du har en sådan funktion
 								},
@@ -1150,14 +1149,26 @@ class Ide
 									// För Mac
 									console.log(\"Cmd+S pressed\");
 									main_submit('save');
+								},
+								\"Ctrl-F\": function(cm) {
+									console.log(\"Ctrl+F pressed\");
+									search_editor(false);
+								},
+								\"Cmd-F\": function(cm) {
+									// För Mac
+									console.log(\"Cmd+F pressed\");
+									search_editor(false);
 								}
+
 							}
 						});
-						editor.on(\"change\", () => checkDirtyCodeMirror());
-						editor.on(\"cursorActivity\", () => checkDirtyCodeMirror());
-						editor.on(\"focus\", () => checkDirtyCodeMirror());
-						editor.on(\"refresh\", () => checkDirtyCodeMirror());
-						checkDirtyCodeMirror();
+						//editor.on(\"keydown\", (cm, evt) => catchTab(evt));
+						editor.on(\"change\", () => checkDirty());
+						editor.on(\"cursorActivity\", () => checkDirty());
+						editor.on(\"focus\", () => checkDirty());
+						editor.on(\"refresh\", () => checkDirty());
+						syncEditor(" . json_encode($this->Conf->UIdata) . ");
+						checkDirty();
 					}
 				});
 				</script>";
@@ -1178,62 +1189,86 @@ class Ide
 			$ret .= '</div>';
 
 		}
-        else if (!$this->Conf->IsBinary)
-        {
-    		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-	       	if ($this->Conf->Fancy == 0) {
-	   	       	$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
-    			$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
-	       		$ret.='</div>';
-			}else{
-			    $ret.='<div id="code" name="code" class="leftwrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
-		        $ret.='<div class="fancywrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
-		        $ret.=str_replace('<code>','<code class="codeprint" style="'.$this->code_style().'">',$this->Edit->getHighlightCode());
-		        $ret.='</div>';
-	       		$ret.='</div>';
-    		}
-	       	$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
-    		$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
-	       	$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
-    		//$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode(range(1, $this->Edit->getlen()), '<br />'). '</code>';
-    		$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
-	       	$ret.= '</div>';
-    		$ret.= '</div>';
-	       	if ($this->Conf->Fancy == 0) {
-		      	$ret .= "<div id='infobarborder'></div>";
-       			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
-	       		$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-		      	$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
-    			$ret .= "</div>";
-	       	}
-    		$ret .="</div>\n";
-        }
-        else
-        {
-    		$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-            $ret.='<div class="leftwrapper" style="border-left:34px solid #e5e5e5;'.$this->code_style().'">';
-
-   			$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
-
-	       	$ret.='</div>';
-
-    		$ret.='<div class="leftheader" style="'.$this->code_style().'">';
-	       	$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:157px;'.$this->code_style().'">';
-    		$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:32px;text-align:right;'.$this->code_style().'">';
-
-            for($i = 0; $i <= $this->Edit->getlen(); $i += 16)
-            {
-                $ret .= dechex($i).'<br/>';
-            }
-
-            $ret.= '</code>';
-		    $ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';
-            $ret.=str_replace(chr(0x0d),'<br/>',$this->Edit->getAscii());
-	       	$ret.='</div>';
-	       	$ret.= '</div>';
-    		$ret.= '</div>';
-
-	       	$ret.='</div>';
+        else {
+        	$ret .= "<script>
+			document.addEventListener(\"DOMContentLoaded\", function () {
+				if (!window.editor && document.getElementById('code')) {
+					const code = document.getElementById('code');
+			
+					code.addEventListener('keydown', evt => catchTab(evt));
+					code.addEventListener('keyup', checkDirty);
+					code.addEventListener('mouseup', checkDirty);
+					code.addEventListener('change', checkDirty);
+					code.addEventListener('focus', checkDirty);
+			
+					const codeNumbers = document.getElementById('code_numbers');
+					if (codeNumbers) {
+						code.addEventListener('scroll', () => {
+							codeNumbers.style.top = (-code.scrollTop) + 'px';
+						});
+					}
+					syncEditor(" . json_encode($this->Conf->UIdata) . ");
+					checkDirty();
+				}
+			});
+			</script>";
+			if (!$this->Conf->IsBinary)
+			{
+				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
+				if ($this->Conf->Fancy == 0) {
+					$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
+					$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
+					$ret.='</div>';
+				}else{
+					$ret.='<div id="code" name="code" class="leftwrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
+					$ret.='<div class="fancywrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
+					$ret.=str_replace('<code>','<code class="codeprint" style="'.$this->code_style().'">',$this->Edit->getHighlightCode());
+					$ret.='</div>';
+					$ret.='</div>';
+				}
+				$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
+				$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
+				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
+				//$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode(range(1, $this->Edit->getlen()), '<br />'). '</code>';
+				$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
+				$ret.= '</div>';
+				$ret.= '</div>';
+				if ($this->Conf->Fancy == 0) {
+					$ret .= "<div id='infobarborder'></div>";
+					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+					$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
+					$ret .= "</div>";
+				}
+				$ret .="</div>\n";
+			}
+			else
+			{
+				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
+				$ret.='<div class="leftwrapper" style="border-left:34px solid #e5e5e5;'.$this->code_style().'">';
+	
+				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
+	
+				$ret.='</div>';
+	
+				$ret.='<div class="leftheader" style="'.$this->code_style().'">';
+				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:157px;'.$this->code_style().'">';
+				$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:32px;text-align:right;'.$this->code_style().'">';
+	
+				for($i = 0; $i <= $this->Edit->getlen(); $i += 16)
+				{
+					$ret .= dechex($i).'<br/>';
+				}
+	
+				$ret.= '</code>';
+				$ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';
+				$ret.=str_replace(chr(0x0d),'<br/>',$this->Edit->getAscii());
+				$ret.='</div>';
+				$ret.= '</div>';
+				$ret.= '</div>';
+	
+				$ret.='</div>';
+			}
         }
 		$ret .="</div>\n";
 		return $ret;
@@ -1409,6 +1444,10 @@ class Ide
 	{
 		global $_POST;
 
+		if (isset($_POST['UIdata'])) {
+			$this->Conf->UIdata = $_POST['UIdata'];
+		}
+
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
 		$ret = "<script type=\"text/javascript\" src=\"splitters/splitters.js\"></script>
     		<link rel=\"stylesheet\" type=\"text/css\" href=\"splitters/splitters.css\">";
@@ -1505,12 +1544,9 @@ class Ide
 		$this->Conf->recentfiles = $this->recentfiles->save();
 		$this->Conf->recentdirs = $this->recentdirs->save();
 		$this->Conf->recentevals = $this->recentevals->save();
-		if (isset($_POST['UIdata'])) {
-			$this->Conf->UIdata = $_POST['UIdata'];
-		}
 		$this->Conf->save_to_file();
 		// JavaScript block
-		$ret .= "<script>\nsyncEditor(" . json_encode($this->Conf->UIdata) . ");\n</script>\n";
+		//$ret .= "<script>syncEditor(" . json_encode($this->Conf->UIdata) . ");</script>\n";
 
 		// Confirm overwrite if needed
 		if (!empty($_POST['overwrite_ok'])) {

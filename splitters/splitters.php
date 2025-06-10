@@ -66,10 +66,45 @@ class SplitterFactory {
 	}
 
 	public function buildAssets(): string {
-		return <<<HTML
+		$ret = <<<HTML
         <script type="text/javascript" src="{$this->assetUrl}splitters.js"></script>
         <link rel="stylesheet" type="text/css" href="{$this->assetUrl}splitters.css">
         HTML;
+        $ret .= $this->buildInitScript();
+        return $ret;
 	}
+
+    private function buildInitScript(): string {
+        $imgPath = $this->assetUrl . 'splitterbg.png';
+        return <<<JS
+        <script>
+        function init_splitters() {
+            const img_path = "{$imgPath}";
+            let elem_array = document.querySelectorAll('.horiz_split');
+            for (let i = 0; i < elem_array.length; i++) {
+                elem_array[i].style.top = '-4px';
+                elem_array[i].onmouseover = function() {
+                    this.style.backgroundImage = 'url(' + img_path + ')';
+                };
+                elem_array[i].onmouseout = function() {
+                    this.style.background = 'transparent';
+                };
+            }
+
+            elem_array = document.querySelectorAll('.vert_split');
+            for (let i = 0; i < elem_array.length; i++) {
+                elem_array[i].style.left = '-4px';
+                elem_array[i].onmouseover = function() {
+                    this.style.backgroundImage = 'url(' + img_path + ')';
+                };
+                elem_array[i].onmouseout = function() {
+                    this.style.background = 'transparent';
+                };
+            }
+        }
+        document.addEventListener("DOMContentLoaded", init_splitters);
+        </script>
+        JS;
+    }
 }
 ?>

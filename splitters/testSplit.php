@@ -18,14 +18,6 @@ tr{
     margin:0px;
     border:none;
 }
-/*
-td.insidediv,td.insidedivpad{
-    height:100%;
-    padding:2px;
-    margin:0px;
-    border:1px solid #00ff00;
-}
-*/
 div.relative{
 	padding:0px;
 	margin:0px;
@@ -39,7 +31,8 @@ div.relative{
 div.absolute{
 	padding:0px;
 	margin:0px;
-	border:none;
+	border:1px;
+	border-style: solid;
 	position:absolute;
 	width:100%;
 	height:100%;
@@ -91,6 +84,3 @@ bottom
 </table>
 </div>
 </body>
-<script type="text/javascript">
-  init_splitters();
-</script>
