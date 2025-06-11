@@ -136,8 +136,8 @@ class Ide
 				$this->Conf->LayoutStyle=$_POST['layoutstyle'];
 			} elseif($_POST['action']=='phpnet') {
 				$this->Conf->Phpnet=$_POST['phpnet'];
-			} elseif($_POST['action']=='fancy') {
-				$this->Conf->Fancy=$_POST['fancy'];
+			//} elseif($_POST['action']=='fancy') {
+			//	$this->Conf->Fancy=$_POST['fancy'];
 			//} elseif($_POST['action']=='use_code_mirror') {
 			//	$this->Conf->UseCodeMirror=$_POST['use_code_mirror'];
 			} elseif($_POST['action']=='chmod_file') {
@@ -995,13 +995,13 @@ class Ide
 	{
 		$ret ="<div class='top_window_z1000'>";
 		$menu = "";
-		if (!$this->Conf->UseCodeMirror) {
-			$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
-			$menu .="<hr/>";
-		}
-		$menu .=$this->Out->menu_item('Search...','search_editor(true);',($this->Conf->Fancy or $this->Conf->IsBinary));
-		$menu .=$this->Out->menu_item('Replace...','replace_editor();',($this->Conf->Fancy or $this->Conf->IsBinary));
-		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',($this->Conf->Fancy or $this->Conf->IsBinary));
+		//if (!$this->Conf->UseCodeMirror) {
+		//	$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
+		//	$menu .="<hr/>";
+		//}
+		$menu .=$this->Out->menu_item('Search...','search_editor(true);',$this->Conf->IsBinary);
+		$menu .=$this->Out->menu_item('Replace...','replace_editor();',$this->Conf->IsBinary);
+		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',$this->Conf->IsBinary);
 		$menu .="<hr/>";
 		$menu .=$this->Out->menu_item('Open tpl','ae_confirm(callback_submit,"Replace current code with new template?","show_template")',($this->Conf->IsBinary));
 		$menu .=$this->Out->menu_item('Save tpl','ae_confirm(callback_submit,"Replace current template?","save_as_template")',(!file_exists($this->Conf->Current_file or $this->Conf->IsBinary)));
@@ -1215,10 +1215,11 @@ class Ide
 			if (!$this->Conf->IsBinary)
 			{
 				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-				if ($this->Conf->Fancy == 0) {
+				//if ($this->Conf->Fancy == 0) {
 					$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
 					$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
 					$ret.='</div>';
+				/*	
 				}else{
 					$ret.='<div id="code" name="code" class="leftwrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
 					$ret.='<div class="fancywrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
@@ -1226,20 +1227,22 @@ class Ide
 					$ret.='</div>';
 					$ret.='</div>';
 				}
-				$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
-				$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
+				*/
+				//$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
+				//$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
+				$ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
 				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
 				//$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode(range(1, $this->Edit->getlen()), '<br />'). '</code>';
 				$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
 				$ret.= '</div>';
 				$ret.= '</div>';
-				if ($this->Conf->Fancy == 0) {
+				//if ($this->Conf->Fancy == 0) {
 					$ret .= "<div id='infobarborder'></div>";
 					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
 					$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
 					$ret .= "</div>";
-				}
+				//}
 				$ret .="</div>\n";
 			}
 			else
@@ -1458,7 +1461,6 @@ class Ide
 	<input type="hidden" id="change_counter" name="change_counter" value="{$h($this->Conf->Dirtyfile)}">
 	<input type="hidden" name="Current_filename" id="Current_filename" value="{$h($this->Conf->Current_file)}">
 	<input type="hidden" id="save_as_filename" name="save_as_filename" value="{$h($_POST['save_as_filename'] ?? '')}">
-	<input type="hidden" id="fancy" name="fancy" value="{$h($this->Conf->Fancy)}">
 	<input type="hidden" id="use_code_mirror" name="use_code_mirror" value="{$h($this->Conf->UseCodeMirror)}">
 	<input type="hidden" id="phpnet" name="phpnet" value="{$h($this->Conf->Phpnet)}">
 	<input type="hidden" id="syncmode" name="syncmode" value="{$h($this->Conf->Syncmode)}">
@@ -1760,7 +1762,7 @@ class Editor
             return $this->make_textarea_safe($this->data);
          }
     }
-
+/*
     function getHighlightCode()
     {
 		ob_start();
@@ -1769,7 +1771,7 @@ class Editor
 		ob_end_clean();
 		return $fancy_code_str;
     }
-
+*/
     function saveFile($file,$trim=false)
     {
    		if (!is_writable($file)) {

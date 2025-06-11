@@ -1,9 +1,3 @@
-//var is_opera=(navigator.userAgent.toLowerCase().indexOf("opera")!=-1);
-//var is_safari=(navigator.userAgent.toLowerCase().indexOf("safari")!=-1);
-//var is_IE6=((navigator.userAgent.toLowerCase().indexOf('msie 6') != -1) && (navigator.userAgent.toLowerCase().indexOf('msie 7') == -1) && (navigator.userAgent.toLowerCase().indexOf('msie 8') == -1));
-//var do_scroll_loop=is_opera;
-
-//var browser = new Browser();
 var savedCode='';
 let editor = null;
 
@@ -135,28 +129,14 @@ window.onbeforeunload=function()
             }
         }
     }
+    window.onbeforeunload = null;
 }
 
 var show;
 var sub_id;
 
 function main_submit(action) {
-    var php = new PHP_Serializer();
-    var UIdata = {};
-
-    var uidataField = document.getElementById('UIdata');
-    if (uidataField && uidataField.value.length) {
-        UIdata = php.unserialize(uidataField.value);
-    }
-
-	var scrollInfo = getScrollPosition();
-	UIdata['scrollTop'] = scrollInfo.top;
-	UIdata['scrollLeft'] = scrollInfo.left;
-	
-	var selectionRange = getSelectionRange();
-	UIdata['selStart'] = selectionRange.selStart;
-	UIdata['selEnd'] = selectionRange.selEnd;
-
+	serializeUI();
     if (isUsingCodeMirror()) {
         var elem = document.getElementById('code');
 		elem.disabled = true;
@@ -166,10 +146,6 @@ function main_submit(action) {
 		newElem.value = editor.getValue();;
 		document.main_form.appendChild(newElem);
     }
-    // Skriv tillbaka till dolt fält
-    if (uidataField) {
-        uidataField.value = php.serialize(UIdata);
-	}
     // Skicka formuläret
     document.main_form.action.value = action;
     document.main_form.submit();
@@ -177,18 +153,31 @@ function main_submit(action) {
 
 function startdownload()
 {
-	/*
-	if (do_scroll_loop)
-	{
-		opera_scroll();
-	}
-	*/
 	document.getElementById('save_as_filename').value='./systemzip/idephp.zip';
 	document.getElementById('action').value='set_download';
 	document.getElementById('main_form').submit();
 }
 
-function UItimeout() {
+function serializeUI() {
+    var php = new PHP_Serializer();
+    var UIdata = {};
+    //if (uidataField && uidataField.value.length) {
+        //UIdata = php.unserialize(uidataField.value);
+    //}
+	var scrollInfo = getScrollPosition();
+	UIdata['scrollTop'] = scrollInfo.scrollTop;
+	UIdata['scrollLeft'] = scrollInfo.scrollLeft;
+	var selectionRange = getSelectionRange();
+	UIdata['selStart'] = selectionRange.selStart;
+	UIdata['selEnd'] = selectionRange.selEnd;
+	
+    var uidataField = document.getElementById('UIdata');
+    if (uidataField) {
+        uidataField.value = php.serialize(UIdata);
+	}
+}
+
+function unserializeUI() {
     var php = new PHP_Serializer();
     var uidataField = document.getElementById('UIdata');
     if (!uidataField || !uidataField.value.length) return;
@@ -212,11 +201,7 @@ function syncEditor(UIstr) {
 	UIfield.type = 'hidden';
 	UIfield.value = UIstr;
 	document.main_form.appendChild(UIfield);
-
-	// Sätt ev. tidigare markeringar
-	if (UIstr.length) {
-		setTimeout(UItimeout, 0);
-	}
+	unserializeUI();
 	if (Number(document.getElementById('change_counter').value) === 0) {
         savedCode = codeValue();
     }
@@ -275,7 +260,7 @@ function syncCodeMirrorEditor() {
 		const line = editor.lineAtHeight(e.clientY, 'client');
 		editor.setSelection(
 				{ line: line, ch: 0 },
-				{ line: line + 1, ch: 0 }
+				{ line: line , ch: Infinity }
 			);
 		gutterStartLine = line;
 
@@ -304,7 +289,6 @@ function catchTab(e) {
     const evt = e || window.event;
     const code = document.getElementById('code');
     const key = evt.which || evt.keyCode;
-
     // Cmd/Ctrl + S (spara)
     if ((evt.ctrlKey || evt.metaKey) && key === 83) { // S
         evt.preventDefault();
@@ -329,14 +313,30 @@ function catchTab(e) {
     // Tab
     if (key === 9) {
         evt.preventDefault(); //  blockera fokusbyte
-        replaceTextareaSelection('\t');
+        const selectionRange = getSelectionRange();
+        const lastNewline = codeValue().lastIndexOf('\n', selectionRange.selStart - 1);
+		const startcol = selectionRange.selStart - (lastNewline + 1);
+		setSelectionRange(selectionRange.selStart - startcol, selectionRange.selEnd);
+		const selectedCode = getSelectedCode();
+        if (selectionRange.selEnd - selectionRange.selStart === 0) {
+			const currentline = selectedCode;
+			let modified = tabLine(currentline,evt);
+			replaceTextareaSelection(modified);
+			const replaceLen = selectedCode.length - modified.length;
+			setSelectionRange(selectionRange.selStart - replaceLen, selectionRange.selStart - replaceLen);
+        }
+        else {
+			const lines = selectedCode.split('\n');
+			let modified = lines.map(line => tabLine(line,evt)).join('\n');
+			replaceTextareaSelection(modified);
+			setSelectionRange(selectionRange.selStart - startcol, selectionRange.selStart - startcol + modified.length);
+        }
         return false;
     }
 
     // Enter
     if (key === 13) {
-        const { selEnd } = getSelectionRange();
-        const line_array = codeValue().substring(0, selEnd).split('\n');
+        const line_array = codeValue().substring(0, selectionRange.selEnd).split('\n');
         const match = line_array[line_array.length - 1].match(/^([ \t]+)/);
         if (match) {
             evt.preventDefault();
@@ -346,6 +346,17 @@ function catchTab(e) {
     }
 
     return true;
+}
+
+function tabLine(line, evt) {
+	const TAB = '\t';
+	if (evt.shiftKey) {
+		if (line.startsWith(TAB)) return line.slice(TAB.length);
+		if (line.startsWith('    ')) return line.slice(4);
+		return line;
+	} else {
+		return TAB + line;
+	}
 }
 
 function showHideLayer() {
@@ -806,58 +817,7 @@ function replace_callback(returncode,id,value)
         }
     }
 }
-/*
-function scrollIntoView(selectionStart, selectionEnd)
-{
-	if (isUsingCodeMirror()) {
-		editor.focus();
-		// Konvertera index till pos
-		const fromPos = editor.posFromIndex(selectionStart);
-		const toPos = editor.posFromIndex(selectionEnd);
-		// Sätt markering
-		editor.setSelection(fromPos, toPos);
-		// Scrolla så markeringen syns
-		editor.scrollIntoView({ from: fromPos, to: toPos });
-	} else if (isTextAreaEditor()) {
-		const input = document.getElementById('code');
-		input.focus();
-		if (input.setSelectionRange)
-		{
-			input.setSelectionRange(selectionEnd-1, selectionEnd);
-			if (is_safari)
-			{
-				input.setSelectionRange(selectionEnd-1, selectionEnd);
-				var eventObject = document.createEvent('TextEvent');
-				eventObject.initTextEvent('textInput', true, true, null, codeValue().substring(selectionEnd-1,selectionEnd));
-				input.dispatchEvent(eventObject);
-			}
-			else if (is_opera)
-			{
-				input.scrollTop=((codeValue().substring(0,selectionEnd).substring_count('\n'))*parseInt(input.style.lineHeight,10))-20;   //???
-			}
-			else
-			{
-				input.setSelectionRange(selectionEnd-1, selectionEnd);
-				var ev = document.createEvent ('KeyEvents');
-				ev.initKeyEvent('keypress', true, true, window,false, false, false, false, 0,codeValue().charCodeAt(selectionEnd-1));
-				input.dispatchEvent(ev); // causes the scrolling
-			}
-			input.setSelectionRange(selectionStart, selectionEnd);
-		 }
-		 else if(input.createTextRange) {
-			var i = input.createTextRange();
-			i.collapse(true);
-			var j=codeValue().substring(0,selectionEnd).substring_count('\n');
-			i.moveEnd('character', selectionEnd-j);
-			j=codeValue().substring(0,selectionStart).substring_count('\n');
-			i.moveStart('character', selectionStart-j);
-			i.select();
-			i.scrollIntoView();
-			input.focus();
-		 }
-     }
-}
-*/
+
 function scrollIntoView(selectionStart, selectionEnd) {
 	if (isUsingCodeMirror()) {
 		editor.focus();
@@ -878,11 +838,7 @@ function scrollIntoView(selectionStart, selectionEnd) {
 		}
 	}
 }
-/*
-function setCaretToPos(input, pos) {
-	setSelectionRange(pos, pos);
-}
-*/
+
 function clearAuthenticationCache(page) {
     ae_confirm_yes_no(clearAuthenticationCache_callback,"Log out?",page);
 }
@@ -983,74 +939,9 @@ function validatePass()
 	}
 	return true;
 }
-/*
-function getElementsByClassName(node,classname) {
-	if (node.getElementsByClassName)
-		return node.getElementsByClassName(classname);
-	else {
-		var testClass = new RegExp("(^|\\s)" + classname + "(\\s|$)");
-		var tag = "*";
-		var node = node || document;
-		var elements = (tag == "*" && node.all)? node.all : node.getElementsByTagName(tag);
-		var returnElements = [];
-		var current;
-		var length = elements.length;
-		for(var i=0; i<length; i++){
-			current = elements[i];
-			if(testClass.test(current.className)){
-				returnElements.push(current);
-			}
-		}
-		return returnElements;
-	}
-}
-*/
-/*
-// Determine browser and version.
 
-function Browser() {
-
-  var ua, s, i;
-
-  this.isIE    = false;
-  this.isNS    = false;
-  //this.version = null;
-
-  ua = navigator.userAgent;
-
-  s = "MSIE";
-  if ((i = ua.indexOf(s)) >= 0) {
-    this.isIE = true;
-    //this.version = parseFloat(ua.substr(i + s.length));
-    return;
-  }
-
-  s = "Opera";
-  if ((i = ua.indexOf(s)) >= 0) {
-    this.isIE = true;
-    //this.version = parseFloat(ua.substr(i + s.length));
-    return;
-  }
-
-  s = "Netscape6/";
-  if ((i = ua.indexOf(s)) >= 0) {
-    this.isNS = true;
-    //this.version = parseFloat(ua.substr(i + s.length));
-    return;
-  }
-
-  // Treat any other "Gecko" browser as NS 6.1.
-
-  s = "Gecko";
-  if ((i = ua.indexOf(s)) >= 0) {
-    this.isNS = true;
-    //this.version = 6.1;
-    return;
-  }
-}
-*/
 //For textarea editor line numbers
-
+/*
 function reset_width()
 {
     var elem=document.getElementById('code');
@@ -1060,47 +951,13 @@ function reset_width()
         document.getElementById('code_numbers').style.top = (st * -1) + 'px';
     }
 }
-/*
-function opera_scroll()
-{
-    var elem=document.getElementById('code');
-    var st=parseInt(elem.scrollTop,10);
-    document.getElementById('code_numbers').style.top= (st * -1) +'px';
-    setTimeout('opera_scroll()', 50);
-}
-
-if (do_scroll_loop)
-{
-    window.onload=function()
-    {
-        opera_scroll();
-    }
-}
-*/
-/*
-if (browser.isIE && !is_opera) {
-    window.onresize=function()
-    {
-        reset_width();
-    }
-}
 */
 function lines_dragGo(event)
 {
     var elem=document.getElementById('code');
     var elem1=document.getElementById('code_numbers');
     select_lines(elem,sel_line_num,line_number(event,elem1));
-    /*
-    if (browser.isIE)
-    {
-        window.event.cancelBubble = true;
-        window.event.returnValue = false;
-    }
-    */
-    //if (browser.isNS)
-    //{
     event.preventDefault();
-    //}
 }
 
 function lines_dragStop(event)
@@ -1109,16 +966,8 @@ function lines_dragStop(event)
     var elem1=document.getElementById('code_numbers');
     select_lines(elem,sel_line_num,line_number(event,elem1));
     sel_line_num=-1;
-    /*
-    if (browser.isIE) {
-        document.detachEvent("onmousemove", lines_dragGo);
-        document.detachEvent("onmouseup",   lines_dragStop);
-    }
-    */
-    //if (browser.isNS) {
 	document.removeEventListener("mousemove", lines_dragGo,   true);
 	document.removeEventListener("mouseup",   lines_dragStop, true);
-    //}
     elem1.parentNode.style.zIndex='auto';
     var splitbg=document.getElementById('splitter_bg');
     splitbg.style.visibility='hidden';
@@ -1127,14 +976,7 @@ function lines_dragStop(event)
 
 function line_number(event,elem)
 {
-	/*
-	if (browser.isIE) {
-		y = window.event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
-	}
-	*/
-	//if (browser.isNS) {
-	y = event.clientY + window.scrollY;
-	//}
+	var y = event.clientY + window.scrollY;
 	var top  = parseInt(elem.style.top,10);
 	if (isNaN(top))
 	{
@@ -1153,12 +995,6 @@ function select_lines(elem,startLine,endLine)
 		startLine=temp;
 	}
     var selcode=elem.value;
-    /*
-    if (browser.isIE && !is_opera)
-    {
-        selcode=selcode.replace(/\r/g,'');
-    }
-    */
     var lines=selcode.explode('\n');
     if (startLine>=lines.length-1)
     {
@@ -1188,286 +1024,3 @@ function select_lines(elem,startLine,endLine)
     }
     setSelectionRange(selS,selE-1,true);
 }
-/*
-// Global object to hold drag information.
-
-var dragObj = new Object();
-dragObj.zIndex = 0;
-var winheight;
-var winwidth;
-//global to hold the current table placement
-var cell_padding=0;
-var padding_left=0;
-var padding_right=0;
-var padding_bottom=0;
-var padding_top=25;
-var tds1;
-var tds2;
-
-function window_size()
-{
-	if( typeof window.innerWidth === 'number' ) {
-		//Non-IE
-		winwidth = window.innerWidth;
-		winheight = window.innerHeight;
-	} else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
-		//IE 6+ in 'standards compliant mode'
-		winwidth = document.documentElement.clientWidth;
-		winheight = document.documentElement.clientHeight;
-	} else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
-		//IE 4 compatible
-		winwidth = document.body.clientWidth;
-		winheight = document.body.clientHeight;
-	}
-}
-
-function dragStart(event,id, td1) {
-	var el;
-	var x, y;
-	var id;
-	dragObj=new Object();
-	dragObj.zIndex = 0;
-	tds1=new Array();
-	td_array=td1.split('%');
-	for (var i=0;i<td_array.length;i++)
-	{
-		tds1[i]=document.getElementById(td_array[i]);
-	}
-
-	window_size();
-	
-	// If an element id was given, find it. Otherwise use the element being
-	// clicked on.
-	
-	if (id)
-	{
-		dragObj.elNode = document.getElementById(id);
-		//alert(id);
-	}
-	else {
-		//if (browser.isIE)
-		  //dragObj.elNode = window.event.srcElement;
-		//if (browser.isNS)
-		dragObj.elNode = event.target;
-		
-		// If this is a text node, use its parent element.
-		
-		if (dragObj.elNode.nodeType == 3) {
-			dragObj.elNode = dragObj.elNode.parentNode;
-		}
-	}
-	tds2=new Array();
-	tds2[0]=dragObj.elNode.parentNode.parentNode;
-	// Get cursor position with respect to the page.
-	//if (browser.isNS) {
-	x = event.clientX + window.scrollX;
-	y = event.clientY + window.scrollY;
-	//}
-	// Save starting positions of cursor and element.
-	dragObj.cursorStartX = x;
-	dragObj.cursorStartY = y;
-	dragObj.elStartLeft  = parseInt(dragObj.elNode.style.left, 10);
-	dragObj.elStartTop   = parseInt(dragObj.elNode.style.top,  10);
-	if (isNaN(dragObj.elStartLeft)) dragObj.elStartLeft = 0;
-	if (isNaN(dragObj.elStartTop))  dragObj.elStartTop  = 0;
-	dragObj.elStartLeftPercent=((x-padding_left)*100)/(winwidth-(padding_left+padding_right));
-	dragObj.elStartTopPercent=((y-padding_top)*100)/(winheight-(padding_top+padding_bottom));
-
-	var splitbg=document.getElementById('splitter_bg');
-	
-	if (!splitbg)
-	{
-		splitbg=document.createElement('div');
-		splitbg.id='splitter_bg';
-		splitbg.style.top='0px';
-		splitbg.style.left='0px';
-		splitbg.style.width='100%';
-		splitbg.style.height='100%';
-		splitbg.style.position='fixed';
-		splitbg.style.display='block';
-		splitbg.innerHTML=' ';
-		document.body.appendChild(splitbg);
-	}
-	splitbg.style.zIndex=8000;
-	splitbg.style.cursor='pointer';
-	splitbg.style.visibility='visible';
-	
-	dragObj.elNode.style.zIndex =8001;// ++dragObj.zIndex;
-	
-	// Capture mousemove and mouseup events on the page.
-	//if (browser.isNS) {
-	document.addEventListener("mousemove", dragGo,   true);
-	document.addEventListener("mouseup",   dragStop, true);
-	event.preventDefault();
-	//}
-	
-}
-
-function dragGo(event) {
-
-	var x, y;
-	
-	// Get cursor position with respect to the page.
-	//if (browser.isNS) {
-	x = event.clientX + window.scrollX;
-	y = event.clientY + window.scrollY;
-	//}
-	
-	// Move drag element by the same amount the cursor has moved.
-	if (dragObj.elNode.className !== 'horiz_split')
-	{
-		dragObj.elNode.style.left = (dragObj.elStartLeft + (x - dragObj.cursorStartX)) + "px";
-	}
-	if (dragObj.elNode.className!== 'vert_split')
-	{
-		dragObj.elNode.style.top  = (dragObj.elStartTop  + (y - dragObj.cursorStartY)) + "px";
-	}
-	//if (browser.isNS)
-	event.preventDefault();
-}
-
-function dragStop(event) {
-
-	// Get cursor position with respect to the page.
-	//if (browser.isNS) {
-	x = event.clientX + window.scrollX;
-	y = event.clientY + window.scrollY;
-	//}
-	
-	if (dragObj.elNode.className === 'horiz_split')
-	{
-		var y_percent=((y-(padding_top+cell_padding))*100)/(winheight-(padding_top+padding_bottom+(cell_padding*2)));
-		var y_diff=Math.round(y_percent-dragObj.elStartTopPercent);
-		var minHeight1=100;
-		var minHeight2=100;
-		for (var i=0;i<tds1.length;i++)
-		{
-			var newHeight=parseInt(tds1[i].style.height, 10)+y_diff;
-			if (newHeight<minHeight1)
-			{
-				minHeight1=newHeight;
-			}
-		}
-		for (var i=0;i<tds2.length;i++)
-		{
-			var newHeight=parseInt(tds2[i].style.height, 10)-y_diff;
-			if (newHeight<minHeight2)
-			{
-				minHeight2=newHeight;
-			}
-		}
-		if (minHeight1<2)
-		{
-			minHeight2+=(minHeight1-2);
-			minHeight1=2;
-		}
-		if (minHeight2<2)
-		{
-			minHeight1+=(minHeight2-2);
-			minHeight2=2;
-		}
-		for (var i=0;i<tds1.length;i++)
-		{
-			tds1[i].style.height=minHeight1+'%';
-			var styleelem=document.getElementById(tds1[i].id+'_style');
-			if (styleelem)
-			{
-				styleelem.value='width:'+tds1[i].style.width+';height:'+tds1[i].style.height+';';
-			}
-		}
-		for (var i=0;i<tds2.length;i++)
-		{
-			tds2[i].style.height=minHeight2+'%';
-			var styleelem=document.getElementById(tds2[i].id+'_style');
-			if (styleelem)
-			{
-				styleelem.value='width:'+tds2[i].style.width+';height:'+tds2[i].style.height+';';
-			}
-		}
-		dragObj.elNode.style.top=(dragObj.elStartTop-cell_padding)+'px';
-	}
-
-	if (dragObj.elNode.className === 'vert_split')
-	{
-	var x_percent=((x-(padding_left+cell_padding))*100)/(winwidth-(padding_left+padding_right+(cell_padding*2)));
-	var x_diff=Math.round(x_percent-dragObj.elStartLeftPercent);
-	var minWidth1=100;
-	var minWidth2=100;
-	for (var i=0;i<tds1.length;i++)
-	{
-		var newWidth=parseInt(tds1[i].style.width, 10)+x_diff;
-		if (newWidth<minWidth1)
-		{
-			minWidth1=newWidth;
-		}
-	}
-	for (var i=0;i<tds2.length;i++)
-	{
-		var newWidth=parseInt(tds2[i].style.width, 10)-x_diff;
-		if (newWidth<minWidth2)
-		{
-			minWidth2=newWidth;
-		}
-	}
-	if (minWidth1<2)
-	{
-		minWidth2+=(minWidth1-2);
-		minWidth1=2;
-	}
-	if (minWidth2<2)
-	{
-		minWidth1+=(minWidth2-2);
-		minWidth2=2;
-	}
-	for (var i=0;i<tds1.length;i++)
-	{
-		tds1[i].style.width=minWidth1+'%';
-		var styleelem=document.getElementById(tds1[i].id+'_style');
-		if (styleelem)
-		{
-			styleelem.value='width:'+tds1[i].style.width+';height:'+tds1[i].style.height+';';
-		}
-	}
-	for (var i=0;i<tds2.length;i++)
-	{
-		tds2[i].style.width=minWidth2+'%';
-		var styleelem=document.getElementById(tds2[i].id+'_style');
-		if (styleelem)
-		{
-			styleelem.value='width:'+tds2[i].style.width+';height:'+tds2[i].style.height+';';
-		}
-	}
-	dragObj.elNode.style.left=(dragObj.elStartLeft-cell_padding)+'px';
-	}
-	dragObj.elNode.style.zIndex=1001;
-	// Clear the drag element global.
-	dragObj.elNode = null;
-	
-	// Stop capturing mousemove and mouseup events.
-	var splitbg=document.getElementById('splitter_bg');
-	//if (browser.isNS) {
-	document.removeEventListener("mousemove", dragGo,   true);
-	document.removeEventListener("mouseup",   dragStop, true);
-	//}
-
-	splitbg.style.visibility='hidden';
-}
-
-function init_splitters()
-{
-	elem_array=getElementsByClassName(document,'horiz_split');
-	for (var i=0;i<elem_array.length;i++)
-	{
-		elem_array[i].style.top='-4px';
-		elem_array[i].onmouseover=new Function("this.style.backgroundImage='url(images/splitterbg.png)';");
-		elem_array[i].onmouseout=new Function("this.style.background='transparent';");
-	}
-	elem_array=getElementsByClassName(document,'vert_split');
-	for (var i=0;i<elem_array.length;i++)
-	{
-		elem_array[i].style.left='-4px';
-		elem_array[i].onmouseover=new Function("this.style.backgroundImage='url(images/splitterbg.png)';");
-		elem_array[i].onmouseout=new Function("this.style.background='transparent';");
-	}
-}
-*/

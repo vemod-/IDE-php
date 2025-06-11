@@ -178,6 +178,18 @@ div.relative,.fixed_window {
     width: 100% !important;
 }
 
+.CodeMirror-linenumber {
+	//min-width:30px;
+	//max-width:30px;
+	//width:30px;
+	color: gray;
+	//text-align: right;
+	//margin-right: 0px;
+	//padding-right: 3px;
+	background-color: #f8ffcb;
+	border-right: 1px dotted #aaaaaa;
+}
+
 .absolute{
 	padding:0px;
 	margin:0px;
@@ -588,11 +600,14 @@ hr {
 	background-color: #f8ffcb;
 	border-right: 1px dotted #aaaaaa; 
 }
-
+textarea {
+    resize:none;
+}
 #code
 {
     background-color: #ffffff;
     float:left;
+    tab-size:4;
 }
 #code_numbers{
     position:relative;
