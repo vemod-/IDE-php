@@ -6,35 +6,6 @@ if (String.prototype.right==null) String.prototype.right=function(num){
       return this.substring(this.length-num);  // pull out right num
 }
 /*
-function closeFrame()
-{
-    if (document.getElementById('is_submit').value != 0)
-    {
-        var doc=window.frames['previewframe'].contentDocument;
-        if (!doc)
-        {
-            //doc=window.frames['previewframe'].document;
-            doc=document.getElementById('previewframe').contentDocument;
-        }
-        if (!doc)
-        {
-            doc=window.frames['previewframe'].document;
-        }
-        if (!doc)
-        {
-            doc=document.getElementById('previewframe').document;
-        }
-        alert(doc);
-        alert(doc.forms[0]);
-        doc.forms[0].submit();
-    }
-    //document.getElementById('borderdiv').style.visibility="hidden";
-    //fadeoutdiv('borderdiv',60);
-    //document.getElementById('framediv').style.visibility="hidden";
-    //fadeoutdiv('framediv',90);
-    hidedivs('framediv',100);
-}
-*/
 function closeFrame() {
     const isSubmit = document.getElementById('is_submit');
     if (isSubmit && isSubmit.value != "0") {
@@ -44,8 +15,6 @@ function closeFrame() {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
             if (doc && doc.forms.length > 0) {
                 doc.forms[0].submit();
-
-                // Vänta tills formuläret laddat klart, sen stäng och ladda om
                 previewFrame.onload = function () {
                     hideFrame();
                     window.location.reload();
@@ -56,18 +25,38 @@ function closeFrame() {
             console.error("closeFrame(): Formulär kunde inte skickas.", e);
         }
     }
-
-    // Om inget formulär eller is_submit == 0, stäng bara
     hideFrame();
 }
-
+*/
+function closeFrame()
+{
+    if (document.getElementById('is_submit').value != 0)
+    {
+        var doc=window.frames['previewframe'].contentDocument;
+        if (!doc)
+        {
+            doc=document.getElementById('previewframe').contentDocument;
+        }
+        if (!doc)
+        {
+            doc=window.frames['previewframe'].document;
+        }
+        if (!doc)
+        {
+            doc=document.getElementById('previewframe').document;
+        }
+        doc.forms[0].submit();
+    }
+    hidedivs('framediv',100);
+}
+/*
 function hideFrame() {
     const borderdiv = document.getElementById('borderdiv');
     const framediv = document.getElementById('framediv');
     if (borderdiv) borderdiv.style.display = "none";
     if (framediv) framediv.style.display = "none";
 }
-
+*/
 function showwindow(url,inf,title)
 {
     var path='';
@@ -168,11 +157,7 @@ function showwindow(url,inf,title)
             alternativediv.innerHTML=inf;
         }
         document.getElementById('closediv').innerHTML='<div class="inside_menu_text" style="text-indent:8px;"> '+title+'</div><div class="inside_menu" style="float:right;"><a href="#" class="btn" onClick="closeFrame();"/>'+close+'</a><div>';
-        //document.getElementById('borderdiv').style.visibility="visible";
-        //fadeindiv('borderdiv',60);
-        //fadeindiv('framediv',90);
-            showdivs('framediv',100);
-        //document.getElementById('framediv').style.visibility="visible";
+        showdivs('framediv',100);
         document.getElementById('borderdiv').style.position="absolute";
         document.getElementById('borderdiv').style.position="fixed";
         document.getElementById('is_submit').value=is_submit ? 1 : 0;
@@ -271,12 +256,10 @@ function button_keycheck(e)
     {
         if (document.getElementsByName('button_name_0')[0])
         {
-            //document.getElementsByName('button_name_0')[0].click();
             ae_clk(0);
         }
         else
         {
-            //ae$('button_id_0').click();
             ae_clk(ae$('button_id_0').name.right(1));
         }
         return false;
@@ -299,7 +282,6 @@ function button_keycheck(e)
         {
             return true;
         }
-        //btns_array[button1].name="button_name_none";
         btns_array[button1].style.borderStyle="solid";
         btns_array[button1].style.borderColor="transparent";
         if (c==37)
@@ -318,7 +300,6 @@ function button_keycheck(e)
                 button1=0;
             }
         }
-        //btns_array[button1].name="button_name_1";
         btns_array[button1].style.borderStyle="dotted";
         btns_array[button1].style.borderColor="#000";
     }
@@ -402,7 +383,7 @@ function ae_prompt(callback, fields, btns, id, title)
 		}
 		ae$('aep_prompt').appendChild(span);
 	}
-	//ae$('aep_prompt').innerHTML+='<br/>';
+
 	ae$('aep_buttons').innerHTML='';
 	for (i=btns_array.length-1; i>=0; i--) {
 		var btn_array=btns_array[i].split('%¤%');
@@ -423,25 +404,16 @@ function ae_prompt(callback, fields, btns, id, title)
     {
         ae$('aep_prompt').innerHTML+='<input type="text" class="aep_hidden_text" id="id_jspopup_input_0" onkeydown="return button_keycheck(event);"/>';
     }
-	//ovrl.style.visibility =
-    //fadeindiv('borderdiv',60);
-    //fadeindiv('aep_win',90);
     showdivs('aep_win',100);
-    //ae_win.style.visibility = 'visible';
-    //alert(ae$('aep_win').innerHTML);
 }
 
 function ae_clk(m)
 {
-	//ae$('borderdiv').style.visibility =
-    //fadeoutdiv('borderdiv',60);
-    //fadeoutdiv('aep_win',90);
     hidedivs('aep_win',100);
     if (!ae_cb)
     {
         return;
     }
-    //ae$('aep_win').style.visibility = 'hidden';
 	var i=0;
 	var id=ae$('current_dialog_id').value;
 	var tb=ae$('id_jspopup_input_'+i);
@@ -473,8 +445,6 @@ var fadeouttime=20; // higher is slower
 
 function showdivs(id,opac)
 {
-    //fadeindiv('borderdiv',60);
-    //fadeindiv(id,opac);
     document.getElementById('borderdiv').style.visibility='visible';
     document.getElementById(id).style.visibility='visible';
         if (id == 'aep_win')
@@ -486,24 +456,19 @@ function showdivs(id,opac)
 
 function hidedivs(id,opac)
 {
-    //fadeoutdiv('borderdiv',60);
-    //fadeoutdiv(id,opac);
     document.getElementById('borderdiv').style.visibility='hidden';
     document.getElementById(id).style.visibility='hidden';
-	    if (id=='framediv')
-	    {
-	        if (document.getElementById('is_submit').value != 0)
-	        {
-                //document.forms[0].action.value='do_nothing';
-                 //document.forms[0].submit();
-                 setTimeout("main_submit('do_nothing');",0);
-             }
-        }
+    if (id=='framediv')
+    {
+        if (document.getElementById('is_submit').value != 0)
+        {
+             setTimeout("main_submit('do_nothing');",0);
+         }
+    }
 }
 
 function fadeindiv(id,targetop)
 {
-    //document.getElementById(id).style.visibility='hidden';
     fadeinto=setTimeout("divIn(0,'" + id + "',"+targetop+")",0);
 }
 
@@ -514,11 +479,7 @@ function fadeoutdiv(id,targetop)
 
 function divIn(opacity, id, targetop) {
     opacity+=targetop/4;
-
     var os = document.getElementById(id).style;
-
-
-    //clearTimeout(fadeinto);
     if(opacity<targetop)
     {
 	    os.opacity = (opacity / 100);
@@ -545,10 +506,7 @@ function divIn(opacity, id, targetop) {
 
 function divOut(opacity, id, targetop) {
     opacity-=targetop/4;
-
     var os = document.getElementById(id).style;
-
-    //clearTimeout(fadeoutto);
     if(opacity>0)
     {
 	    os.opacity = (opacity / 100);
@@ -568,8 +526,6 @@ function divOut(opacity, id, targetop) {
 	    {
 	        if (document.getElementById('is_submit').value != 0)
 	        {
-                //document.forms[0].action.value='do_nothing';
-                 //document.forms[0].submit();
                  main_submit('do_nothing');
              }
         }

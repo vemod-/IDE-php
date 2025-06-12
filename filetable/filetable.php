@@ -136,16 +136,16 @@ class FileTable
 			$ret.=($path==$this->currentfile) ? "<tr class='selrow'><td>\n" : "<tr class='row$k'><td>\n";
 			if (is_dir(realpath($this->dir."/".$file['name']))) {
 				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="   <a href='#' onClick='javascript:onFolderClick(\"{$file['name']}\");return false;'><img src='{$this->asset_url}folder.png'/> ".$file['name']."</a>\n";
+					$ret .="   <a href='#' onClick='javascript:onFolderClick(\"{$file['name']}\");return false;'><img class='fileimg' src='{$this->asset_url}folder_icon.png'/> ".$file['name']."</a>\n";
 				} else {
-					$ret .="   <img src='{$this->asset_url}folder.png'/> ".$file['name'];
+					$ret .="   <img class='fileimg' src='{$this->asset_url}folder_icon.png'/> ".$file['name'];
 				}
 				$ret.="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'> </td>\n<td>\n<a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			} else {
 				if (is_readable(realpath($this->dir."/".$file['name']))) {
-					$ret .="   <a href='#' onClick='javascript:onFileClick(\"{$path}\");return false;'><img src='{$this->asset_url}file.png'/> ".$file['name']."</a>\n";
+					$ret .="   <a href='#' onClick='javascript:onFileClick(\"{$path}\");return false;'><img class='fileimg' src='{$this->asset_url}file_icon.png'/> ".$file['name']."</a>\n";
 				} else {
-					$ret .="   <img src='{$this->asset_url}file.png'/> ".$file['name'];
+					$ret .="   <img class='fileimg' src='{$this->asset_url}file_icon.png'/> ".$file['name'];
 				}
 				$ret .="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			}

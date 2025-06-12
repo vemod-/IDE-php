@@ -63,7 +63,9 @@ function setSelectionRange(selectionStart, selectionEnd) {
 	if (isUsingCodeMirror()) {
 		const startPos = editor.posFromIndex(selectionStart);
 		const endPos = editor.posFromIndex(selectionEnd);
+		const scrollInfo = editor.getScrollInfo();
 		editor.setSelection(startPos, endPos);
+		editor.scrollTo(scrollInfo.left, scrollInfo.top);
 		editor.focus();
 	}
     else if (isTextAreaEditor()) {
@@ -88,39 +90,36 @@ function getSelectedCode() {
 	return codeValue().substring(selectionRange.selStart,selectionRange.selEnd);
 }
 
-if (!String.prototype.substring_count) String.prototype.substring_count=function(substring){
-     var count = 0;
-     var idx = 0;
+function scrollIntoView(selectionStart, selectionEnd) {
+	if (isUsingCodeMirror()) {
+		editor.focus();
+		const fromPos = editor.posFromIndex(selectionStart);
+		const toPos = editor.posFromIndex(selectionEnd);
+		editor.setSelection(fromPos, toPos);
+		editor.scrollIntoView({ from: fromPos, to: toPos });
+	} else if (isTextAreaEditor()) {
+		const input = document.getElementById('code');
+		input.focus();
 
-     while ((idx = this.indexOf(substring, idx)) !== -1)
-     {
-        idx++;
-        count++;
-     }
-
-     return count;
+		if (input.setSelectionRange) {
+			input.setSelectionRange(selectionStart, selectionEnd);
+			// Scrolla raden manuellt om det behövs
+			const lineHeight = parseInt(getComputedStyle(input).lineHeight || '16', 10);
+			const linesAbove = codeValue().substring(0, selectionStart).split('\n').length;
+			input.scrollTop = Math.max(0, (linesAbove - 1) * lineHeight - 20);
+		}
+	}
 }
 
-if (!String.prototype.explode) String.prototype.explode=function(separator){
-     if (this.indexOf(separator) === -1)
-     {
-        var retval=new Array();
-        retval[0]=this;
-        return retval;
-     }
-     return this.split(separator);
+function toHtmlEntities(str) {
+    return str.replace(/[^a-z0-9.\-_\s\t]/ig, c => `&#${c.charCodeAt(0)};`);
 }
-
-String.prototype.toHtmlEntities = function() {
-	return this.replace(/[^a-z0-9\.\-\_\s\t]/ig, function(c) {
-    		return '&#'+c.charCodeAt(0)+';';
-       	});
-};
 
 window.onbeforeunload=function()
 {
     if (document.main_form)
     {
+    	alert("beforeUnload");
         if ((document.main_form.action.value.length === 0) || (document.main_form.action.value === 'options') || (document.main_form.action.value === 'about'))
         {
             if (checkDirty())
@@ -129,7 +128,7 @@ window.onbeforeunload=function()
             }
         }
     }
-    window.onbeforeunload = null;
+    //window.onbeforeunload = null;
 }
 
 var show;
@@ -161,16 +160,16 @@ function startdownload()
 function serializeUI() {
     var php = new PHP_Serializer();
     var UIdata = {};
-    //if (uidataField && uidataField.value.length) {
-        //UIdata = php.unserialize(uidataField.value);
-    //}
+    if (uidataField && uidataField.value.length) {
+        UIdata = php.unserialize(uidataField.value);
+    }
 	var scrollInfo = getScrollPosition();
 	UIdata['scrollTop'] = scrollInfo.scrollTop;
 	UIdata['scrollLeft'] = scrollInfo.scrollLeft;
 	var selectionRange = getSelectionRange();
 	UIdata['selStart'] = selectionRange.selStart;
 	UIdata['selEnd'] = selectionRange.selEnd;
-	
+
     var uidataField = document.getElementById('UIdata');
     if (uidataField) {
         uidataField.value = php.serialize(UIdata);
@@ -194,95 +193,84 @@ function unserializeUI() {
 var sel_line_num=-1;
 
 function syncEditor(UIstr) {
-	// Skapa/fyll i dolt UIdata-fält
 	const UIfield = document.createElement('input');
 	UIfield.id = 'UIdata';
 	UIfield.name = 'UIdata';
 	UIfield.type = 'hidden';
 	UIfield.value = UIstr;
 	document.main_form.appendChild(UIfield);
-	unserializeUI();
 	if (Number(document.getElementById('change_counter').value) === 0) {
         savedCode = codeValue();
     }
     if (isUsingCodeMirror()) {
-	    syncCodeMirrorEditor();
+		if (!editor.__eventsSynced) {
+			editor.on("keydown", (cm, evt) => catchTab(evt));
+			editor.on("change", () => checkDirty());
+			editor.on("cursorActivity", () => checkDirty());
+			editor.on("focus", () => checkDirty());
+			editor.on("refresh", () => checkDirty());
+			editor.__eventsSynced = true; // markera som färdig
+		}
+	    let gutterStartLine = null;
+		editor.getWrapperElement().addEventListener('mousedown', function (e) {
+			if (!e.target.classList.contains('CodeMirror-linenumber')) return;
+			e.preventDefault(); // Förhindra textmarkering
+			const line = editor.lineAtHeight(e.clientY, 'client');
+			editor.setSelection(
+					{ line: line, ch: 0 },
+					{ line: line , ch: Infinity }
+				);
+			gutterStartLine = line;
+			const onMouseMove = function (e2) {
+				const currentLine = editor.lineAtHeight(e2.clientY, 'client');
+				const from = Math.min(gutterStartLine, currentLine);
+				const to = Math.max(gutterStartLine, currentLine) + 1;
+				editor.setSelection(
+					{ line: from, ch: 0 },
+					{ line: to, ch: 0 }
+				);
+			};
+			const onMouseUp = function () {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+			};
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+		});
     }
     else if (isTextAreaEditor()) {
-		syncTextAreaEditor();
+		const elem = document.getElementById('code');
+		const elem1 = document.getElementById('code_numbers');
+		elem.addEventListener('keydown', evt => catchTab(evt));
+		elem.addEventListener('keyup', checkDirty);
+		elem.addEventListener('mouseup', checkDirty);
+		elem.addEventListener('change', checkDirty);
+		elem.addEventListener('focus', checkDirty);
+		if (elem1) {
+			elem.addEventListener('scroll', () => {
+				elem1.style.top = (-elem.scrollTop) + 'px';
+			});
+			elem1.onmousedown = function (evt) {
+				sel_line_num = line_number(evt, this);
+				let splitbg = document.getElementById('splitter_bg');
+				if (!splitbg) {
+					splitbg = document.createElement('div');
+					splitbg.id = 'splitter_bg';
+					splitbg.innerHTML = ' ';
+					document.body.appendChild(splitbg);
+				}
+
+				splitbg.style.zIndex = 8000;
+				this.parentNode.style.zIndex = 8001;
+				document.addEventListener("mousemove", lines_dragGo, true);
+				document.addEventListener("mouseup", lines_dragStop, true);
+				evt.preventDefault();
+			};
+		}
+		elem.focus();
 	}
-}
-
-function syncTextAreaEditor() {
-	const elem = document.getElementById('code');
-	const elem1 = document.getElementById('code_numbers');
-	if (elem1) {
-		elem1.onmousedown = function (evt) {
-			sel_line_num = line_number(evt, this);
-
-			let splitbg = document.getElementById('splitter_bg');
-			if (!splitbg) {
-				splitbg = document.createElement('div');
-				splitbg.id = 'splitter_bg';
-				Object.assign(splitbg.style, {
-					top: '0px',
-					left: '0px',
-					width: '100%',
-					height: '100%',
-					position: 'fixed',
-					display: 'block',
-					cursor: 'default',
-					visibility: 'visible'
-				});
-				splitbg.innerHTML = ' ';
-				document.body.appendChild(splitbg);
-			}
-
-			splitbg.style.zIndex = 8000;
-			this.parentNode.style.zIndex = 8001;
-			document.addEventListener("mousemove", lines_dragGo, true);
-			document.addEventListener("mouseup", lines_dragStop, true);
-			evt.preventDefault();
-		};
-	}
-	elem.focus();
-}
-
-function syncCodeMirrorEditor() {
-	let gutterStartLine = null;
-
-	editor.getWrapperElement().addEventListener('mousedown', function (e) {
-		// Kontrollera om klicket sker på en radnummer-cell
-		if (!e.target.classList.contains('CodeMirror-linenumber')) return;
-
-		e.preventDefault(); // Förhindra textmarkering
-
-		const line = editor.lineAtHeight(e.clientY, 'client');
-		editor.setSelection(
-				{ line: line, ch: 0 },
-				{ line: line , ch: Infinity }
-			);
-		gutterStartLine = line;
-
-		const onMouseMove = function (e2) {
-			const currentLine = editor.lineAtHeight(e2.clientY, 'client');
-			const from = Math.min(gutterStartLine, currentLine);
-			const to = Math.max(gutterStartLine, currentLine) + 1;
-
-			editor.setSelection(
-				{ line: from, ch: 0 },
-				{ line: to, ch: 0 }
-			);
-		};
-
-		const onMouseUp = function () {
-			document.removeEventListener('mousemove', onMouseMove);
-			document.removeEventListener('mouseup', onMouseUp);
-		};
-
-		document.addEventListener('mousemove', onMouseMove);
-		document.addEventListener('mouseup', onMouseUp);
-	});
+	unserializeUI();
+	checkDirty();
 }
 
 function catchTab(e) {
@@ -292,23 +280,45 @@ function catchTab(e) {
     // Cmd/Ctrl + S (spara)
     if ((evt.ctrlKey || evt.metaKey) && key === 83) { // S
         evt.preventDefault();
-        main_submit('save');
+        if (checkDirty()) {
+        	main_submit('save');
+        }
         return false;
     }
 
     // Cmd/Ctrl + F (sök)
     if ((evt.ctrlKey || evt.metaKey) && key === 70) { // F
         evt.preventDefault();
-        search_editor(false);
+        search_editor(true);
         return false;
     }
 
-    // F3
-    if (key === 114) {
+    // Cmd/Ctrl + G (sök nästa)
+    if ((evt.ctrlKey || evt.metaKey) && key === 71) { // G
         evt.preventDefault();
         search_editor(false);
         return false;
     }
+
+    // Cmd/Ctrl + H (replace)
+    if ((evt.ctrlKey || evt.metaKey) && key === 72) { // H
+        evt.preventDefault();
+        replace_editor();
+        return false;
+    }
+
+	//if (checkDirty()){
+	//	ae_confirm(callback_submit,"Discard changes?","set_undo");
+	//} else {
+	//	main_submit("set_undo");
+	//}
+	// Cmd/Ctrl + R (run)
+	if ((evt.ctrlKey || evt.metaKey) && key === 82) { // R
+        evt.preventDefault();
+		main_form.phpnet.value=0;
+		main_submit("eval");
+		return false;
+	}
 
     // Tab
     if (key === 9) {
@@ -336,6 +346,7 @@ function catchTab(e) {
 
     // Enter
     if (key === 13) {
+        const selectionRange = getSelectionRange();
         const line_array = codeValue().substring(0, selectionRange.selEnd).split('\n');
         const match = line_array[line_array.length - 1].match(/^([ \t]+)/);
         if (match) {
@@ -386,27 +397,28 @@ function decimalToHex(d, padding) {
 function checkDirty()
 {
 	var isdirty=false;
-	var selectionRange = getSelectionRange();
-	var currentCode = codeValue();
-	var charcode = currentCode.charCodeAt(selectionRange.selStart);
+	const selectionRange = getSelectionRange();
+	const currentCode = codeValue();
+	const charcode = currentCode.charCodeAt(selectionRange.selStart);
 	var info='';
-	var infobar = document.getElementById('infobar');
+	const infobar = document.getElementById('infobar');
 	if (infobar)
 	{
-		var selection = getSelectedCode();
-		var startarray = currentCode.substring(0,selectionRange.selStart).split('\n');
-		var startcol = startarray[startarray.length-1].length;
+		const selection = getSelectedCode();
+		const startarray = currentCode.substring(0,selectionRange.selStart).split('\n');
+		const startcol = startarray[startarray.length-1].length;
 		if (selection.length != 0)
 		{
-			var rows = selection.substring_count('\n')+1;
-			var endarray = currentCode.substring(0,selectionRange.selEnd).split('\n');
-			var endcol = endarray[endarray.length-1].length;
+			//var rows = selection.substring_count('\n')+1;
+			const rows = selection.split('\n').length;
+			const endarray = currentCode.substring(0,selectionRange.selEnd).split('\n');
+			const endcol = endarray[endarray.length-1].length;
 			info+= rows+' x '+Math.abs(endcol-startcol)+'   ['+selection.length+'] ';
 		}
 		else
 		{
-			var startrow = startarray.length;
-			var endarray = currentCode.split('\n');
+			const startrow = startarray.length;
+			const endarray = currentCode.split('\n');
 			info+= startrow+' : '+startcol+' / '+endarray.length+' ';
 		}
 		infobar.innerHTML = info + '   '+charcode+' (0x'+decimalToHex(charcode,2)+')';
@@ -472,7 +484,7 @@ function replaceTextareaSelection(str) {
 	setSelectionRange(newPos, newPos);
 	checkDirty();
 }
-
+//menu functions filetable
 function submit_sort(order)
 {
     document.getElementById('sortorder').value=order;
@@ -527,7 +539,7 @@ function chmod_callback(returncode,id,value)
         }
     }
 }
-
+//file menu functions
 function save_as(file)
 {
     ae_prompt(prompt_callback,'text%¤%Save as%¤%'+file,'OK%¤%1|¤|Cancel%¤%0','save_as');
@@ -607,13 +619,13 @@ function rename_file(name)
 {
     ae_prompt(prompt_callback,'text%¤%New file name:%¤%'+name,'OK%¤%1|¤|Cancel%¤%0','set_rename');
 }
-
+//eval menu functions
 function runeval()
 {
    var evalwin=document.getElementById('evaluationwindow');
    if (evalwin)
    {
-     evalwin.contentWindow.location.reload();
+	   evalwin.contentWindow.location.reload();
    }
 }
 
@@ -625,7 +637,7 @@ function eval_history(step)
         evalwin.contentWindow.history.go(step);
    }
 }
-
+//search and replace
 var searchPos=0;
 var searchTerm='';
 var searchMatchCase=false;
@@ -654,7 +666,7 @@ function search_editor(showDialog)
         searchSelection = getSelectionRange();
         if (searchSelection.selStart != searchSelection.selEnd)
         {
-            searchTerm = getSelectedCode().explode('\n')[0];
+            searchTerm = getSelectedCode().split('\n')[0];
         }
         var caseChecked=(searchMatchCase ? 'checked':'');
         var wordChecked=(searchWholeWord ? 'checked':'');
@@ -742,7 +754,7 @@ function replace_editor()
 	searchSelection = getSelectionRange();
 	if (searchSelection.selStart != searchSelection.selEnd)
 	{
-		searchTerm = getSelectedCode().explode('\n')[0];
+		searchTerm = getSelectedCode().split('\n')[0];
 	}
     var caseChecked=(searchMatchCase ? 'checked':'');
     var wordChecked=(searchWholeWord ? 'checked':'');
@@ -812,146 +824,13 @@ function replace_callback(returncode,id,value)
         else
         {
             checkDirty();
-            ae_alert(searchTerm.toHtmlEntities() + ' was replaced '+replacements+' times');
+            ae_alert(toHtmlEntities(searchTerm) + ' was replaced '+replacements+' times');
 	        setTimeout("document.getElementById('code').focus();",0);
         }
     }
 }
 
-function scrollIntoView(selectionStart, selectionEnd) {
-	if (isUsingCodeMirror()) {
-		editor.focus();
-		const fromPos = editor.posFromIndex(selectionStart);
-		const toPos = editor.posFromIndex(selectionEnd);
-		editor.setSelection(fromPos, toPos);
-		editor.scrollIntoView({ from: fromPos, to: toPos });
-	} else if (isTextAreaEditor()) {
-		const input = document.getElementById('code');
-		input.focus();
-
-		if (input.setSelectionRange) {
-			input.setSelectionRange(selectionStart, selectionEnd);
-			// Scrolla raden manuellt om det behövs
-			const lineHeight = parseInt(getComputedStyle(input).lineHeight || '16', 10);
-			const linesAbove = codeValue().substring(0, selectionStart).split('\n').length;
-			input.scrollTop = Math.max(0, (linesAbove - 1) * lineHeight - 20);
-		}
-	}
-}
-
-function clearAuthenticationCache(page) {
-    ae_confirm_yes_no(clearAuthenticationCache_callback,"Log out?",page);
-}
-
-function clearAuthenticationCache_callback(returncode,page,value)
-{
-	if (returncode == 1)
-	{
-		if (page.length === 0) page = '.force_logout';
-		try{
-			var agt=navigator.userAgent.toLowerCase();
-			if (agt.indexOf("msie") !== -1) {
-				// IE clear HTTP Authentication
-				document.execCommand("ClearAuthenticationCache");
-			}
-			else {
-				// Let's create an xmlhttp object
-				var xmlhttp = createXMLObject();
-				// Let's prepare invalid credentials
-				xmlhttp.open("GET", page, true, "logout", "logout");
-				// Let's send the request to the server
-				xmlhttp.send("");
-				// Let's abort the request
-				xmlhttp.abort();
-			}
-			main_submit("logout");
-			return;
-		} catch(e) {
-			// There was an error
-			ae_alert('Log out error, browser may not be supported');
-		}
-	}
-}
-
-function createXMLObject() {
-	var xmlhttp=false;
-	if (!xmlhttp && typeof XMLHttpRequest !== 'undefined') {
-		try {
-			xmlhttp = new XMLHttpRequest();
-		} catch (e) {
-			xmlhttp=false;
-		}
-	}
-	if (!xmlhttp && window.createRequest) {
-		try {
-			xmlhttp = window.createRequest();
-		} catch (e) {
-			xmlhttp=false;
-		}
-	}
-    return xmlhttp;
-}
-
-function validatePass()
-{
-	var invalid = " "; // Invalid character is a space
-	var minLength = 6; // Minimum length
-	var pw1 = document.main_form.password.value;
-	var pw2 = document.main_form.passwordrepeat.value;
-	var usernames=document.main_form.allusernames.value.explode('|¤|');
-	var specials = [
-      '/', '.', '*', '+', '?', '|',
-      '(', ')', '[', ']', '{', '}','$','^','\\'
-    ];
-	var matches=document.main_form.username.value.match(/[\?\[\]\/\\=\+<>:;'",\.\*]+/);
-    if (matches)
-    {
-    	ae_alert(matches[0]+' is not allowed in the username.');
-	   	return false;
-    }
-
-	for (var i=0;i<usernames.length;i++)
-	{
-        if (document.main_form.username.value === usernames[i])
-        {
-    		ae_alert('User already exists.');
-	   	    return false;
-        }
-    }
-	// check for a value in both fields.
-	if (pw1 == '' || pw2 == '') {
-		ae_alert('Please enter your password twice.');
-		return false;
-	}
-	// check for minimum length
-	if (pw1.length < minLength) {
-		ae_alert('Your password must be at least ' + minLength + ' characters long. Try again.');
-		return false;
-	}
-	// check for spaces
-	if (pw1.indexOf(invalid) !== -1) {
-		ae_alert("Sorry, spaces are not allowed.");
-		return false;
-	}
-	if (pw1 != pw2) {
-		ae_alert("You did not enter the same new password twice. Please re-enter your password.");
-		return false;
-	}
-	return true;
-}
-
 //For textarea editor line numbers
-/*
-function reset_width()
-{
-    var elem=document.getElementById('code');
-    if (!isUsingCodeMirror()) {
-        elem.style.width=((elem.parentNode.offsetWidth)-34)+'px';
-        var st=parseInt(elem.scrollTop,10);
-        document.getElementById('code_numbers').style.top = (st * -1) + 'px';
-    }
-}
-*/
 function lines_dragGo(event)
 {
     var elem=document.getElementById('code');
@@ -995,7 +874,7 @@ function select_lines(elem,startLine,endLine)
 		startLine=temp;
 	}
     var selcode=elem.value;
-    var lines=selcode.explode('\n');
+    var lines=selcode.split('\n');
     if (startLine>=lines.length-1)
     {
         startLine=lines.length-2;

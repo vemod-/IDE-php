@@ -1,0 +1,42 @@
+#aep_win {
+	position: fixed;
+	top: 20%;
+	left: 50%;
+	width: 400px;
+	margin-left: -200px;
+	background: #eeeeee;
+	z-index: 19002;
+	border: 4px solid #336699;
+	text-align: left;
+}
+#aep_w {
+	position:relative;
+	width:100%;
+	margin-top:25px;
+	border: 0px;
+	/*background-color:#eeeeee;*/
+	text-align: left;
+}
+
+.aep_text {
+	width: 90%;margin-left:20px;
+	border:1px solid #aaaaaa;
+    font-family: "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: normal;
+    font-size: 12px;
+    line-height: 13px;
+    font-size-adjust: none;
+    font-stretch: normal;
+    -x-system-font: none;
+    height:17px;
+    padding-top:1px;
+}
+.aep_hidden_text {
+    position:absolute;
+    left:-500px;
+    top:-300px;
+}
+#aep_w span {margin-left:20px;}
+#aep_w div {text-align: right; margin-top: 5px;}

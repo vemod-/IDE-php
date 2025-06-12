@@ -999,15 +999,15 @@ class Ide
 		//	$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
 		//	$menu .="<hr/>";
 		//}
-		$menu .=$this->Out->menu_item('Search...','search_editor(true);',$this->Conf->IsBinary);
-		$menu .=$this->Out->menu_item('Replace...','replace_editor();',$this->Conf->IsBinary);
+		$menu .=$this->Out->menu_item('Search...&emsp;&emsp;&emsp;cmd+F','search_editor(true);',$this->Conf->IsBinary);
+		$menu .=$this->Out->menu_item('Replace...&emsp;&emsp;cmd+H','replace_editor();',$this->Conf->IsBinary);
 		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',$this->Conf->IsBinary);
 		$menu .="<hr/>";
 		$menu .=$this->Out->menu_item('Open tpl','ae_confirm(callback_submit,"Replace current code with new template?","show_template")',($this->Conf->IsBinary));
 		$menu .=$this->Out->menu_item('Save tpl','ae_confirm(callback_submit,"Replace current template?","save_as_template")',(!file_exists($this->Conf->Current_file or $this->Conf->IsBinary)));
 		$menu .="<hr/>";
 		$menu .=$this->Out->menu_item('Revert to saved','if (checkDirty()){ae_confirm(callback_submit,"Discard changes?","set_undo");}else{main_submit("set_undo");}');
-		$menu .=$this->Out->menu_item('Save','main_submit("save");',(!file_exists($this->Conf->Current_file)));
+		$menu .=$this->Out->menu_item('Save&emsp;&emsp;&emsp;&emsp;&emsp;cmd+S','main_submit("save");',(!file_exists($this->Conf->Current_file)));
 		$menu .=$this->Out->menu_item('Save as...','save_as("'.$this->Conf->Current_file.'")');
 		$menu .=$this->Out->menu_item('Encoding...','showFrame("./encoding_ide.php","","Encoding","Close",true);return false;');
 		$ret .= $this->Out->menu_create('Code',$menu);
@@ -1024,7 +1024,7 @@ class Ide
 		$ret .= $this->Out->menu_create($this->Conf->Current_file,$menu);
 		$ret .= "<div class='inside_menu'>";
 		$ret .= "<span id='dirty_p'>\n";
-		$ret .=($this->Conf->Dirtyfile>0) ? '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save"> <img src="images/savel.png"/> </a>':'';
+		$ret .=($this->Conf->Dirtyfile>0) ? '<a href="#" class="imgbutton" onClick="main_submit(\'save\');" title="Save cmd+S"> <img src="images/savel.png"/> </a>':'';
 		$ret .="</span>\n";
 		$ret .= "</div>\n";
 		$ret .="</div>\n";
@@ -1037,7 +1037,7 @@ class Ide
 		$ret ="<div class='top_window_z1000'>";
 		//$ret .= $this->Out->menu_button('- RUN -','main_form.phpnet.value=0;main_submit("eval");',(strlen($this->Conf->Eval_path)==0));
 		$ret .= "<div class='inside_menu'>";
-		$ret .= "<a href='#' class='imgbutton' onClick='main_form.phpnet.value=0;main_submit(\"eval\");' title='Run'>  <img src='images/play.png'/>  </a>";
+		$ret .= "<a href='#' class='imgbutton' onClick='main_form.phpnet.value=0;main_submit(\"eval\");' title='Run cmd+R'>  <img src='images/play.png'/>  </a>";
 		$ret .= "</div>";
 		//$ret.=$this->Out->menu_top('Evaluate');
 		$menu = $this->Out->menu_item('Sync','main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="sync"){main_form.syncmode.value="";}else{main_form.syncmode.value="sync";}main_submit("eval_sync");',!file_exists($this->Conf->Current_file),$this->Conf->Syncmode=='sync');
@@ -1063,20 +1063,16 @@ class Ide
 			}
 		}
 		$ret .= $this->Out->menu_create('',$menu);
-		//$ret.=$this->Out->menu_bottom();
 		$ret .= "<div class='inside_menu' style='padding-top:3px;'>";
 		$ret .= "<input name='eval_path' class='menu_textbox' id='eval_path' type='text' size='20' value='".$this->current_eval()."' onKeyDown='if (checkEnter(event)){return false;};' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'/>\n";
 		$ret .= "<input type='submit' class='hiddenbutton' value='Change eval path' id='submit_eval' onClick='main_form.syncmode.value=\"\";main_form.phpnet.value=0;main_submit(\"eval_change\");'/>\n";
 		$ret .="</div>";
-		//$ret .= "<a href='#' class='btn' onClick='eval_history(-1);'>Back</a>\n";
-		//$ret .= "<a href='#' class='btn' onClick='eval_history(1);'>Fwd</a>\n";
 		$ret .="</div>";
 		return $ret;
 	}
 
 	function file_window($borderstyle)
 	{
-
 		require 'filetable/filetable.php';
 	    $filetable = new FileTable($this->Conf->Dir_path,$this->Conf->Current_file,$this->Conf->Dir_sortorder,$this->Conf->Allow_browse_below_root);
 		$ret ="<div class='fixed_window'>\n";
@@ -1086,20 +1082,16 @@ class Ide
 			document.addEventListener(\"DOMContentLoaded\", function () {
 				if (typeof FileTableEvents !== 'undefined') {
 					FileTableEvents.onFileClick = function (path) {
-						//alert(path);
 						submit_file(path);
 					};
 					FileTableEvents.onFolderClick = function (path) {
-						//alert(path);
 						submit_dir(path);
 					};
 					FileTableEvents.onChangeSortOrder = function (sortorder) {
-						//alert(sortorder);
 						submit_sort(sortorder);
 					}
 					FileTableEvents.onPermissionsClick = function (file,value)
 					{
-						//alert(file + value);
 						submit_chmod(file,value);
 					}
 				}
@@ -1122,7 +1114,6 @@ class Ide
 				<!-- CSS och JS -->
 				<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.css\">
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.js\"></script>
-
 				<!-- Språkmoduler -->
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/javascript/javascript.js\"></script>
 				<script src=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/php/php.js\"></script>
@@ -1135,40 +1126,12 @@ class Ide
 					if (typeof(CodeMirror) !== 'undefined') {
 						editor = CodeMirror.fromTextArea(document.getElementById('code'), {
 							lineNumbers: true,
-							//mode: \"text/html\", // Byt till t.ex. \"javascript\" eller \"php\" beroende på filtyp
 							mode: document.getElementById('code').dataset.mode,
-							theme: \"$theme\", // <--- här sätts temat
+							theme: \"$theme\",
 							indentUnit: 4,
-							tabSize: 4,
-							extraKeys: {
-								\"Ctrl-S\": function(cm) {
-									console.log(\"Ctrl+S pressed\");
-									main_submit('save'); // Om du har en sådan funktion
-								},
-								\"Cmd-S\": function(cm) {
-									// För Mac
-									console.log(\"Cmd+S pressed\");
-									main_submit('save');
-								},
-								\"Ctrl-F\": function(cm) {
-									console.log(\"Ctrl+F pressed\");
-									search_editor(false);
-								},
-								\"Cmd-F\": function(cm) {
-									// För Mac
-									console.log(\"Cmd+F pressed\");
-									search_editor(false);
-								}
-
-							}
+							tabSize: 4
 						});
-						//editor.on(\"keydown\", (cm, evt) => catchTab(evt));
-						editor.on(\"change\", () => checkDirty());
-						editor.on(\"cursorActivity\", () => checkDirty());
-						editor.on(\"focus\", () => checkDirty());
-						editor.on(\"refresh\", () => checkDirty());
 						syncEditor(" . json_encode($this->Conf->UIdata) . ");
-						checkDirty();
 					}
 				});
 				</script>";
@@ -1192,84 +1155,45 @@ class Ide
         else {
         	$ret .= "<script>
 			document.addEventListener(\"DOMContentLoaded\", function () {
-				if (!window.editor && document.getElementById('code')) {
-					const code = document.getElementById('code');
-			
-					code.addEventListener('keydown', evt => catchTab(evt));
-					code.addEventListener('keyup', checkDirty);
-					code.addEventListener('mouseup', checkDirty);
-					code.addEventListener('change', checkDirty);
-					code.addEventListener('focus', checkDirty);
-			
-					const codeNumbers = document.getElementById('code_numbers');
-					if (codeNumbers) {
-						code.addEventListener('scroll', () => {
-							codeNumbers.style.top = (-code.scrollTop) + 'px';
-						});
-					}
-					syncEditor(" . json_encode($this->Conf->UIdata) . ");
-					checkDirty();
-				}
+				syncEditor(" . json_encode($this->Conf->UIdata) . ");
 			});
 			</script>";
 			if (!$this->Conf->IsBinary)
 			{
 				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-				//if ($this->Conf->Fancy == 0) {
-					$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
-					$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
-					$ret.='</div>';
-				/*	
-				}else{
-					$ret.='<div id="code" name="code" class="leftwrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
-					$ret.='<div class="fancywrapper" style="background-color:#f3f3f3;'.$this->code_style().'">';
-					$ret.=str_replace('<code>','<code class="codeprint" style="'.$this->code_style().'">',$this->Edit->getHighlightCode());
-					$ret.='</div>';
-					$ret.='</div>';
-				}
-				*/
-				//$leftheaderclass=($this->Conf->Fancy == 0) ? 'leftheaderinfo':'leftheader';
-				//$ret.='<div class="'.$leftheaderclass.'" style="'.$this->code_style().'">';
+				$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
+				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
+				$ret.='</div>';
 				$ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
 				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
-				//$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode(range(1, $this->Edit->getlen()), '<br />'). '</code>';
 				$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
 				$ret.= '</div>';
 				$ret.= '</div>';
-				//if ($this->Conf->Fancy == 0) {
-					$ret .= "<div id='infobarborder'></div>";
-					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
-					$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-					$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
-					$ret .= "</div>";
-				//}
+				$ret .= "<div id='infobarborder'></div>";
+				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+				$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
+				$ret .= "</div>";
 				$ret .="</div>\n";
 			}
 			else
 			{
 				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
 				$ret.='<div class="leftwrapper" style="border-left:34px solid #e5e5e5;'.$this->code_style().'">';
-	
 				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
-	
 				$ret.='</div>';
-	
 				$ret.='<div class="leftheader" style="'.$this->code_style().'">';
 				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:157px;'.$this->code_style().'">';
 				$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:32px;text-align:right;'.$this->code_style().'">';
-	
-				for($i = 0; $i <= $this->Edit->getlen(); $i += 16)
-				{
+				for($i = 0; $i <= $this->Edit->getlen(); $i += 16) {
 					$ret .= dechex($i).'<br/>';
 				}
-	
 				$ret.= '</code>';
 				$ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';
 				$ret.=str_replace(chr(0x0d),'<br/>',$this->Edit->getAscii());
 				$ret.='</div>';
 				$ret.= '</div>';
 				$ret.= '</div>';
-	
 				$ret.='</div>';
 			}
         }
@@ -1303,147 +1227,8 @@ class Ide
 		$ret .="<iframe id='evaluationwindow' name='evaluationwindow' frameborder='0' width='100%' height='100%' class='scroll_window' style='$borderstyle' src='".$src."'></iframe></div>\n";
 		return $ret;
 	}
-/*
-	function main_page()
-	{
-		global $_POST;
-		$ret = "<FORM NAME='main_form' ID='main_form' enctype='multipart/form-data' METHOD='POST' ACTION='{$_SERVER['PHP_SELF']}'>\n";
-		$ret .= "<INPUT TYPE='hidden' NAME='action' ID='action' VALUE=''>\n";
-		//$ret .= "<INPUT TYPE='hidden' NAME='prev_submit' VALUE='".md5(time()+session_id)."'>\n";
-		$ret .= "<INPUT TYPE='hidden' NAME='prev_submit' VALUE='" . md5(time() . session_id()) . "'>\n";
-		$ret .= "<INPUT TYPE='hidden' id='change_counter' NAME='change_counter' VALUE='{$this->Conf->Dirtyfile}'>\n";
-		$ret .= "<INPUT TYPE='hidden' NAME='Current_filename' id='Current_filename' VALUE='{$this->Conf->Current_file}'>\n";
-		$ret .= "<INPUT TYPE='hidden' id='save_as_filename' NAME='save_as_filename' VALUE='{$_POST['save_as_filename']}'>\n";
-		$ret .= "<INPUT TYPE='hidden' id='fancy' NAME='fancy' VALUE='{$this->Conf->Fancy}'>";
-		$ret .= "<INPUT TYPE='hidden' id='phpnet' NAME='phpnet' VALUE='{$this->Conf->Phpnet}'>\n";
-		$ret .= "<INPUT TYPE='hidden' id='syncmode' NAME='syncmode' VALUE='{$this->Conf->Syncmode}'>\n";
-		$ret .= "<INPUT TYPE='hidden' id='layoutstyle' NAME='layoutstyle' VALUE='{$this->Conf->LayoutStyle}'>\n";
-		$ret .= "<input name='current_directory' id='current_directory' type='hidden' value='' />\n";
-		$ret .= "<input name='sortorder' id='sortorder' type='hidden' value='' />\n";
-		$ret .= "<input name='some_file_name' id='some_file_name' type='hidden' value='' />\n";
-		$ret .= "<input name='chmod_value' id='chmod_value' type='hidden' value='' />\n";
-		$this->Conf->tdleftstyle=isset($_POST['td_left_style']) ? $_POST['td_left_style']:$this->Conf->tdleftstyle;
-		$ret .= "<input type='hidden' name='td_left_style' id='td_left_style' value='{$this->Conf->tdleftstyle}'/>\n";//width 18%
-		$this->Conf->tdmiddlestyle=isset($_POST['td_middle_style']) ? $_POST['td_middle_style']:$this->Conf->tdmiddlestyle;
-		$ret .= "<input type='hidden' name='td_middle_style' id='td_middle_style' value='{$this->Conf->tdmiddlestyle}'/>\n"; //width 41%
-		$this->Conf->tdrightstyle=isset($_POST['td_right_style']) ? $_POST['td_right_style']:$this->Conf->tdrightstyle;
-		$ret .= "<input type='hidden' name='td_right_style' id='td_right_style' value='{$this->Conf->tdrightstyle}'/>\n"; //width 41%
-		$this->Conf->tdtopleftstyle=isset($_POST['td_top_left_style']) ? $_POST['td_top_left_style']:$this->Conf->tdtopleftstyle;
-		$ret .= "<input type='hidden' name='td_top_left_style' id='td_top_left_style' value='{$this->Conf->tdtopleftstyle}'/>\n";//width:18%;height:50%
-		$this->Conf->tdtoprightstyle=isset($_POST['td_top_right_style']) ? $_POST['td_top_right_style']:$this->Conf->tdtoprightstyle;
-		$ret .= "<input type='hidden' name='td_top_right_style' id='td_top_right_style' value='{$this->Conf->tdtoprightstyle}'/>\n"; //width:82%;height:50%
-		$this->Conf->tdbottomstyle=isset($_POST['td_bottom_style']) ? $_POST['td_bottom_style']:$this->Conf->tdbottomstyle;
-		$ret .= "<input type='hidden' name='td_bottom_style' id='td_bottom_style' value='{$this->Conf->tdbottomstyle}'/>\n"; //width:100%;height:50%
-		$ret .= "<div class='wrapper' id='wrapper_div'>\n";
-		$ret .= "<div class='relative'>";
-		if ($this->Conf->LayoutStyle==1) {
-			$ret .= "<table class='insidediv'><tr>\n";
-			$ret .= "<td style='{$this->Conf->tdleftstyle}' class='insidedivpad' id='td_left'>\n";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->file_window('border-left:0px;border-bottom:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->file_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td>\n";
-			$ret .= "<td style='{$this->Conf->tdmiddlestyle}' class='insidedivpad' id='td_middle'>\n";
-			$ret .= "<div class='vert_container'><div id='splitter1' class='vert_split' onmousedown='dragStart(event,this.id,\"td_left\")'></div></div>";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->code_window('border-left:0px;border-bottom:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->code_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td>\n";
-			$ret .= "<td style='{$this->Conf->tdrightstyle}' class='insidedivpad' id='td_right'>\n";
-			$ret .= "<div class='vert_container'><div id='splitter2' class='vert_split' onmousedown='dragStart(event,this.id,\"td_middle\")'></div></div>";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->eval_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td></tr></table>";
-		} else {
-			$ret .= "<table class='insidediv'><tr>\n";
-			$ret .= "<td class='insidedivpad' style='{$this->Conf->tdtopleftstyle}' id='td_top_left'>\n";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->file_window('border-left:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->file_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td>\n";
-			$ret .= "<td class='insidedivpad' style='{$this->Conf->tdtoprightstyle}' id='td_top_right'>\n";
-			$ret .= "<div class='vert_container'><div id='splitter1' class='vert_split' onmousedown='dragStart(event,this.id,\"td_top_left\")'></div></div>";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->code_window('border-left:0px;border-right:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->code_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td>\n";
-			$ret .= "</tr><tr>\n";
-			$ret .= "<td colspan='2' class='insidedivpad' style='{$this->Conf->tdbottomstyle}' id='td_bottom'>\n";
-			$ret .= "<div class='horiz_container'><div id='splitter2' class='horiz_split' onmousedown='dragStart(event,this.id,\"td_top_left%td_top_right\")'></div></div>";
-			$ret .= "<div class='relative'>";
-			$ret .= "<div class='insidewrapper'>";
-			$ret .= $this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;');
-			$ret .= "</div>";
-			$ret .= "<div class='header'>\n";
-			$ret .= $this->eval_menu();
-			$ret .= "</div>";
-			$ret.="</div>";
-			$ret .= "</td></tr></table>";
-		}
-		$ret.="</div>\n";
-		$ret.="</div>\n";
-		$ret .= "<div class='globalheader'>\n";
-		$ret.=$this->toolbar_left();
-		$ret.=$this->toolbar_middle();
-		$ret.=$this->toolbar_right();
-		$ret .= "</div>\n";
-		$ret .= "</FORM>\n";
-		$this->Conf->recentfiles=$this->recentfiles->save();
-		$this->Conf->recentdirs=$this->recentdirs->save();
-		$this->Conf->recentevals=$this->recentevals->save();
-		if (isset($_POST['UIdata'])) {
-			$this->Conf->UIdata=$_POST['UIdata'];
-		}
-		$this->Conf->save_to_file();
-		$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
-		$ret.="syncEditor('{$this->Conf->UIdata}');";
-		$ret .= "</SCRIPT>\n";
-		if ($_POST['overwrite_ok']) {
-			$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
-			$ret .= "ae_confirm(callback_submit,'The file {$_POST['save_as_filename']} already exists, replace?','{$_POST['action']}_replace');\n";
-			$ret .= "</SCRIPT>\n";
-		}
-		if ($_POST['action']=='download_system')
-		{
-			$ret .= "<SCRIPT LANGUAGE='JavaScript'>\n";
-			$ret .= "window.onload=startdownload;";
-			//$ret .= "window.onload=function(){";
-			//$ret .= "document.getElementById('save_as_filename').value='./systemzip/idephp.zip';";
-			//$ret .= "document.getElementById('action').value='set_download';";
-			//$ret .= "document.getElementById('main_form').submit();}";
-			$ret .= "</SCRIPT>\n";
-			echo $ret;
-		}
-		return($ret);
-	}
-*/
-	function main_page()
+
+function main_page()
 	{
 		global $_POST;
 
@@ -1547,8 +1332,6 @@ class Ide
 		$this->Conf->recentdirs = $this->recentdirs->save();
 		$this->Conf->recentevals = $this->recentevals->save();
 		$this->Conf->save_to_file();
-		// JavaScript block
-		//$ret .= "<script>syncEditor(" . json_encode($this->Conf->UIdata) . ");</script>\n";
 
 		// Confirm overwrite if needed
 		if (!empty($_POST['overwrite_ok'])) {
@@ -1762,16 +1545,7 @@ class Editor
             return $this->make_textarea_safe($this->data);
          }
     }
-/*
-    function getHighlightCode()
-    {
-		ob_start();
-		highlight_string($this->getCode());
-		$fancy_code_str = ob_get_contents();
-		ob_end_clean();
-		return $fancy_code_str;
-    }
-*/
+
     function saveFile($file,$trim=false)
     {
    		if (!is_writable($file)) {
@@ -1794,33 +1568,6 @@ class Editor
          fclose($handle);
     }
 
-    /*
-    function saveFile($file, $trim = false)
-	{
-		// Kolla om filen är skrivbar, annars visa varning
-		if (!is_writable($file)) {
-			$this->alert_message = 'The file \"$file\" is read only.\\nChange permissions.';
-			return;
-		}
-
-		$handle = @fopen($file, 'w+');
-		if (!$handle) {
-			$this->alert_message = 'Could not open file \"$file\" for write access.';
-			return;
-		}
-
-		if ($this->isbinary) {
-			fwrite($handle, $this->data);
-		} else {
-			if ($trim) {
-				$this->trimData();
-			}
-			fwrite($handle, $this->data);
-		}
-
-		fclose($handle);
-	}
-    */
     function getHex()
     {
          $tmp=unpack('H*',$this->data);
