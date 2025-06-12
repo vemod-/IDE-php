@@ -1,6 +1,6 @@
 var win;
 
-var olderBrowser;
+//var olderBrowser;
 
 if (String.prototype.right==null) String.prototype.right=function(num){
       return this.substring(this.length-num);  // pull out right num
@@ -120,12 +120,13 @@ function showwindow(url,inf,title)
 
     function showFrame(url,inf,title,close,is_submit)
     {
+/*
         if (olderBrowser)
         {
             showwindow(url,inf,title);
             return;
         }
-
+*/
         var borderdiv=document.getElementById('borderdiv');
         if (!borderdiv)
         {
@@ -176,7 +177,7 @@ function showwindow(url,inf,title)
         }
     }
 
-    olderBrowser=true;
+   // olderBrowser=true;
 
 function ae_alert(text,title)
 {

@@ -32,48 +32,15 @@ class Page {
 	public string $JS_code = "";
 
 	function html_top($encoding="UTF-8") {
-	   $ret = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
-	   //$ret = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
+	    $ret = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
 		$ret.="<html><head>";
-		//$ret .=	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />";   
 		$ret .= "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=$encoding\">";
-	   //$ret .= "<script src=\"codepress/codepress.js\" type=\"text/javascript\"></script>  ";
-	   /*
-		$ret .= "<script language=\"javascript\" type=\"text/javascript\" src=\"editarea_0_8_2/edit_area/edit_area_full.js\"></script>";
-		
-		$ret .= "<script language=\"javascript\" type=\"text/javascript\">";
-		$ret .= "editAreaLoader.init({id: \"code\",start_highlight: true	// if start with highlight
-			,allow_resize: \"both\"
-			,allow_toggle: true
-			,word_wrap: true
-			,language: \"en\"
-			,syntax: \"php\"
-			,allow_toggle: false
-			,browsers:\"all\"	
-			,display:\"onload\"
-		});";
-		$ret .= "</script>";
-		*/
 		$ret .= "<script type=\"text/javascript\" src=\"javascript/jshttpauth.js\"></script>";
 		$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/lightbox.css\">\n";    
 		$ret.="<link REL=\"STYLESHEET\" TYPE=\"text/css\" HREF=\"css/ide.php.css\">\n";
 		$ret .= "<script type=\"text/javascript\" src=\"javascript/php_serializer.js\"></script>\n";    
 		$ret .= "<script type=\"text/javascript\" src=\"javascript/lightbox.js\"></script>\n";
 		$ret .= "<script src=\"javascript/ide.php.js\" type=\"text/javascript\"></script>\n";    
-		$ret .= "<!--[if gt IE 6]><!-->
-	<SCRIPT LANGUAGE=\"JavaScript\">
-	<!--
-			olderBrowser=false;
-	-->
-	</script>
-	<![endif]-->\n";    
-		
-		/*
-		ob_start();
-	   include('./lightbox.js');
-	   $ret.=ob_get_contents();
-	   ob_end_clean();
-	*/
 	   $ret .= "<TITLE>I D E . P H P</TITLE>\n";
 	   $ret .= "{$this->CSS_code}\n";
 	   $ret .= "{$this->JS_code}\n";   
@@ -100,13 +67,10 @@ class Page {
 	function start_box_table($attr="") {
 	   $ret = "<TABLE BORDER='0' CELLPADDING='10' CELLSPACING='1' BGCOLOR='{$this->Box_color}' ALIGN='center' ";
 	   $ret .= (is_array($attr) ? join(" ", $attr) : NULL) . ">\n";
-	   //$ret .= "<TR><TD>\n";
-	   //$ret .= "<TABLE BORDER='0' CELLPADDING='3' CELLSPACING='1' BGCOLOR='{$this->Box_color}' ALIGN='center' HEIGHT='100%' WIDTH='100%'>\n";
 	   return ($ret);
 	}
 	
 	function end_box_table() {
-	   //$ret .= "</TABLE></TD></TR>";
 	   $ret = "</TABLE>\n";
 	   return ($ret);
 	}
@@ -114,10 +78,7 @@ class Page {
 	function info_box($width, $content) {
 	   $ret = $this->start_box_table(array("WIDTH='$width'"));
 	   $ret .= "<TR BGCOLOR='{$this->Box_bgcolor}'><TD>\n";
-	   //$ret .= $this->begin_invisible_table("100%", array("CELLPADDING='10'", "CELLSPACING='0'", "ALIGN='center'", "BGCOLOR='{$this->Box_bgcolor}'"));
-	   //$ret .= "<TR><TD CLASS='netscapesucks'>\n";
 	   $ret .= $content;
-	   //$ret .= "</TD></TR></TABLE>\n";
 	   $ret .= "</TD></TR>\n";
 	   $ret .= $this->end_box_table();
 	   return($ret);
@@ -130,7 +91,6 @@ class Page {
 		{
 			$checkmark="&nbsp;&#10003;";
 		}
-		//$caption="<table border='1' cellspacing='0' cellpadding='0' width='100%'><tr><td style='width:20px;min-width:20px;text-align:left;'>$checkmark</td><td align='left'>$caption&nbsp;&nbsp;</td></tr></table>";
 		$caption="<span style='position:absolute;left:-7px;'>$checkmark</span>$caption&nbsp;&nbsp;";
 		if ($disabled)
 		{
@@ -138,37 +98,7 @@ class Page {
 		}
 		return "<li><a href='#' onClick='$action'>$caption</a></li>\n";
 	}
-	/*
-	function menu_top($caption)
-	{
-		$ret = "";
-		global $menu_id;
-		$menu_id++;
-		if ($caption != '')
-		{   
-			$ret .= "<div class='inside_menu'>\n";
-			$ret .="<div class='navcontainer'>\n";
-			$ret .="<ul class='navlist' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
-			$ret .="<li><a href='#' id='current'>$caption</a></li>\n";
-			$ret .="<span id='sub_$menu_id' class='navsubbox'>\n";
-			return $ret;
-		}
-		$ret .= "<div class='inside_menu' style='padding:0px;margin:0px;visibility:hidden;'>\n";
-		$ret .="<div class='navcontainer'>\n";
-		$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
-		$ret .="<li style='visibility:hidden;'>\n";
-		$ret .="<a href='#' id='current' style='padding:0px;margin:0px;padding-right:3px;visibility:hidden;height:21px;'></a></li>\n";
-		$ret .="<span id='sub_$menu_id' class='navsubbox' style='margin-left:3px;'>\n";
-		return $ret;    
-	}
-	
-	function menu_bottom()
-	{
-		$ret ="</span></ul></div>";   
-		$ret .="</div>\n";
-		return $ret;
-	}
-	*/
+
 	function menu_create($caption, $items)
 	{
 		$ret = "";
@@ -180,9 +110,6 @@ class Page {
 			$ret .="<div class='navcontainer'>\n";
 			$ret .="<ul class='navlist' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
 			$ret .="<li><a href='#' id='current'>$caption</a></li>\n";
-			//$ret .="<span id='sub_$menu_id' class='navsubbox'>\n";
-			//return $ret;
-			//$x=new borderimg('span',"<div style='margin:-6px -9px -8px'>".$items."</div>","sub_$menu_id",'navsubbox','margin-top:8px;margin-left:9px;');        
 		}
 		else
 		{
@@ -191,14 +118,8 @@ class Page {
 			$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
 			$ret .="<li style='visibility:hidden;'>\n";
 			$ret .="<a href='#' id='current' style='padding:0px;margin:0px;padding-right:3px;visibility:hidden;height:21px;'></a></li>\n";
-			//$ret .="<span id='sub_$menu_id' class='navsubbox' style='margin-left:3px;'>\n";
-			//$x=new borderimg('span',"<div style='margin:-6px -9px -8px'>".$items."</div>","sub_$menu_id",'navsubbox','margin-top:8px;margin-left:12px;');        
 		}
-		//return $ret;    
-		//$x->borderwidth(8,39,44);
-		//$ret.= $x->borderimage('./images/mnshadow.png',10,39,44);
 		$ret .= "<span id='sub_$menu_id' class='navsubbox'><span class='insidesubbox'>$items</span></span>\n";
-		//$ret.= $items;
 		$ret .="</ul></div>";   
 		$ret .="</div>\n";
 		return $ret;

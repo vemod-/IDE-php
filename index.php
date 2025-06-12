@@ -1372,12 +1372,22 @@ class Editor
 
 	function make_textarea_safe($code)
 	{
+		 /*
+		** Since the code is displayed in a <TEXTAREA>, it can't contain the tag </TEXTAREA>,
+		** since that would break our editor :/ Thus we replace it with </TEXTAREA>
+		** and put it in $this->textarea_safe_code. The reverse substitution is first
+		** performed on $this->code, to restore any previous replacements.
+		*/
 		$safe_code = preg_replace("/<\/(TEXTAREA)>/i", "</ide\\1>", $code);
-
-		if ($this->protecthtml) {
-			$safe_code = preg_replace("/&/", "&", $safe_code);
+        if (!$this->isbinary)
+        {
+		    if ($this->protecthtml) {
+				$safe_code = preg_replace('/&(#[0-9]+|[a-zA-Z0-9]+);/', '&amp;$1;', $safe_code);
+			}
+			if ($this->unixnewlines) {
+			    $safe_code = preg_replace('/[\r\f]/', '', $safe_code);
+		    }
 		}
-
 		return $safe_code;
 	}
 
@@ -1391,34 +1401,6 @@ class Editor
         return isset($this->data);
     }
 
-    function modifyCode()
-    {
-        if (!$this->isbinary)
-        {
-            /*
-            ** Since the code is displayed in a <TEXTAREA>, it can't contain the tag </TEXTAREA>,
-            ** since that would break our editor :/ Thus we replace it with </TEXTAREA>
-            ** and put it in $this->textarea_safe_code. The reverse substitution is first
-            ** performed on $this->code, to restore any previous replacements.
-            */
-			$this->data = preg_replace("/<\/ide(TEXTAREA)>/i", "</\\1>", $this->data);
-		    //$this->textarea_safe_code	= $this->make_textarea_safe($this->code);
-            /*
-            ** Htmlentities are not literally shown inside TEXTAREA in some (all?) browsers.
-            */
-
-			if ($this->protecthtml) {
-				$this->data = preg_replace("/(&)+&/", "&", $this->data);
-		    }
-            /*
-            ** Remove \r\f if desired, needed for cgi on UNIX
-            */
-		    if ($this->unixnewlines) {
-			    $this->data = preg_replace('/[\r\f]/', '', $this->data);
-		    }
-		}
-    }
-
     function createFromData($data)
     {
         $this->data=$data;
@@ -1426,7 +1408,7 @@ class Editor
         if (!$this->isbinary)
         {
             $this->encoding = mb_detect_encoding($data,'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1, WINDOWS-1252');
-            $this->modifyCode();
+            //$this->modifyCode();
         }
         return $this->isbinary;
     }
@@ -1474,7 +1456,7 @@ class Editor
 				*/
             }
             $this->data=$code;
-            $this->modifyCode();
+            //$this->modifyCode();
         }
     }
 
@@ -1651,6 +1633,7 @@ class Editor
         "php5" => "php",
         "phtm" => "php",
         "phtml" => "php",
+        "phpclass" => "php",
         "ctp" => "php",
         "c" => "clike",
         "h" => "clike",
