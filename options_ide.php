@@ -20,22 +20,22 @@ class options
 		}
 		if (isSet($_POST['options_action'])) {
 			if ($_POST['options_action'] == "add_suffix") {
-				$add_suffix = ereg_replace("^\.*(.+)", ".\\1", trim($_POST['add_remove_suffix']));
-				if ($add_suffix && (! in_array($add_suffix, $this->Conf->Eval_suffix_list))) {
+				$add_suffix = preg_replace('/^\.*(.+)/', '.\1', trim($_POST['add_remove_suffix']));
+				if ($add_suffix && !in_array($add_suffix, $this->Conf->Eval_suffix_list)) {
 					$this->Conf->Eval_suffix_list[] = $add_suffix;
 				}
-				$this->Conf->save_to_file(array('Eval_suffix_list'));
-			} elseif($_POST['options_action'] == "remove_suffix") {
-				$remove_suffix = ereg_replace("^\.*(.+)", ".\\1", trim($_POST['add_remove_suffix']));
-				if ($remove_suffix && (in_array($remove_suffix, $this->Conf->Eval_suffix_list))) {
-					reset($this->Conf->Eval_suffix_list);
-					for ($i=0; $i<sizeof($this->Conf->Eval_suffix_list); $i++) {
-						if (ereg("^$remove_suffix$", $this->Conf->Eval_suffix_list[$i])) {
+				$this->Conf->save_to_file(['Eval_suffix_list']);
+			} elseif ($_POST['options_action'] == "remove_suffix") {
+				$remove_suffix = preg_replace('/^\.*(.+)/', '.\1', trim($_POST['add_remove_suffix']));
+				if ($remove_suffix && in_array($remove_suffix, $this->Conf->Eval_suffix_list)) {
+					foreach ($this->Conf->Eval_suffix_list as $i => $suffix) {
+						if (preg_match('/^' . preg_quote($remove_suffix, '/') . '$/', $suffix)) {
 							unset($this->Conf->Eval_suffix_list[$i]);
 						}
 					}
+					$this->Conf->Eval_suffix_list = array_values($this->Conf->Eval_suffix_list); // reindex
+					$this->Conf->save_to_file(['Eval_suffix_list']);
 				}
-				$this->Conf->save_to_file(array('Eval_suffix_list'));
 			}
 		}
 		echo $this->Out->html_top();
@@ -107,6 +107,12 @@ class options
 		//$ret .= "<A HREF='javascript: document.options_form.submit()' CLASS='netscapesucks'>[ s a v e ]</A></DIV>\n";
 		$ret .= "</FORM>\n";
 		$ret.="</div>";
+		$ret .= "<style type=\"text/css\">
+		table {
+			width:96%;
+			max-width:96%;
+		}";
+
 		return($ret);
 	}
 

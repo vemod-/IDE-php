@@ -164,7 +164,7 @@ class FileTable
 	    {
 			$ret .="<table width='100%' cellpadding='0' border='0' cellspacing='0' CLASS='boldtable'><tr><td align='left'>\n";
 			$ret .="Unable to read $dir<br>";
-			$ret .="<a href='#' onClick='javascript:onFolderClick(\"./\");return false;'><img src='{$this->asset_url}folder.png'/> Home</a>\n";
+			$ret .="<a href='#' onClick='javascript:onFolderClick(\"./\");return false;'><img class='fileimg' src='{$this->asset_url}folder_icon.png'/>&nbsp;Home</a>\n";
 			$ret .="</td></tr></table>";
             return $ret;
         }

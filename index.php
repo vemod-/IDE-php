@@ -72,8 +72,8 @@ class Ide
 		$this->recentdirs=new RecentList($this->Conf->recentdirs,$this->Conf->Dir_path);
 		$this->recentevals=new RecentList($this->Conf->recentevals,$this->Conf->Eval_path);
 
-        //php_alert_safe($_POST);
-
+		//php_alert_safe($_POST);
+		
 		if (isset($_POST['prev_submit']) && $_POST['prev_submit']==$this->Conf->Previous_submit) {
 			$_POST=array();
 		}
@@ -81,6 +81,11 @@ class Ide
 			$this->Conf->Previous_submit=$_POST['prev_submit'];
 			if ($this->Conf->Current_file != $_POST['Current_filename']) {
 				$_POST=array();
+			}
+		}
+		if (isset($_POST['Current_filename'])) {
+			if (isset($_POST['UIdata'])) {
+				$this->recentfiles->append($_POST['Current_filename'],$_POST['UIdata']);
 			}
 		}
 		if (isset($_POST['change_counter'])) {
@@ -287,8 +292,9 @@ class Ide
 					$this->save_code_files();
 				}
 			} elseif($_POST['action']=='set_directory') {
-				$reldir="{$this->Conf->Dir_path}/{$_POST['current_directory']}";
-				$reldir=$this->shorten_reldir($reldir);
+				$dir="{$this->Conf->Dir_path}/{$_POST['current_directory']}";
+				$reldir=$this->shorten_reldir($dir);
+				$alert = "{$this->Conf->Dir_path} - {$_POST['current_directory']} - {$dir} - {$reldir}";
 				if (is_dir($reldir)) {
 					$this->Conf->Dir_path=$reldir;
 					$this->recentdirs->append($reldir);
@@ -330,15 +336,23 @@ class Ide
 					$_POST['overwrite_ok']=1;
 				} else {
 					$this->save_file($_POST['save_as_filename']);
-					$this->recentfiles->append($_POST['save_as_filename']);
+					$uidata = $_POST['UIdata'] ?? '';
+					//php_alert_safe("save as");
+					$this->recentfiles->append($_POST['save_as_filename'],$uidata);
 				}
 			} elseif($_POST['action'] == 'save_as_replace') {
 				$this->save_file($_POST['save_as_filename']);
-				$this->recentfiles->append($_POST['save_as_filename']);
+				$uidata = $_POST['UIdata'] ?? '';
+				//php_alert_safe("save as replace");
+				$this->recentfiles->append($_POST['save_as_filename'],$uidata);
 			} elseif($_POST['action'] == 'open_file') {
 				$filepath="{$this->Conf->Data_dir}/{$_POST['code_file_name']}";
 				$this->open_file($filepath);
+				//php_alert_safe("open");
+				//$uidata = $_POST['UIdata'] ?? '';
 				$this->recentfiles->append($filepath);
+				//$uidata = $this->recentfiles->itemUIdata($filepath);
+				//if ($uidata != []) $this->Conf->UIdata = $uidata;
 			} elseif(($_POST['action']=='load_browse_file') || ($_POST['action']=='load_browse_discard') || ($_POST['action']=='load_browse_save')) {
 				if (!$this->Conf->IsBinary)	{
 					if ($_POST['action']=='load_browse_discard') {
@@ -350,7 +364,11 @@ class Ide
 				$filepath=$_POST['some_file_name'];
 				$filepath=$this->shorten_reldir($filepath);
 				$this->open_file($filepath);
+				//php_alert_safe("browse");
+				//$uidata = $_POST['UIdata'] ?? '';
 				$this->recentfiles->append($filepath);
+				//$uidata = $this->recentfiles->itemUIdata($filepath);
+				//if ($uidata != []) $this->Conf->UIdata = $uidata;
 			}
 			elseif($_POST['action'] == 'show_template')
 			{
@@ -782,7 +800,7 @@ class Ide
 		//return(count(glob('$dir/*')) === 0) ? true : false;
 		return (count(glob($dir . '/*')) === 0);
 	}
-	/*
+
 	function shorten_reldir($reldir,$realpath='')
 	{
 		//optimization of relative a path
@@ -810,11 +828,11 @@ class Ide
 		}
 		return $ret;
 	}
-	*/
+	/*
 	function shorten_reldir($reldir, $base = __DIR__) {
 		return str_replace($base, '.', realpath($reldir));
 	}
-
+*/
 	function undo_file($filepath)
 	{
 		if (!file_exists($this->Conf->Backup_file)) {
@@ -1064,7 +1082,7 @@ class Ide
 		}
 		$ret .= $this->Out->menu_create('',$menu);
 		$ret .= "<div class='inside_menu' style='padding-top:3px;'>";
-		$ret .= "<input name='eval_path' class='menu_textbox' id='eval_path' type='text' size='20' value='".$this->current_eval()."' onKeyDown='if (checkEnter(event)){return false;};' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'/>\n";
+		$ret .= "<input name='eval_path' class='menu_textbox' id='eval_path' type='text' size='20' value='".$this->current_eval()."' onKeyDown='if (checkEnter(event)){return false;};' onMouseOver='showLayer(\"sub_$menu_id\")' onMouseOut='hideLayer(\"sub_$menu_id\")'/>\n";
 		$ret .= "<input type='submit' class='hiddenbutton' value='Change eval path' id='submit_eval' onClick='main_form.syncmode.value=\"\";main_form.phpnet.value=0;main_submit(\"eval_change\");'/>\n";
 		$ret .="</div>";
 		$ret .="</div>";
@@ -1131,7 +1149,7 @@ class Ide
 							indentUnit: 4,
 							tabSize: 4
 						});
-						syncEditor(" . json_encode($this->Conf->UIdata) . ");
+						syncEditor(" . json_encode($this->recentfiles->latestUIdata()) . ");
 					}
 				});
 				</script>";
@@ -1155,7 +1173,7 @@ class Ide
         else {
         	$ret .= "<script>
 			document.addEventListener(\"DOMContentLoaded\", function () {
-				syncEditor(" . json_encode($this->Conf->UIdata) . ");
+				syncEditor(" . json_encode($this->recentfiles->latestUIdata()) . ");
 			});
 			</script>";
 			if (!$this->Conf->IsBinary)
@@ -1230,12 +1248,24 @@ class Ide
 
 function main_page()
 	{
+	/*
 		global $_POST;
-
-		if (isset($_POST['UIdata'])) {
-			$this->Conf->UIdata = $_POST['UIdata'];
+		
+		php_alert_safe($_POST);
+		
+		if (isset($_POST['Current_filename'])) {
+			php_alert_safe("loading recent ui");
+			$this->Conf->UIdata = $this->recentfiles->itemUIdata($_POST['Current_filename']);
 		}
-
+		else {
+			if (isset($_POST['UIdata'])) {
+				php_alert_safe("loading ui");
+				$this->Conf->UIdata = $_POST['UIdata'];
+			}
+		}
+		*/
+		//$this->Conf->UIdata = $this->recentfiles->latestUIdata();
+		
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
 		$ret = "<script type=\"text/javascript\" src=\"splitters/splitters.js\"></script>
     		<link rel=\"stylesheet\" type=\"text/css\" href=\"splitters/splitters.css\">";
@@ -1789,15 +1819,31 @@ class RecentList
 {
 
     var $items;
-
+/*
     function __construct($list,$current)
     {
 		$this->items=unserialize($list);
 		if ($this->items=='') {
-		    $this->items=array($current);
+		    $this->items = array($current);
 		}
     }
-
+    */
+    function __construct($list, $current)
+	{
+		$this->items = @unserialize($list);
+	
+		if (!is_array($this->items) || empty($this->items)) {
+			// Om tomt eller ogiltigt, skapa ny lista med en post
+			$this->items = [['file' => $current]];
+		} /*elseif (isset($this->items[0]) && is_string($this->items[0])) {
+			// Det gamla formatet: array med strängar → konvertera till array med 'file'
+			$this->items = array_map(function($item) {
+				return ['file' => $item];
+			}, $this->items);
+		}
+		*/
+	}
+/*
 	function append($item)
 	{
 		$this->remove($item);
@@ -1810,7 +1856,21 @@ class RecentList
 		}
 		$this->items=array_values($this->items);
 	}
-
+	*/
+	function append($file, $uidata = [])
+	{
+		//php_alert_safe($file);
+		//php_alert_safe($uidata);
+		// Försök hämta gammal uidata innan du tar bort
+		if ($uidata === []) {
+			$uidata = $this->itemUIdata($file); 
+		}
+		//php_alert_safe($uidata);
+		$this->remove($file);
+		$this->items[] = ['file' => $file, 'uidata' => $uidata];
+		$this->items = array_slice($this->items, -10);
+	}
+/*
 	function remove($item)
 	{
 		for ($i=count($this->items)-1; $i>=0; $i--) {
@@ -1829,7 +1889,15 @@ class RecentList
 		}
 		$this->items=array_values($this->items);
 	}
-
+*/
+	function remove($filePath) {
+		$this->items = array_values(array_filter($this->items, function($item) use ($filePath) {
+			if (!is_array($item) || empty($item['file'])) return false;
+			if ((!file_exists($item['file'])) && (!$this->is_url($item['file']))) return false;
+			return $item['file'] !== $filePath;
+		}));
+	}
+	
     function count()
     {
         return count($this->items);
@@ -1849,8 +1917,33 @@ class RecentList
 
     function item($i)
     {
-        return $this->items[$i];
+        //return $this->items[$i];
+        return $this->itemPath($i);
     }
+
+	// Returnerar bara sökvägen till filen i position $i
+	function itemPath($i) {
+		if (isset($this->items[$i]['file'])) {
+			return $this->items[$i]['file'];
+		}
+		return is_string($this->items[$i]) ? $this->items[$i] : null;
+	}
+	
+	function itemUIdata($file)
+	{
+		foreach ($this->items as $item) {
+			if (isset($item['file']) && $item['file'] === $file) {
+				return $item['uidata'] ?? [];
+			}
+		}
+		return [];
+	}	
+	
+	function latestUIdata()
+	{
+		$last = array_slice($this->items, -1)[0] ?? null;
+		return is_array($last) && isset($last['uidata']) ? $last['uidata'] : [];
+	}	
 
     function save()
     {

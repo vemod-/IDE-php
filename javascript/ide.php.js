@@ -131,9 +131,6 @@ window.onbeforeunload=function()
     //window.onbeforeunload = null;
 }
 
-var show;
-var sub_id;
-
 function main_submit(action) {
 	serializeUI();
     if (isUsingCodeMirror()) {
@@ -369,19 +366,19 @@ function tabLine(line, evt) {
 		return TAB + line;
 	}
 }
-
-function showHideLayer() {
+// drop-dowm menu
+function showLayer(sub_id) {
     const menu = document.getElementById(sub_id);
-    if (show)
-    {
-		menu.style.visibility = "visible";
-		menu.style.display = "block";
-		menu.style.zIndex = 99999;
-    }
-    else
-    {
-   		menu.style.display = "none";
-    }
+    if (!menu) return;
+    menu.style.visibility = "visible";
+    menu.style.display = "block";
+    menu.style.zIndex = 99999;
+}
+
+function hideLayer(sub_id) {
+    const menu = document.getElementById(sub_id);
+    if (!menu) return;
+    menu.style.display = "none";
 }
 
 function decimalToHex(d, padding) {
@@ -475,6 +472,7 @@ function checkEnter(e)
         evalbutton.click();
         return true;
     }
+    return false;
 }
 
 function replaceTextareaSelection(str) {
@@ -499,8 +497,8 @@ function submit_dir(dir)
 
 function submit_file(file)
 {
-    setSelectionRange(0,0);
-    setScrollPosition(0,0);
+    //setSelectionRange(0,0);
+    //setScrollPosition(0,0);
     document.getElementById('some_file_name').value=""+file+"";
     if (checkDirty())
     {

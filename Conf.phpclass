@@ -56,7 +56,7 @@ class Conf {
    var $recentdirs            ="";
    var $recentevals           ="";  
    var $Syncmode              ="temp";  
-   var $UIdata                =""; 
+   //var $UIdata                =""; 
    var $ftp_path			  ="";
    var $ftp_system_path		  ="";
    var $UseCodeMirror		  = true;
@@ -87,7 +87,7 @@ class Conf {
                                                 'Eval_path','Dir_path','Dir_sortorder','Current_file','IsBinary','Encoding','Dirtyfile','Copy_file',
                                                 'Previous_submit','Phpnet','UseCodeMirror','CodeMirrorTheme','LayoutStyle','Eval_suffix_list',
                                                 'tdleftstyle','tdrightstyle','tdmiddlestyle','tdtoprightstyle','tdtopleftstyle','tdbottomstyle',
-                                                'recentfiles','recentdirs','recentevals','Right_trim','Syncmode','UIdata','ftp_path','ftp_system_path','editorfont','editorfontsize','editorlinespace');
+                                                'recentfiles','recentdirs','recentevals','Right_trim','Syncmode','ftp_path','ftp_system_path','editorfont','editorfontsize','editorlinespace');
    /* Other vars */
    var $saved_conf_array;
 

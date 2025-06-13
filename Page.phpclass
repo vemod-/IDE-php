@@ -108,14 +108,14 @@ class Page {
 		{   
 			$ret .= "<div class='inside_menu'>\n";
 			$ret .="<div class='navcontainer'>\n";
-			$ret .="<ul class='navlist' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+			$ret .="<ul class='navlist' onMouseOver='showLayer(\"sub_$menu_id\")' onMouseOut='hideLayer(\"sub_$menu_id\")'>\n";
 			$ret .="<li><a href='#' id='current'>$caption</a></li>\n";
 		}
 		else
 		{
 			$ret .= "<div class='inside_menu' style='padding:0px;margin:0px;visibility:hidden;'>\n";
 			$ret .="<div class='navcontainer'>\n";
-			$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showHideLayer(show=true, sub_id=\"sub_$menu_id\")' onMouseOut='showHideLayer(show=false)'>\n";
+			$ret .="<ul class='navlist' style='visibility:hidden;' onMouseOver='showLayer(\"sub_$menu_id\")' onMouseOut='hideLayer(\"sub_$menu_id\")'>\n";
 			$ret .="<li style='visibility:hidden;'>\n";
 			$ret .="<a href='#' id='current' style='padding:0px;margin:0px;padding-right:3px;visibility:hidden;height:21px;'></a></li>\n";
 		}
