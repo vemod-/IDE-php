@@ -1420,12 +1420,44 @@ class Editor
 		}
 		return $safe_code;
 	}
-
+/*
     function dataIsBinary()
     {
         return preg_match('/[\x00-\x08\x0b-\x0c\x0e\x1f]/', $this->data);
     }
-
+*/
+	function dataIsBinary() {
+		if (!function_exists('finfo_buffer')) // fallback 
+		{
+			// Strip UTF-8 BOM
+			$data = ltrim($this->data, "\xEF\xBB\xBF");
+			// Allow up to N control characters
+			$sample = substr($data, 0, 1000);
+			$nonText = preg_match_all('/[\x00-\x08\x0B-\x0C\x0E-\x1F]/', $sample);
+			return $nonText > 5;
+		}
+	
+		$finfo = new finfo(FILEINFO_MIME_TYPE);
+		$mime = $finfo->buffer($this->data);
+		// Bedöm textlikt innehåll
+		$textTypes = [
+			'text/',
+			'application/javascript',
+			'application/json',
+			'application/xml',
+			'application/x-javascript',
+			'application/x-httpd-php',
+			'application/xhtml+xml',
+			'application/x-shellscript'
+		];
+		foreach ($textTypes as $type) {
+			if (strpos($mime, $type) === 0) {
+				return false; // inte binär
+			}
+		}
+		return true; // default = binär
+	}
+	
     function dataSet()
     {
         return isset($this->data);
@@ -1519,6 +1551,7 @@ class Editor
     function saveCode($file,$trim=false)
     {
          $handle = fopen($file, 'w+');
+         $this->isbinary = $this->dataIsBinary();
          if ($this->isbinary)
          {
             $hex=$this->getHex();
@@ -1565,6 +1598,7 @@ class Editor
 			return;
 		}
          $handle = fopen($file, 'w+');
+         $this->isbinary = $this->dataIsBinary();
          if ($this->isbinary)
          {
             fwrite($handle, $this->data);
