@@ -100,7 +100,6 @@ function scrollIntoView(selectionStart, selectionEnd) {
 	} else if (isTextAreaEditor()) {
 		const input = document.getElementById('code');
 		input.focus();
-
 		if (input.setSelectionRange) {
 			input.setSelectionRange(selectionStart, selectionEnd);
 			// Scrolla raden manuellt om det behövs
@@ -108,6 +107,15 @@ function scrollIntoView(selectionStart, selectionEnd) {
 			const linesAbove = codeValue().substring(0, selectionStart).split('\n').length;
 			input.scrollTop = Math.max(0, (linesAbove - 1) * lineHeight - 20);
 		}
+	}
+}
+
+function setFocus() {
+	if (isUsingCodeMirror()) {
+		editor.focus();
+	} else if (isTextAreaEditor()) {
+		const input = document.getElementById('code');
+		input.focus();
 	}
 }
 
@@ -497,8 +505,6 @@ function submit_dir(dir)
 
 function submit_file(file)
 {
-    //setSelectionRange(0,0);
-    //setScrollPosition(0,0);
     document.getElementById('some_file_name').value=""+file+"";
     if (checkDirty())
     {
@@ -657,28 +663,128 @@ RegExp.escape = function(text) {
   return text.replace(arguments.callee.sRE, '\\$1');
 }
 
-function search_editor(showDialog)
-{
-    if (showDialog)
-    {
-        searchSelection = getSelectionRange();
-        if (searchSelection.selStart != searchSelection.selEnd)
-        {
-            searchTerm = getSelectedCode().split('\n')[0];
-        }
-        var caseChecked=(searchMatchCase ? 'checked':'');
-        var wordChecked=(searchWholeWord ? 'checked':'');
-        var selectedChecked=(searchSelected ? 'checked':'');
-        ae_prompt(search_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');
-    }
-    else
-    {
-        search_callback(2,'','')
-    }
+function createLabeledCheckbox(id, labelText) {
+	const wrapper = document.createElement('label');
+	wrapper.style.marginLeft = '10px';
+
+	const checkbox = document.createElement('input');
+	checkbox.type = 'checkbox';
+	checkbox.id = id;
+	checkbox.onclick = () => {
+		setFocus();
+	};
+
+	const label = document.createElement('span');
+	label.textContent = labelText;
+
+	wrapper.appendChild(checkbox);
+	wrapper.appendChild(label);
+	return wrapper;
+}
+
+function search_editor(showDialog) {
+	if (!showDialog) {
+		search_callback(3, '', '');
+		return;
+	}
+
+	searchSelection = getSelectionRange();
+	if (searchSelection.selStart !== searchSelection.selEnd) {
+		searchTerm = getSelectedCode().split('\n')[0];
+	}
+	searchPos = searchSelection.selStart;
+
+	let searchWindow = document.getElementById('searchWindow');
+	if (!searchWindow) {
+		const codewindow = document.getElementById('codewindow');
+
+		searchWindow = document.createElement('div');
+		searchWindow.id = "searchWindow";
+		Object.assign(searchWindow.style, {
+			backgroundColor: '#E0E4EA',
+			opacity: '0.85',
+			//border: '1px solid black',
+			//height: '24px',
+			padding: '2px',
+			position: 'absolute',
+			zIndex: '1000',
+			top: '0',
+			width: '100%',
+			display: 'none',
+			whiteSpace: 'nowrap',
+			alignItems: 'center'
+		});
+		searchWindow.style.display = 'flex';
+		codewindow.prepend(searchWindow);
+
+		// Close button
+		const closeButton = document.createElement('div');
+		Object.assign(closeButton.style, {
+			height: '14px',
+			width: '14px',
+			textAlign: 'center',
+			cursor: 'pointer',
+			marginRight: '10px'
+		});
+		closeButton.textContent = '✖';
+		closeButton.onclick = () => {
+			searchWindow.style.display = 'none';
+			setFocus();
+		};
+		// Next button
+		const nextButton = document.createElement('div');
+		Object.assign(nextButton.style, {
+			height: '14px',
+			width: '14px',
+			textAlign: 'center',
+			cursor: 'pointer',
+			marginLeft: '2px'
+		});
+		nextButton.textContent = '>';
+		nextButton.onclick = () => {
+			search_editor(false);
+			setFocus();
+		};
+
+		searchWindow.appendChild(closeButton);
+
+		// Input
+		const inputTextarea = document.createElement('input');
+		inputTextarea.type = 'text';
+		inputTextarea.id = 'searchText';
+		inputTextarea.placeholder = 'Search…';
+		inputTextarea.style.height = '14px';
+		inputTextarea.style.border = '1px solid #888888';
+		inputTextarea.style.borderRadius = '5px';
+		inputTextarea.addEventListener('keydown', evt => {
+			if (evt.key === 'Enter') {
+				evt.preventDefault();
+		        search_callback(3,'','');
+			}
+			if (evt.key === 'Escape') {
+				evt.preventDefault();
+				searchWindow.style.display = 'none';
+				setFocus();
+            }
+		});
+		searchWindow.appendChild(inputTextarea);
+		
+		searchWindow.appendChild(nextButton);
+
+		searchWindow.appendChild(createLabeledCheckbox('matchcasecb', 'Match case'));
+		searchWindow.appendChild(createLabeledCheckbox('wholewordcb', 'Whole word'));
+		searchWindow.appendChild(createLabeledCheckbox('searchselectedcb', 'Search selected'));
+	}
+
+	searchWindow.style.display = 'flex';
+	const searchText = document.getElementById('searchText');
+	searchText.value = searchTerm || '';
+	searchText.focus();
 }
 
 function search_callback(returncode,id,value)
 {
+    const codevalue = codeValue();
     if (returncode == 1)
     {
         value_array=value.split('|¤|');
@@ -688,7 +794,7 @@ function search_callback(returncode,id,value)
         searchSelected=(value_array[3] == 'true') ? true:false;
         if (!searchSelected)
         {
-        	searchSelection = { selStart: 0, selEnd: codeValue().length };
+        	searchSelection = { selStart: 0, selEnd: codevalue.length };
         }
         searchPos = searchSelection.selStart;
     }
@@ -696,9 +802,18 @@ function search_callback(returncode,id,value)
     {
         return;
     }
+    if (returncode == 3) {
+	    searchTerm = document.getElementById('searchText').value;
+        searchMatchCase = document.getElementById('matchcasecb').checked;
+	    searchWholeWord = document.getElementById('wholewordcb').checked;
+	    if (!document.getElementById('searchselectedcb').checked)
+        {
+        	searchSelection = { selStart: 0, selEnd: codevalue.length };
+        }
+    }
     if (searchTerm != '' && searchTerm != null)
     {
-        var RegExpStr=RegExp.escape(searchTerm);
+        var RegExpStr = RegExp.escape(searchTerm);
         var RegExpModifier='';
         if (searchWholeWord)
         {
@@ -708,11 +823,11 @@ function search_callback(returncode,id,value)
         {
             RegExpModifier='i';
         }
-        var regex = new RegExp(RegExpStr, RegExpModifier);
-        var start=-1;
+        const regex = new RegExp(RegExpStr, RegExpModifier);
+        var start = -1;
         while (1)
         {
-            start = codeValue().substring(searchPos,searchSelection.selEnd).search(regex);
+            start = codevalue.substring(searchPos,searchSelection.selEnd).search(regex);
             if (start != -1)
             {
                 if (searchWholeWord)
@@ -726,7 +841,7 @@ function search_callback(returncode,id,value)
             }
             else
             {
-                if (searchPos>0)
+                if (searchPos > searchSelection.selStart)
                 {
                     searchPos = searchSelection.selStart;
                 }
@@ -740,11 +855,8 @@ function search_callback(returncode,id,value)
         {
             ae_alert(searchTerm + ' not found');
         }
-        else
-        {
-	        setTimeout("document.getElementById('code').focus();",0);
-        }
     }
+    setFocus();
 }
 
 function replace_editor()
@@ -763,6 +875,7 @@ function replace_editor()
 function replace_callback(returncode,id,value)
 {
     var replacements=0;
+    var codevalue = codeValue();
     if (returncode == 1)
     {
         value_array=value.split('|¤|');
@@ -778,7 +891,7 @@ function replace_callback(returncode,id,value)
     }
     if (!searchSelected)
     {
-		searchSelection = { selStart: 0, selEnd: codeValue().length };
+		searchSelection = { selStart: 0, selEnd: codevalue.length };
     }
     searchPos = searchSelection.selStart;
     if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
@@ -793,11 +906,11 @@ function replace_callback(returncode,id,value)
         {
             RegExpModifier='i';
         }
-        var regex = new RegExp(RegExpStr, RegExpModifier);
+        const regex = new RegExp(RegExpStr, RegExpModifier);
         var start=-1;
         while (1)
         {
-            start=codeValue().substring(searchPos,searchSelection.selEnd).search(regex);
+            start = codevalue.substring(searchPos,searchSelection.selEnd).search(regex);
             if (start != -1)
             {
                 if (searchWholeWord)
@@ -806,7 +919,7 @@ function replace_callback(returncode,id,value)
                 }
                 start+=searchPos;
                 searchPos=start+1;
-                setCodeValue(codeValue().substring(0,start)+replaceTerm+codeValue().substring(start+searchTerm.length));
+                codevalue = codevalue.substring(0,start)+replaceTerm+codevalue.substring(start+searchTerm.length);
                 searchSelection.selEnd+=replaceTerm.length-searchTerm.length;
                 replacements++;
             }
@@ -821,6 +934,7 @@ function replace_callback(returncode,id,value)
         }
         else
         {
+	        setCodeValue(codevalue);
             checkDirty();
             ae_alert(toHtmlEntities(searchTerm) + ' was replaced '+replacements+' times');
 	        setTimeout("document.getElementById('code').focus();",0);

@@ -140,14 +140,14 @@ class FileTable
 				} else {
 					$ret .="   <img class='fileimg' src='{$this->asset_url}folder_icon.png'/> ".$file['name'];
 				}
-				$ret.="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'> </td>\n<td>\n<a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
+				$ret.="</td>\n<td> ".$this->formatDate($file['date'])." </td>\n<td align='right' style='padding-right:7px;'> </td>\n<td>\n<a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			} else {
 				if (is_readable(realpath($this->dir."/".$file['name']))) {
 					$ret .="   <a href='#' onClick='javascript:onFileClick(\"{$path}\");return false;'><img class='fileimg' src='{$this->asset_url}file_icon.png'/> ".$file['name']."</a>\n";
 				} else {
 					$ret .="   <img class='fileimg' src='{$this->asset_url}file_icon.png'/> ".$file['name'];
 				}
-				$ret .="</td>\n<td> ".date("Y-m-d",$file['date'])." </td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
+				$ret .="</td>\n<td> ".$this->formatDate($file['date'])." </td>\n<td align='right' style='padding-right:7px;'>".$this->formatBytes($file['size'])."</td>\n<td><a href='#' onClick='javascript:onPermissionsClick(\"{$path}\",\"$perms\");return false;'>".$perms."</a>\n";
 			}
 			$ret .="</td></tr>\n";
 			$k=1-$k;
@@ -218,8 +218,28 @@ class FileTable
     		}
     	}
     }
-
-    function formatBytes($bytes, $precision = 2)
+    
+    public static function formatDate($timestamp) {
+	    $now = time();
+	    $diff = $now - $timestamp;
+	
+	    if ($diff < 60) return "Just now";
+	    if ($diff < 3600) return floor($diff / 60) . " min ago";
+	    if ($diff < 86400) return floor($diff / 3600) . " hours ago";
+	
+	    $yesterday = strtotime('yesterday');
+	    if (date('Y-m-d', $timestamp) == date('Y-m-d', $yesterday)) {
+	        return 'Yesterday at ' . date('H:i', $timestamp);
+	    }
+	
+	    if (date('Y') == date('Y', $timestamp)) {
+	        return date('M d \a\t H:i', $timestamp);
+	    }
+	
+	    return date('Y-m-d H:i', $timestamp);
+	}
+	
+    public static function formatBytes($bytes, $precision = 2)
     {
     	$units = array('B', 'KB', 'MB', 'GB', 'TB');
     	$bytes = max($bytes, 0);

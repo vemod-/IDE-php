@@ -141,10 +141,6 @@ class Ide
 				$this->Conf->LayoutStyle=$_POST['layoutstyle'];
 			} elseif($_POST['action']=='phpnet') {
 				$this->Conf->Phpnet=$_POST['phpnet'];
-			//} elseif($_POST['action']=='fancy') {
-			//	$this->Conf->Fancy=$_POST['fancy'];
-			//} elseif($_POST['action']=='use_code_mirror') {
-			//	$this->Conf->UseCodeMirror=$_POST['use_code_mirror'];
 			} elseif($_POST['action']=='chmod_file') {
 				if (!@chmod($_POST['some_file_name'],octdec(substr('0000'.$_POST['chmod_value'], -4)))) {
 					$this->alert_message = "Could not CHMOD file {$_POST['some_file_name']}";
@@ -348,11 +344,7 @@ class Ide
 			} elseif($_POST['action'] == 'open_file') {
 				$filepath="{$this->Conf->Data_dir}/{$_POST['code_file_name']}";
 				$this->open_file($filepath);
-				//php_alert_safe("open");
-				//$uidata = $_POST['UIdata'] ?? '';
 				$this->recentfiles->append($filepath);
-				//$uidata = $this->recentfiles->itemUIdata($filepath);
-				//if ($uidata != []) $this->Conf->UIdata = $uidata;
 			} elseif(($_POST['action']=='load_browse_file') || ($_POST['action']=='load_browse_discard') || ($_POST['action']=='load_browse_save')) {
 				if (!$this->Conf->IsBinary)	{
 					if ($_POST['action']=='load_browse_discard') {
@@ -364,11 +356,7 @@ class Ide
 				$filepath=$_POST['some_file_name'];
 				$filepath=$this->shorten_reldir($filepath);
 				$this->open_file($filepath);
-				//php_alert_safe("browse");
-				//$uidata = $_POST['UIdata'] ?? '';
 				$this->recentfiles->append($filepath);
-				//$uidata = $this->recentfiles->itemUIdata($filepath);
-				//if ($uidata != []) $this->Conf->UIdata = $uidata;
 			}
 			elseif($_POST['action'] == 'show_template')
 			{
@@ -911,7 +899,7 @@ class Ide
 	function toolbar_middle()
 	{
 		$ret ="<div class='top_window_no_border' style='left:18%';width:41%>";
-		$ret .= "<div class='inside_menu_text'>\n";
+		$ret .= "<div id = 'alertbar' class='inside_menu_text'>\n";
 		//$ret .= "<FONT COLOR='{$this->Conf->Alert_message_color}'>{$this->alert_message}</FONT>\n";
 		//$ret .= "<FONT COLOR='{$this->Conf->Success_message_color}'>{$this->success_message}</FONT>\n";
 		if (!empty($this->alert_message)) {
@@ -995,8 +983,8 @@ class Ide
 		//$ret .= $this->Out->menu_top($this->Conf->Dir_path);
 		$menu='';
 		for ($i=$this->recentdirs->count()-1; $i>=0; $i--) {
-			$relpath=$this->shorten_reldir(realpath($this->recentdirs->item($i)),realpath($this->Conf->Dir_path));
-			$menu .=$this->Out->menu_item($this->recentdirs->item($i),'submit_dir("'.$relpath.'")',!file_exists($this->recentdirs->item($i)));
+			$relpath=$this->shorten_reldir(realpath($this->recentdirs->path($i)),realpath($this->Conf->Dir_path));
+			$menu .=$this->Out->menu_item($this->recentdirs->path($i),'submit_dir("'.$relpath.'")',!file_exists($this->recentdirs->path($i)));
 			if ($i==$this->recentdirs->count()-1) {
 				if ($this->recentdirs->count()>1)
                 {
@@ -1013,10 +1001,6 @@ class Ide
 	{
 		$ret ="<div class='top_window_z1000'>";
 		$menu = "";
-		//if (!$this->Conf->UseCodeMirror) {
-		//	$menu .= $this->Out->menu_item('Highlight','main_form.fancy.value=(1-main_form.fancy.value);main_submit("fancy");',($this->Conf->IsBinary),($this->Conf->Fancy));
-		//	$menu .="<hr/>";
-		//}
 		$menu .=$this->Out->menu_item('Search...&emsp;&emsp;&emsp;cmd+F','search_editor(true);',$this->Conf->IsBinary);
 		$menu .=$this->Out->menu_item('Replace...&emsp;&emsp;cmd+H','replace_editor();',$this->Conf->IsBinary);
 		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',$this->Conf->IsBinary);
@@ -1031,7 +1015,7 @@ class Ide
 		$ret .= $this->Out->menu_create('Code',$menu);
 		$menu='';
 		for ($i=$this->recentfiles->count()-1; $i>=0; $i--) {
-			$menu .=$this->Out->menu_item($this->recentfiles->item($i),'submit_file("'.$this->recentfiles->item($i).'")',!file_exists($this->recentfiles->item($i)));
+			$menu .=$this->Out->menu_item($this->recentfiles->path($i),'submit_file("'.$this->recentfiles->path($i).'")',!file_exists($this->recentfiles->path($i)));
 			if ($i==$this->recentfiles->count()-1) {
 				if ($this->recentfiles->count()>1)
                 {
@@ -1072,7 +1056,7 @@ class Ide
 		//$ret.=$this->Out->menu_top('');
 		$menu='';
 		for ($i=$this->recentevals->count()-1; $i>=0; $i--) {
-			$menu .=$this->Out->menu_item($this->recentevals->item($i),'main_form.syncmode.value="";main_form.phpnet.value=0;main_form.eval_path.value="'.$this->recentevals->item($i).'";main_submit("eval_change");',(!file_exists($this->recentevals->item($i))) && (!$this->is_url($this->recentevals->item($i))));
+			$menu .=$this->Out->menu_item($this->recentevals->path($i),'main_form.syncmode.value="";main_form.phpnet.value=0;main_form.eval_path.value="'.$this->recentevals->path($i).'";main_submit("eval_change");',(!file_exists($this->recentevals->path($i))) && (!$this->is_url($this->recentevals->path($i))));
 			if ($i==$this->recentevals->count()-1) {
 				if ($this->recentevals->count()>1)
                 {
@@ -1122,8 +1106,8 @@ class Ide
 
 	function code_window($borderstyle)
 	{
-		$ret = "<div class='fixed_window'>\n";
-		if ($this->Conf->UseCodeMirror) {
+		$ret = "<div id = 'codewindow' class='fixed_window'>\n";
+		if ($this->Conf->UseCodeMirror && !$this->Conf->IsBinary) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
 			if ($theme !== 'default') {
 				$ret .= "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/codemirror@5.65.13/theme/{$theme}.css\">\n";
@@ -1165,7 +1149,7 @@ class Ide
 			$ret .= "<div id='infobarborder'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
+			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
 			$ret .= "</div>";
 			$ret .= '</div>';
 
@@ -1190,28 +1174,34 @@ class Ide
 				$ret .= "<div id='infobarborder'></div>";
 				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
 				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-				$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.date('Y-m-d H:i:s',filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".date('Y-m-d H:i:s',filemtime($this->Conf->Backup_file)).' ';
+				$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
 				$ret .= "</div>";
 				$ret .="</div>\n";
 			}
 			else
 			{
 				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-				$ret.='<div class="leftwrapper" style="border-left:34px solid #e5e5e5;'.$this->code_style().'">';
+				$ret.='<div class="leftwrapperinfo" style="border-left:172px solid #e5e5e5;'.$this->code_style().'">';
 				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
 				$ret.='</div>';
-				$ret.='<div class="leftheader" style="'.$this->code_style().'">';
-				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:157px;'.$this->code_style().'">';
-				$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:32px;text-align:right;'.$this->code_style().'">';
+				$ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
+				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:170px;'.$this->code_style().'">';
+				$ret.= '<code class="codeprint" style="position:absolute;left:0px;top:0px;width:34px;text-align:right;'.$this->code_style().'">';
 				for($i = 0; $i <= $this->Edit->getlen(); $i += 16) {
 					$ret .= dechex($i).'<br/>';
 				}
 				$ret.= '</code>';
-				$ret.='<div class="fancywrapper" style="width:120px;position:absolute;left:34px;top:0px;border-right:1px dotted #aaaaaa;background-color:#e5e5e5;color:#202020;text-align:left;'.$this->code_style().'">';
-				$ret.=str_replace(chr(0x0d),'<br/>',$this->Edit->getAscii());
-				$ret.='</div>';
+				$ret.='<code class = "asciiwrapper" style="left:34px;"'.$this->code_style().'">';
+				$ret.=$this->Edit->getAscii();
+				$ret.='</code>';
 				$ret.= '</div>';
 				$ret.= '</div>';
+				$ret .= "<div id='infobarborder'></div>";
+				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+				$ret .= FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
+				$ret .= "</div>";
+
 				$ret.='</div>';
 			}
         }
@@ -1247,25 +1237,7 @@ class Ide
 	}
 
 function main_page()
-	{
-	/*
-		global $_POST;
-		
-		php_alert_safe($_POST);
-		
-		if (isset($_POST['Current_filename'])) {
-			php_alert_safe("loading recent ui");
-			$this->Conf->UIdata = $this->recentfiles->itemUIdata($_POST['Current_filename']);
-		}
-		else {
-			if (isset($_POST['UIdata'])) {
-				php_alert_safe("loading ui");
-				$this->Conf->UIdata = $_POST['UIdata'];
-			}
-		}
-		*/
-		//$this->Conf->UIdata = $this->recentfiles->latestUIdata();
-		
+	{		
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
 		$ret = "<script type=\"text/javascript\" src=\"splitters/splitters.js\"></script>
     		<link rel=\"stylesheet\" type=\"text/css\" href=\"splitters/splitters.css\">";
@@ -1420,12 +1392,7 @@ class Editor
 		}
 		return $safe_code;
 	}
-/*
-    function dataIsBinary()
-    {
-        return preg_match('/[\x00-\x08\x0b-\x0c\x0e\x1f]/', $this->data);
-    }
-*/
+
 	function dataIsBinary() {
 		if (!function_exists('finfo_buffer')) // fallback 
 		{
@@ -1439,7 +1406,6 @@ class Editor
 	
 		$finfo = new finfo(FILEINFO_MIME_TYPE);
 		$mime = $finfo->buffer($this->data);
-		// Bedöm textlikt innehåll
 		$textTypes = [
 			'text/',
 			'application/javascript',
@@ -1470,7 +1436,6 @@ class Editor
         if (!$this->isbinary)
         {
             $this->encoding = mb_detect_encoding($data,'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1, WINDOWS-1252');
-            //$this->modifyCode();
         }
         return $this->isbinary;
     }
@@ -1483,16 +1448,6 @@ class Editor
 		$handle = fopen($file, 'r');
 		$this->data = fread($handle, filesize($file));
 		fclose($handle);
-
-		$this->isbinary=$this->dataIsBinary();
-        if (!$this->isbinary)
-        {
-			/*
-        	if (get_magic_quotes_runtime()) {
-				$this->data = stripslashes($this->data);	//??
-			}
-			*/
-        }
         return $this->createFromData($this->data);
     }
 
@@ -1500,25 +1455,14 @@ class Editor
     {
         if ($this->isbinary)
         {
-            $hexcode= preg_replace('/[\x00-\x20]/','',$code);
-            $this->data=pack('H*',$hexcode);
+            //$hexcode= preg_replace('/[\x00-\x20]/','',$code);
+            //$this->data=pack('H*',$hexcode);
+            $hexcode = str_replace([" ", "\r", "\n"], '', $code);
+			$this->data = pack('H*', $hexcode);
         }
         else
         {
-    		/*
-            ** Remove slashes if necessary, put code in $this->code
-            */
-
-            if (!$isfile)
-			{
-			/*
-				if (get_magic_quotes_gpc()) {
-					$code = stripslashes($code);
-				}
-				*/
-            }
             $this->data=$code;
-            //$this->modifyCode();
         }
     }
 
@@ -1530,15 +1474,6 @@ class Editor
 		$handle = fopen($file, 'r');
 		$code = fread($handle, filesize($file));
 		fclose($handle);
-        /*
-		if (!$this->isbinary)
-        {
-        	if (get_magic_quotes_runtime()) {
-				$code = stripslashes($code);	//??
-
-			}
-        }
-        */
         $this->createFromCode($code,true);
     }
 
@@ -1551,7 +1486,6 @@ class Editor
     function saveCode($file,$trim=false)
     {
          $handle = fopen($file, 'w+');
-         $this->isbinary = $this->dataIsBinary();
          if ($this->isbinary)
          {
             $hex=$this->getHex();
@@ -1598,7 +1532,6 @@ class Editor
 			return;
 		}
          $handle = fopen($file, 'w+');
-         $this->isbinary = $this->dataIsBinary();
          if ($this->isbinary)
          {
             fwrite($handle, $this->data);
@@ -1616,15 +1549,66 @@ class Editor
 
     function getHex()
     {
-         $tmp=unpack('H*',$this->data);
-         $this->hex=trim(chunk_split(chunk_split($tmp[1],2,' '),48,chr(0x0d)));
-         return $this->hex;
+        $tmp = unpack('H*', $this->data);
+		$this->hex = trim(chunk_split(chunk_split($tmp[1], 2, ' '), 48, "\r"));
+        return $this->hex;
     }
+    /*
     function getAscii()
     {
          $this->ascii.=trim(preg_replace('/([\x80-\xff])/e',"'&#'.ord('\\1').';'",htmlentities(chunk_split(preg_replace('/[\x00-\x20\x80-\xaf]/','.',$this->data),16,chr(0x0d))) ));
          return $this->ascii;
     }
+    */
+    /*
+    function getAscii()
+	{
+		$ascii = "<p style='margin:0;'>";
+		$len = strlen($this->data);
+	
+		for ($i = 0; $i < $len; $i++) {
+			$char = $this->data[$i];
+			$byte = ord($char);
+			if ($byte >= 32 && $byte <= 126) {
+				$ascii .= $char;
+			} else {
+				$ascii .= '.';
+			}
+			if (($i + 1) % 16 === 0) {
+				$ascii .= "</p><p style='margin:0;'>";
+			}
+		}
+		$ascii .= "</p>";
+		$this->ascii = $ascii;
+		return $ascii;
+	}
+	*/
+	function getAscii()
+	{
+		$ascii = '';
+		$len = strlen($this->data);
+		$line = '';
+		$lineCount = 0;
+	
+		for ($i = 0; $i < $len; $i++) {
+			$char = $this->data[$i];
+			$byte = ord($char);
+	
+			$line .= ($byte >= 32 && $byte <= 126) ? htmlspecialchars($char) : '.';
+	
+			if (($i + 1) % 16 === 0 || $i === $len - 1) {
+				// Använd bakgrund baserat på radnummer (jämn/udda)
+				$bg = ($lineCount % 2 === 0) ? '#ffffff' : '#eef7ff';
+				$ascii .= "<p style='margin:0;background:$bg;font-family:monospace;'>$line</p>";
+				$line = '';
+				$lineCount++;
+			}
+		}
+	
+		$this->ascii = $ascii;
+		return $ascii;
+	}
+	
     function getlen()
     {
          if ($this->isbinary)
@@ -1853,77 +1837,25 @@ class RecentList
 {
 
     var $items;
-/*
-    function __construct($list,$current)
-    {
-		$this->items=unserialize($list);
-		if ($this->items=='') {
-		    $this->items = array($current);
-		}
-    }
-    */
+
     function __construct($list, $current)
 	{
 		$this->items = @unserialize($list);
-	
 		if (!is_array($this->items) || empty($this->items)) {
-			// Om tomt eller ogiltigt, skapa ny lista med en post
 			$this->items = [['file' => $current]];
-		} /*elseif (isset($this->items[0]) && is_string($this->items[0])) {
-			// Det gamla formatet: array med strängar → konvertera till array med 'file'
-			$this->items = array_map(function($item) {
-				return ['file' => $item];
-			}, $this->items);
 		}
-		*/
 	}
-/*
-	function append($item)
-	{
-		$this->remove($item);
-		$this->items[]=$item;
-		for ($i=count($this->items)-11; $i>=0; $i--) {
-			unset($this->items[$i]);
-		}
-		if (!is_array($this->items)) {
-			$this->items=array($this->items);
-		}
-		$this->items=array_values($this->items);
-	}
-	*/
+
 	function append($file, $uidata = [])
 	{
-		//php_alert_safe($file);
-		//php_alert_safe($uidata);
-		// Försök hämta gammal uidata innan du tar bort
 		if ($uidata === []) {
-			$uidata = $this->itemUIdata($file); 
+			$uidata = $this->UIdata($file); 
 		}
-		//php_alert_safe($uidata);
 		$this->remove($file);
 		$this->items[] = ['file' => $file, 'uidata' => $uidata];
 		$this->items = array_slice($this->items, -10);
 	}
-/*
-	function remove($item)
-	{
-		for ($i=count($this->items)-1; $i>=0; $i--) {
-			if (strlen(trim($this->items[$i]))==0) {
-				unset($this->items[$i]);
-			}
-			else if ((!file_exists($this->items[$i])) && (!$this->is_url($this->items[$i])))
-			{
-				unset($this->items[$i]);
-			} else if($this->items[$i]==$item) {
-				unset($this->items[$i]);
-			}
-		}
-		if (!is_array($this->items)) {
-			$this->items=array($this->items);
-		}
-		$this->items=array_values($this->items);
-	}
-*/
+
 	function remove($filePath) {
 		$this->items = array_values(array_filter($this->items, function($item) use ($filePath) {
 			if (!is_array($item) || empty($item['file'])) return false;
@@ -1951,19 +1883,17 @@ class RecentList
 
     function item($i)
     {
-        //return $this->items[$i];
-        return $this->itemPath($i);
+        return $this->path($i);
     }
 
-	// Returnerar bara sökvägen till filen i position $i
-	function itemPath($i) {
+	function path($i) {
 		if (isset($this->items[$i]['file'])) {
 			return $this->items[$i]['file'];
 		}
 		return is_string($this->items[$i]) ? $this->items[$i] : null;
 	}
 	
-	function itemUIdata($file)
+	function UIdata($file)
 	{
 		foreach ($this->items as $item) {
 			if (isset($item['file']) && $item['file'] === $file) {
