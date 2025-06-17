@@ -308,7 +308,8 @@ function catchTab(e) {
     // Cmd/Ctrl + H (replace)
     if ((evt.ctrlKey || evt.metaKey) && key === 72) { // H
         evt.preventDefault();
-        replace_editor();
+        //replace_editor();
+        search_editor(true);
         return false;
     }
 
@@ -649,7 +650,7 @@ var searchWholeWord=false;
 var replaceTerm='';
 var searchSelection = { selStart: 0, selEnd: 0 };
 var searchSelected=false;
-
+/*
 RegExp.escape = function(text) {
   if (!arguments.callee.sRE) {
     var specials = [
@@ -661,6 +662,11 @@ RegExp.escape = function(text) {
     );
   }
   return text.replace(arguments.callee.sRE, '\\$1');
+}
+*/
+RegExp.escape = function(text) {
+  const specials = /[.*+?^${}()|[\]\\]/g;
+  return text.replace(specials, '\\$&');
 }
 
 function createLabeledCheckbox(id, labelText) {
@@ -676,10 +682,27 @@ function createLabeledCheckbox(id, labelText) {
 
 	const label = document.createElement('span');
 	label.textContent = labelText;
-
+	label.style.textAlign = 'center';
 	wrapper.appendChild(checkbox);
 	wrapper.appendChild(label);
 	return wrapper;
+}
+
+function createLabeledButton(id, labelText) {
+	const button = document.createElement('div');
+	button.id = id;
+	Object.assign(button.style, {
+		height: '14px',
+		//width: '14px',
+		textAlign: 'center',
+		cursor: 'pointer',
+		marginLeft: '4px',
+		border: '1px solid gray',
+		borderRadius: '5px',
+		padding: '1px'
+	});
+	button.textContent = labelText;
+	return button;
 }
 
 function search_editor(showDialog) {
@@ -692,64 +715,50 @@ function search_editor(showDialog) {
 	if (searchSelection.selStart !== searchSelection.selEnd) {
 		searchTerm = getSelectedCode().split('\n')[0];
 	}
-	searchPos = searchSelection.selStart;
+	//searchPos = searchSelection.selStart;
+	searchPos = 0;
 
 	let searchWindow = document.getElementById('searchWindow');
 	if (!searchWindow) {
 		const codewindow = document.getElementById('codewindow');
-
 		searchWindow = document.createElement('div');
 		searchWindow.id = "searchWindow";
 		Object.assign(searchWindow.style, {
 			backgroundColor: '#E0E4EA',
 			opacity: '0.85',
-			//border: '1px solid black',
-			//height: '24px',
 			padding: '2px',
 			position: 'absolute',
 			zIndex: '1000',
 			top: '0',
 			width: '100%',
-			display: 'none',
-			whiteSpace: 'nowrap',
-			alignItems: 'center'
+			display: 'none'
 		});
 		searchWindow.style.display = 'flex';
 		codewindow.prepend(searchWindow);
-
+		const searchDiv = document.createElement('div');
+		searchDiv.id = 'searchdiv';
+		searchDiv.style.display = 'flex';
+		searchDiv.style.width = '100%';
+		searchDiv.style.whiteSpace = 'nowrap';
+		searchDiv.style.alignItems = 'center';
+		searchWindow.appendChild(searchDiv);
 		// Close button
-		const closeButton = document.createElement('div');
-		Object.assign(closeButton.style, {
-			height: '14px',
-			width: '14px',
-			textAlign: 'center',
-			cursor: 'pointer',
-			marginRight: '10px'
-		});
-		closeButton.textContent = '✖';
+		const closeButton = createLabeledButton('closesearchbutton','✖');
+		closeButton.style.marginRight = '8px';
 		closeButton.onclick = () => {
 			searchWindow.style.display = 'none';
 			setFocus();
 		};
 		// Next button
-		const nextButton = document.createElement('div');
-		Object.assign(nextButton.style, {
-			height: '14px',
-			width: '14px',
-			textAlign: 'center',
-			cursor: 'pointer',
-			marginLeft: '2px'
-		});
-		nextButton.textContent = '>';
+		const nextButton = createLabeledButton('searchnextbutton','Find next');
 		nextButton.onclick = () => {
 			search_editor(false);
 			setFocus();
 		};
-
-		searchWindow.appendChild(closeButton);
-
+		searchDiv.appendChild(closeButton);
 		// Input
 		const inputTextarea = document.createElement('input');
+		const replaceTextarea = document.createElement('input');
 		inputTextarea.type = 'text';
 		inputTextarea.id = 'searchText';
 		inputTextarea.placeholder = 'Search…';
@@ -766,17 +775,72 @@ function search_editor(showDialog) {
 				searchWindow.style.display = 'none';
 				setFocus();
             }
+            if (evt.key === 'Tab') {
+				evt.preventDefault();
+				replaceTextarea.focus();
+			}
 		});
-		searchWindow.appendChild(inputTextarea);
-		
-		searchWindow.appendChild(nextButton);
+		searchDiv.appendChild(inputTextarea);
+		searchDiv.appendChild(nextButton);
+		searchDiv.appendChild(createLabeledCheckbox('matchcasecb', 'Match case'));
+		searchDiv.appendChild(createLabeledCheckbox('wholewordcb', 'Whole word'));
+		searchDiv.appendChild(createLabeledCheckbox('searchselectedcb', 'Search selected'));
+		const searchStats = document.createElement('div');
+		searchStats.id = 'searchstats';
+		searchStats.style.textAlign = 'center';
+		searchStats.style.marginLeft = '20';
+		searchDiv.appendChild(searchStats);
+		const replaceDiv = document.createElement('div');
+		replaceDiv.id = 'replacediv';
+		replaceDiv.style.display = 'flex';
+		replaceDiv.style.width = '100%';
+		replaceDiv.style.whiteSpace = 'nowrap';
+		replaceDiv.style.alignItems = 'center';
+		replaceDiv.style.paddingLeft = '24px';
+		searchWindow.appendChild(replaceDiv);
+		replaceTextarea.type = 'text';
+		replaceTextarea.id = 'replaceText';
+		replaceTextarea.placeholder = 'Replace with…';
+		replaceTextarea.style.height = '14px';
+		replaceTextarea.style.border = '1px solid #888888';
+		replaceTextarea.style.borderRadius = '5px';
+		replaceTextarea.addEventListener('keydown', evt => {
+			if (evt.key === 'Enter') {
+				evt.preventDefault();
+		        search_callback(3,'','');
+			}
+			if (evt.key === 'Escape') {
+				evt.preventDefault();
+				searchWindow.style.display = 'none';
+				setFocus();
+            }
+            if (evt.key === 'Tab') {
+				evt.preventDefault();
+				inputTextarea.focus();
+			}
+		});
+		replaceDiv.appendChild(replaceTextarea);
+		// replace and next button
+		const replaceNextButton = createLabeledButton('replacefindbutton','Replace and find next');
+		replaceNextButton.onclick = () => {
+			if (replaceTextarea.value.length) {
+				replaceTextareaSelection(replaceTextarea.value);
+				search_editor(false);
+				setFocus();
+	        }
+		};
+		replaceDiv.appendChild(replaceNextButton);
+		// replace all button
+		const replaceAllButton = createLabeledButton('replaceallbutton','Replace all');
+		replaceAllButton.onclick = () => {
+			replace_callback(3,'','');
+			setFocus();
+		};
+		replaceDiv.appendChild(replaceAllButton);
 
-		searchWindow.appendChild(createLabeledCheckbox('matchcasecb', 'Match case'));
-		searchWindow.appendChild(createLabeledCheckbox('wholewordcb', 'Whole word'));
-		searchWindow.appendChild(createLabeledCheckbox('searchselectedcb', 'Search selected'));
 	}
 
-	searchWindow.style.display = 'flex';
+	searchWindow.style.display = 'block';
 	const searchText = document.getElementById('searchText');
 	searchText.value = searchTerm || '';
 	searchText.focus();
@@ -796,7 +860,7 @@ function search_callback(returncode,id,value)
         {
         	searchSelection = { selStart: 0, selEnd: codevalue.length };
         }
-        searchPos = searchSelection.selStart;
+        searchPos = 0;//searchSelection.selStart;
     }
     if (returncode == 0)
     {
@@ -813,6 +877,36 @@ function search_callback(returncode,id,value)
     }
     if (searchTerm != '' && searchTerm != null)
     {
+        var RegExpStr=RegExp.escape(searchTerm);
+        var RegExpModifier='';
+		if (searchWholeWord) {
+		    RegExpStr = '\\b' + RegExpStr + '\\b';
+		}
+		if (!searchMatchCase)
+        {
+            RegExpModifier='i';
+        }
+        let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
+		let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
+		if (searchPos >= matches.length) {
+			searchPos = 0;
+        }
+        const stats = document.getElementById('searchstats');		    
+        if (stats) {
+			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
+        }
+		if (matches.length === 0) {
+		    ae_alert(searchTerm + ' not found');
+		} else {
+            const searchMatches = matches.map(m => ({
+			    start: m.index,
+			    end: m.index + m[0].length
+			}));
+			let match = searchMatches[searchPos];
+		    scrollIntoView(match.start + searchSelection.selStart, match.end + searchSelection.selStart);
+		    searchPos++;
+		}
+    /*
         var RegExpStr = RegExp.escape(searchTerm);
         var RegExpModifier='';
         if (searchWholeWord)
@@ -834,8 +928,8 @@ function search_callback(returncode,id,value)
                 {
                     start++;
                 }
-                start+=searchPos;
-                searchPos=start+1;
+                start += searchPos;
+                searchPos = start + searchTerm.length;
                 scrollIntoView(start,start+searchTerm.length);
                 break;
             }
@@ -855,6 +949,7 @@ function search_callback(returncode,id,value)
         {
             ae_alert(searchTerm + ' not found');
         }
+        */
     }
     setFocus();
 }
@@ -868,7 +963,7 @@ function replace_editor()
 	}
     var caseChecked=(searchMatchCase ? 'checked':'');
     var wordChecked=(searchWholeWord ? 'checked':'');
-        var selectedChecked=(searchSelected ? 'checked':'');
+    var selectedChecked=(searchSelected ? 'checked':'');
     ae_prompt(replace_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|textarea%¤%Replace with%¤%'+replaceTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');
 }
 
@@ -884,61 +979,60 @@ function replace_callback(returncode,id,value)
         searchMatchCase=(value_array[2] == 'true') ? true:false;
         searchWholeWord=(value_array[3] == 'true') ? true:false;
         searchSelected=(value_array[4] == 'true') ? true:false;
+        if (!searchSelected)
+	    {
+			searchSelection = { selStart: 0, selEnd: codevalue.length };
+	    }
     }
     if (returncode == 0)
     {
         return;
     }
-    if (!searchSelected)
-    {
-		searchSelection = { selStart: 0, selEnd: codevalue.length };
+    if (returncode == 3) {
+	    searchTerm = document.getElementById('searchText').value;
+	    replaceTerm = document.getElementById('replaceText').value;
+        searchMatchCase = document.getElementById('matchcasecb').checked;
+	    searchWholeWord = document.getElementById('wholewordcb').checked;
+	    if (!document.getElementById('searchselectedcb').checked)
+        {
+        	searchSelection = { selStart: 0, selEnd: codevalue.length };
+        }
     }
-    searchPos = searchSelection.selStart;
+    //searchPos = searchSelection.selStart;
     if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
     {
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
         if (searchWholeWord)
-        {
-            RegExpStr='[^a-zA-Z0-9_]'+RegExpStr+'[^a-zA-Z0-9_]';
-        }
+		if (searchWholeWord) {
+		    RegExpStr = '\\b' + RegExpStr + '\\b';
+		}
         if (!searchMatchCase)
         {
             RegExpModifier='i';
         }
-        const regex = new RegExp(RegExpStr, RegExpModifier);
-        var start=-1;
-        while (1)
-        {
-            start = codevalue.substring(searchPos,searchSelection.selEnd).search(regex);
-            if (start != -1)
-            {
-                if (searchWholeWord)
-                {
-                    start++;
-                }
-                start+=searchPos;
-                searchPos=start+1;
-                codevalue = codevalue.substring(0,start)+replaceTerm+codevalue.substring(start+searchTerm.length);
-                searchSelection.selEnd+=replaceTerm.length-searchTerm.length;
-                replacements++;
-            }
-            else
-            {
-                break;
-            }
-        }
-        if (replacements == 0)
-        {
-            ae_alert(searchTerm + ' not found');
-        }
-        else
-        {
-	        setCodeValue(codevalue);
-            checkDirty();
-            ae_alert(toHtmlEntities(searchTerm) + ' was replaced '+replacements+' times');
-	        setTimeout("document.getElementById('code').focus();",0);
-        }
+        let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
+		let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
+		
+		if (matches.length === 0) {
+		    ae_alert(searchTerm + ' not found');
+		} else {
+		    for (let i = matches.length - 1; i >= 0; i--) {
+		        let match = matches[i];
+		        let start = match.index;
+		        let end = start + match[0].length;
+		
+		        codevalue = codevalue.substring(0, start + searchSelection.selStart) + replaceTerm + codevalue.substring(end + searchSelection.selStart);
+		        replacements++;
+		    }
+		
+		    setCodeValue(codevalue);
+		    checkDirty();
+		    ae_alert(toHtmlEntities(searchTerm) + ' was replaced ' + replacements + ' times');
+		    //setTimeout(() => document.getElementById('code').focus(), 0);
+		    setFocus();
+		}
+		
     }
 }
 
