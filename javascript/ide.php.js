@@ -174,12 +174,24 @@ function serializeUI() {
 	var selectionRange = getSelectionRange();
 	UIdata['selStart'] = selectionRange.selStart;
 	UIdata['selEnd'] = selectionRange.selEnd;
+	const frameConsole = document.getElementById('frame-console');
+	UIdata['console'] = (frameConsole.style.display != 'none');
+	const searchWindow = document.getElementById('searchWindow');
+	UIdata['searchwindow'] = (searchWindow.style.display != 'none');
+	UIdata['searchPos'] = searchPos;
+	UIdata['searchTerm'] = searchTerm;
+	UIdata['replaceTerm'] = replaceTerm;
+	UIdata['searchMatchCase'] = document.getElementById('matchcasecb').checked;
+	UIdata['searchWholeWord'] = document.getElementById('wholewordcb').checked;
+	UIdata['searchSelected'] = document.getElementById('searchselectedcb').checked;
+	UIdata['searchSelectionStart'] = searchSelection.selStart;
+	UIdata['searchSelectionEnd'] = searchSelection.selEnd;
 
     var uidataField = document.getElementById('UIdata');
     if (uidataField) {
         uidataField.value = php.serialize(UIdata);
 	}
-}
+} 
 
 function unserializeUI() {
     var php = new PHP_Serializer();
@@ -193,6 +205,44 @@ function unserializeUI() {
 	if (UIdata['scrollLeft'] !== null && UIdata['scrollTop'] !== null) {
 		setScrollPosition(UIdata['scrollLeft'], UIdata['scrollTop']);
 	}
+	if (UIdata['console'] !== null) {
+		if (UIdata['console'] > 0) {
+			console_toggle();
+        }
+    }
+    if (UIdata['searchPos'] !== null) {
+		searchPos = UIdata['searchPos'];
+    }
+    if (UIdata['searchTerm'] !== null) {
+		searchTerm = UIdata['searchTerm'];
+    }
+    if (UIdata['replaceTerm'] !== null) {
+		replaceTerm = UIdata['replaceTerm'];
+    }
+    if (UIdata['searchMatchCase'] !== null) {
+		searchMatchCase = UIdata['searchMatchCase'];
+		document.getElementById('matchcasecb').checked = searchMatchCase;
+    }
+    if (UIdata['searchWholeWord'] !== null) {
+		searchWholeWord = UIdata['searchWholeWord'];
+		document.getElementById('wholewordcb').checked = searchWholeWord;
+    }
+    if (UIdata['searchSelected'] !== null) {
+		searchSelected = UIdata['searchSelected'];
+		document.getElementById('searchselectedcb').checked = searchSelected;
+    }
+    if (UIdata['searchSelection'] !== null) {
+		searchSelection.selStart = UIdata['searchSelectionStart'];
+    }
+    if (UIdata['searchSelection'] !== null) {
+		searchSelection.selEnd = UIdata['searchSelectionEnd'];
+    }
+    if (UIdata['searchwindow'] !== null) {
+		if (UIdata['searchwindow'] > 0) {
+			showSearchWindow();
+			searcAndDisplay();
+        }
+    }
 }
 
 var sel_line_num=-1;
@@ -238,6 +288,7 @@ function syncEditor(UIstr) {
 			const onMouseUp = function () {
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
+				setFocus();
 			};
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
@@ -270,12 +321,229 @@ function syncEditor(UIstr) {
 				document.addEventListener("mousemove", lines_dragGo, true);
 				document.addEventListener("mouseup", lines_dragStop, true);
 				evt.preventDefault();
+				elem.focus();
 			};
 		}
 		elem.focus();
 	}
 	unserializeUI();
+	syncSearchWindow();
+	syncConsoleWindow();
 	checkDirty();
+}
+
+function syncConsoleWindow() {
+	const frameConsole = document.getElementById('frame-console');
+	const iframe = document.getElementById('evaluationwindow');
+	const closebutton = document.getElementById('consoleclosebutton');
+	closebutton.style.marginRight = '8px';
+	closebutton.onclick = () => {
+		console_toggle();
+	};
+	iframe.onload = function () {
+	    try {
+	        const iframeWindow = iframe.contentWindow;
+	        const realLog = iframeWindow.console.log;
+	        const realError = iframeWindow.console.error;
+	
+	        iframeWindow.console.log = (...args) => {
+			    appendLog('log', args.join(' '));
+			    realLog.apply(iframeWindow.console, args);
+			};
+			
+			iframeWindow.console.warn = (...args) => {
+			    appendLog('warning', args.join(' '));
+			    realLog.apply(iframeWindow.console, args);
+			};
+
+            iframeWindow.console.debug = (...args) => {
+			    appendLog('debug', args.join(' '));
+			    realLog.apply(iframeWindow.console, args);
+			};
+			
+			iframeWindow.console.info = (...args) => {
+			    appendLog('info', args.join(' '));
+			    realLog.apply(iframeWindow.console, args);
+			};
+
+			iframeWindow.console.error = (...args) => {
+			    appendLog('error', args.join(' '));
+			    realError.apply(iframeWindow.console, args);
+			};
+			
+			iframeWindow.onerror = (message, source, lineno, colno, error) => {
+			    appendLog('error', message, lineno, colno, source);
+			};
+				
+	    } catch (e) {
+		    appendLog('error', 'Can\'t log from (cross-origin): ' + e.message);
+	    }
+	    setConsoleMenuCheckmark();
+	};    
+}
+/*
+function appendLog(type, message, lineno, colno, source = null) {
+    const frameConsole = document.getElementById('frame-console');
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+
+    const sourceText = source ? ` <span class="log-source">${source}:</span>` : '';
+
+    if (typeof lineno === 'number') {
+        line.innerHTML = `
+            ${getIcon(type)}
+            <span class="log-msg">${escapeHtml(message)}</span>
+            ${sourceText}<span class="log-jump">${lineno}&nbsp;</span>
+        `;
+
+        line.querySelector('.log-jump').onclick = () => {
+            //if (isCurrentSource(source)) {
+                setSelectionRangeFromLine(lineno);
+            //} else {
+            //    alert(`Fel kommer från annan fil: ${source}`);
+            //}
+        };
+    } else {
+        line.innerHTML = `
+            ${getIcon(type)} 
+            <span class="log-msg">${escapeHtml(message)}</span>
+            ${sourceText}
+        `;
+    }
+    var prev = frameConsole.lastChild;
+    if (prev) {
+		if (line.innerHTML == prev.innerHTML) {
+			return;
+	    }
+	}
+    frameConsole.appendChild(line);
+}
+*/
+const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/');
+
+function appendLog(type, message, lineno, colno, source = '') {
+    const frameConsole = document.getElementById('frame-console');
+    const logKey = `${type}:${message}:${lineno}:${colno}:${source}`;
+
+    const prev = frameConsole.lastElementChild;
+
+    if (prev && prev.dataset.key === logKey) {
+        // Redan samma fel – öka räknare
+        let countSpan = prev.querySelector('.log-count');
+        let count = parseInt(countSpan.textContent, 10);
+        count++;
+        countSpan.textContent = count;
+        countSpan.style.display = 'block';
+        return;
+    }
+
+    // Ny rad
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    line.dataset.key = logKey;
+    
+    if (source.startsWith(baseUrl)) {
+	    source = './' + source.substring(baseUrl.length);
+	}
+	
+    const icon = getIcon(type);
+    const escapedMsg = escapeHtml(message);
+    const sourceInfo = source ? `<span class="log-jump"  style="color:blue;cursor:pointer;">${escapeHtml(source)}:</span>` : '';
+    const jump = (typeof lineno === 'number')
+        ? `<span class="log-jump" style="color:blue;cursor:pointer;">${lineno}</span>`
+        : '';
+
+    line.innerHTML = `
+        <span class="log-count" style="display:none;">1</span>
+        ${icon} <span class="log-msg">${escapedMsg}</span><br>
+        ${sourceInfo}${jump}
+    `;
+
+    if (lineno) {
+        line.querySelector('.log-jump').onclick = () => {
+            setSelectionRangeFromLine(lineno);
+        };
+    }
+	if (source) {
+	    const currentFileElement = document.getElementById('Current_filename');
+		if (currentFileElement) {
+			const currentFilename = document.getElementById('Current_filename').value;
+			if (currentFilename.length) {
+				if (currentFilename != source) {
+			        line.querySelector('.log-jump').onclick = () => {
+			            submit_file(source);
+			        };
+	            }
+	        }
+		}
+	}
+
+    frameConsole.appendChild(line);
+}
+
+
+// Hjälpmetoder
+function getIcon(type) {
+    return type === 'error' ? '🔴' : type === 'warn' ? '🟡' : '🟢';
+}
+
+function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+    );
+}
+
+function console_toggle() {
+    const frameConsole = document.getElementById('frame-console');
+    const iframe = document.getElementById('evaluationwindow');
+    if (frameConsole.style.display == 'none') {
+	    iframe.style.height = '70%';
+	    frameConsole.style.display = 'block';
+    }
+    else {
+	    iframe.style.height = '100%';
+	    frameConsole.style.display = 'none';	    
+    }
+    setConsoleMenuCheckmark();
+}
+
+const menu_checkmark = '&nbsp;&#10003;';
+
+function setConsoleMenuCheckmark() {
+    const consoleMenu = document.getElementById('menu_item_Console');
+    const frameConsole = document.getElementById('frame-console');
+    if (frameConsole.style.display == 'none') {
+	    consoleMenu.innerHTML = '';
+    }
+    else {
+    	consoleMenu.innerHTML = menu_checkmark;
+    }
+}
+
+function setSelectionRangeFromLine(line) {
+    if (typeof setSelectionRange !== 'function') return;
+    const lineNum = parseInt(line, 10) - 1;
+    var selStart = lineNumStartPos(lineNum);
+    var selEnd = lineNumStartPos(lineNum + 1);
+    setSelectionRange(selStart,selEnd);
+    scrollIntoView(selStart,selEnd);
+}
+
+function lineNumStartPos(lineNumber) {
+	const code = codeValue(); // hel sträng från textarea eller editor
+	if (!code || lineNumber < 0) return 0;
+
+	let pos = 0;
+	let currentLine = 0;
+
+	while (currentLine < lineNumber && pos !== -1) {
+		pos = code.indexOf('\n', pos);
+		if (pos === -1) return code.length; // om rad inte finns, gå till slutet
+		pos++; // hoppa till nästa tecken efter \n
+		currentLine++;
+	}
+
+	return pos;
 }
 
 function catchTab(e) {
@@ -313,11 +581,6 @@ function catchTab(e) {
         return false;
     }
 
-	//if (checkDirty()){
-	//	ae_confirm(callback_submit,"Discard changes?","set_undo");
-	//} else {
-	//	main_submit("set_undo");
-	//}
 	// Cmd/Ctrl + R (run)
 	if ((evt.ctrlKey || evt.metaKey) && key === 82) { // R
         evt.preventDefault();
@@ -360,6 +623,11 @@ function catchTab(e) {
             replaceTextareaSelection("\n" + match[1]);
             return false;
         }
+    }
+    
+    //Escape
+    if (key === 27) {
+	    hideSearchWindow()
     }
 
     return true;
@@ -650,59 +918,82 @@ var searchWholeWord=false;
 var replaceTerm='';
 var searchSelection = { selStart: 0, selEnd: 0 };
 var searchSelected=false;
-/*
-RegExp.escape = function(text) {
-  if (!arguments.callee.sRE) {
-    var specials = [
-      '/', '.', '*', '+', '?', '|',
-      '(', ')', '[', ']', '{', '}','$','^','\\'
-    ];
-    arguments.callee.sRE = new RegExp(
-      '(\\' + specials.join('|\\') + ')', 'g'
-    );
-  }
-  return text.replace(arguments.callee.sRE, '\\$1');
-}
-*/
+
 RegExp.escape = function(text) {
   const specials = /[.*+?^${}()|[\]\\]/g;
   return text.replace(specials, '\\$&');
 }
 
-function createLabeledCheckbox(id, labelText) {
-	const wrapper = document.createElement('label');
-	wrapper.style.marginLeft = '10px';
-
-	const checkbox = document.createElement('input');
-	checkbox.type = 'checkbox';
-	checkbox.id = id;
-	checkbox.onclick = () => {
-		setFocus();
-	};
-
-	const label = document.createElement('span');
-	label.textContent = labelText;
-	label.style.textAlign = 'center';
-	wrapper.appendChild(checkbox);
-	wrapper.appendChild(label);
-	return wrapper;
+function hideSearchWindow() {
+    let codewrapper = document.getElementById('codewrapper');
+	let searchWindow = document.getElementById('searchWindow');
+    searchWindow.style.display = 'none';
+	codewrapper.style.height = '100%';
+	setFocus();
 }
 
-function createLabeledButton(id, labelText) {
-	const button = document.createElement('div');
-	button.id = id;
-	Object.assign(button.style, {
-		height: '14px',
-		//width: '14px',
-		textAlign: 'center',
-		cursor: 'pointer',
-		marginLeft: '4px',
-		border: '1px solid gray',
-		borderRadius: '5px',
-		padding: '1px'
+function showSearchWindow() {
+	let codewrapper = document.getElementById('codewrapper');
+	let searchWindow = document.getElementById('searchWindow');
+	const searchText = document.getElementById('searchText');
+	searchWindow.style.display = 'block';
+	codewrapper.style.height = '70%';
+	searchText.value = searchTerm || '';
+}
+
+function syncSearchWindow() {
+    let codewrapper = document.getElementById('codewrapper');
+	let searchWindow = document.getElementById('searchWindow');
+	const closeButton = document.getElementById('closesearchbutton');
+	closeButton.style.marginRight = '8px';
+	closeButton.onclick = () => {
+		hideSearchWindow()
+	};
+	const inputTextarea = document.getElementById('searchText');
+	const replaceTextarea = document.getElementById('replaceText');
+	inputTextarea.addEventListener('keydown', evt => {
+		if (evt.key === 'Enter') {
+			evt.preventDefault();
+	        search_callback(3,'','');
+		}
+		if (evt.key === 'Escape') {
+			evt.preventDefault();
+			hideSearchWindow()
+        }
+        if (evt.key === 'Tab') {
+			evt.preventDefault();
+			replaceTextarea.focus();
+		}
 	});
-	button.textContent = labelText;
-	return button;
+	document.getElementById('searchnextbutton').onclick = () => {
+		search_editor(false);
+		setFocus();
+	};
+	replaceTextarea.addEventListener('keydown', evt => {
+		if (evt.key === 'Enter') {
+			evt.preventDefault();
+	        search_callback(3,'','');
+		}
+		if (evt.key === 'Escape') {
+			evt.preventDefault();
+			hideSearchWindow()
+        }
+        if (evt.key === 'Tab') {
+			evt.preventDefault();
+			inputTextarea.focus();
+		}
+	});
+	document.getElementById('replacefindbutton').onclick = () => {
+		if (replaceTextarea.value.length) {
+			replaceTextareaSelection(replaceTextarea.value);
+			search_editor(false);
+			setFocus();
+        }
+	};
+	document.getElementById('replaceallbutton').onclick = () => {
+		replace_callback(3,'','');
+		setFocus();
+	};
 }
 
 function search_editor(showDialog) {
@@ -710,140 +1001,22 @@ function search_editor(showDialog) {
 		search_callback(3, '', '');
 		return;
 	}
-
 	searchSelection = getSelectionRange();
 	if (searchSelection.selStart !== searchSelection.selEnd) {
 		searchTerm = getSelectedCode().split('\n')[0];
 	}
-	//searchPos = searchSelection.selStart;
 	searchPos = 0;
-
-	let searchWindow = document.getElementById('searchWindow');
-	if (!searchWindow) {
-		const codewindow = document.getElementById('codewindow');
-		searchWindow = document.createElement('div');
-		searchWindow.id = "searchWindow";
-		Object.assign(searchWindow.style, {
-			backgroundColor: '#E0E4EA',
-			opacity: '0.85',
-			padding: '2px',
-			position: 'absolute',
-			zIndex: '1000',
-			top: '0',
-			width: '100%',
-			display: 'none'
-		});
-		searchWindow.style.display = 'flex';
-		codewindow.prepend(searchWindow);
-		const searchDiv = document.createElement('div');
-		searchDiv.id = 'searchdiv';
-		searchDiv.style.display = 'flex';
-		searchDiv.style.width = '100%';
-		searchDiv.style.whiteSpace = 'nowrap';
-		searchDiv.style.alignItems = 'center';
-		searchWindow.appendChild(searchDiv);
-		// Close button
-		const closeButton = createLabeledButton('closesearchbutton','✖');
-		closeButton.style.marginRight = '8px';
-		closeButton.onclick = () => {
-			searchWindow.style.display = 'none';
-			setFocus();
-		};
-		// Next button
-		const nextButton = createLabeledButton('searchnextbutton','Find next');
-		nextButton.onclick = () => {
-			search_editor(false);
-			setFocus();
-		};
-		searchDiv.appendChild(closeButton);
-		// Input
-		const inputTextarea = document.createElement('input');
-		const replaceTextarea = document.createElement('input');
-		inputTextarea.type = 'text';
-		inputTextarea.id = 'searchText';
-		inputTextarea.placeholder = 'Search…';
-		inputTextarea.style.height = '14px';
-		inputTextarea.style.border = '1px solid #888888';
-		inputTextarea.style.borderRadius = '5px';
-		inputTextarea.addEventListener('keydown', evt => {
-			if (evt.key === 'Enter') {
-				evt.preventDefault();
-		        search_callback(3,'','');
-			}
-			if (evt.key === 'Escape') {
-				evt.preventDefault();
-				searchWindow.style.display = 'none';
-				setFocus();
-            }
-            if (evt.key === 'Tab') {
-				evt.preventDefault();
-				replaceTextarea.focus();
-			}
-		});
-		searchDiv.appendChild(inputTextarea);
-		searchDiv.appendChild(nextButton);
-		searchDiv.appendChild(createLabeledCheckbox('matchcasecb', 'Match case'));
-		searchDiv.appendChild(createLabeledCheckbox('wholewordcb', 'Whole word'));
-		searchDiv.appendChild(createLabeledCheckbox('searchselectedcb', 'Search selected'));
-		const searchStats = document.createElement('div');
-		searchStats.id = 'searchstats';
-		searchStats.style.textAlign = 'center';
-		searchStats.style.marginLeft = '20';
-		searchDiv.appendChild(searchStats);
-		const replaceDiv = document.createElement('div');
-		replaceDiv.id = 'replacediv';
-		replaceDiv.style.display = 'flex';
-		replaceDiv.style.width = '100%';
-		replaceDiv.style.whiteSpace = 'nowrap';
-		replaceDiv.style.alignItems = 'center';
-		replaceDiv.style.paddingLeft = '24px';
-		searchWindow.appendChild(replaceDiv);
-		replaceTextarea.type = 'text';
-		replaceTextarea.id = 'replaceText';
-		replaceTextarea.placeholder = 'Replace with…';
-		replaceTextarea.style.height = '14px';
-		replaceTextarea.style.border = '1px solid #888888';
-		replaceTextarea.style.borderRadius = '5px';
-		replaceTextarea.addEventListener('keydown', evt => {
-			if (evt.key === 'Enter') {
-				evt.preventDefault();
-		        search_callback(3,'','');
-			}
-			if (evt.key === 'Escape') {
-				evt.preventDefault();
-				searchWindow.style.display = 'none';
-				setFocus();
-            }
-            if (evt.key === 'Tab') {
-				evt.preventDefault();
-				inputTextarea.focus();
-			}
-		});
-		replaceDiv.appendChild(replaceTextarea);
-		// replace and next button
-		const replaceNextButton = createLabeledButton('replacefindbutton','Replace and find next');
-		replaceNextButton.onclick = () => {
-			if (replaceTextarea.value.length) {
-				replaceTextareaSelection(replaceTextarea.value);
-				search_editor(false);
-				setFocus();
-	        }
-		};
-		replaceDiv.appendChild(replaceNextButton);
-		// replace all button
-		const replaceAllButton = createLabeledButton('replaceallbutton','Replace all');
-		replaceAllButton.onclick = () => {
-			replace_callback(3,'','');
-			setFocus();
-		};
-		replaceDiv.appendChild(replaceAllButton);
-
-	}
-
-	searchWindow.style.display = 'block';
+	showSearchWindow();
 	const searchText = document.getElementById('searchText');
-	searchText.value = searchTerm || '';
 	searchText.focus();
+}
+
+function highlightMatchPreserveCase(line, searchTerm) {
+    const escapedLine = escapeHtml(line);
+    // Escape HTML i söktermen också, för korrekt regex
+    const escapedTerm = escapeHtml(searchTerm);
+    const regex = new RegExp(escapedTerm, 'gi');
+    return escapedLine.replace(regex, match => `<mark>${match}</mark>`);
 }
 
 function search_callback(returncode,id,value)
@@ -851,7 +1024,7 @@ function search_callback(returncode,id,value)
     const codevalue = codeValue();
     if (returncode == 1)
     {
-        value_array=value.split('|¤|');
+        var value_array = value.split('|¤|');
         searchTerm=value_array[0];
         searchMatchCase=(value_array[1] == 'true') ? true:false;
         searchWholeWord=(value_array[2] == 'true') ? true:false;
@@ -877,6 +1050,7 @@ function search_callback(returncode,id,value)
     }
     if (searchTerm != '' && searchTerm != null)
     {
+    /*
         var RegExpStr=RegExp.escape(searchTerm);
         var RegExpModifier='';
 		if (searchWholeWord) {
@@ -891,10 +1065,74 @@ function search_callback(returncode,id,value)
 		if (searchPos >= matches.length) {
 			searchPos = 0;
         }
+        if (searchPos < 0) {
+			searchPos = matches.length - 1;
+        }
         const stats = document.getElementById('searchstats');		    
         if (stats) {
 			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
         }
+        const showAllDiv = document.getElementById('hitlist');
+        if (showAllDiv) {
+        	showAllDiv.innerHTML = '';
+	        let lines = codevalue.split('\n');
+			let lineStartIndices = [];
+			let index = 0;
+			// Skapa karta med var varje rad börjar i hela koden
+			for (let line of lines) {
+			    lineStartIndices.push(index);
+			    index += line.length + 1; // +1 för \n
+			}
+			// Gå igenom alla matcher
+			let detailedMatches = matches.map((m,i) => {
+			    let matchStart = m.index + searchSelection.selStart;
+			    let matchEnd = matchStart + m[0].length;
+			
+			    // Hitta vilken rad matchen tillhör
+			    let lineNumber = lineStartIndices.findIndex((start, i) => {
+			        return matchStart >= start && matchStart < (lineStartIndices[i + 1] ?? Infinity);
+			    });
+			    const showAllList = document.getElementById('hitlist');
+			    const escapedTerm = RegExp.escape(searchTerm);
+				const flags = searchMatchCase ? 'g' : 'gi';
+				const highlightRegex = new RegExp(escapedTerm, flags);
+				
+				const item = document.createElement('li');
+				item.className = 'search-line';
+				item.onclick = () => {
+					console.log("single");
+					searchPos = i;
+					search_callback(3, '', '');
+				};
+				const numberDiv = document.createElement('div');
+				numberDiv.innerHTML = lineNumber + 1;
+				numberDiv.style.minWidth = '32px';
+				numberDiv.style.textAlign = 'right';
+				numberDiv.style.backgroundColor = '#E0E4EA';
+				numberDiv.style.marginRight = '8px';
+				
+				const lineDiv = document.createElement('div');
+				const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
+				lineDiv.innerHTML = highlightedLine;
+				if (searchPos == i) {
+					item.style.backgroundColor = 'lightblue';
+                }
+
+				item.appendChild(numberDiv);
+				item.appendChild(lineDiv);
+				showAllList.appendChild(item);
+			    let lineText = lines[lineNumber];
+
+			    return {
+			        start: matchStart,
+			        end: matchEnd,
+			        lineNumber: lineNumber + 1, // 1-baserat
+			        lineText
+			    };
+			});
+	    }
+	    */
+	    var matches = searcAndDisplay();
 		if (matches.length === 0) {
 		    ae_alert(searchTerm + ' not found');
 		} else {
@@ -903,55 +1141,96 @@ function search_callback(returncode,id,value)
 			    end: m.index + m[0].length
 			}));
 			let match = searchMatches[searchPos];
-		    scrollIntoView(match.start + searchSelection.selStart, match.end + searchSelection.selStart);
+		    scrollIntoView(match.start, match.end);
 		    searchPos++;
 		}
-    /*
-        var RegExpStr = RegExp.escape(searchTerm);
-        var RegExpModifier='';
-        if (searchWholeWord)
-        {
-            RegExpStr='[^a-zA-Z0-9_]'+RegExpStr+'[^a-zA-Z0-9_]';
-        }
-        if (!searchMatchCase)
-        {
-            RegExpModifier='i';
-        }
-        const regex = new RegExp(RegExpStr, RegExpModifier);
-        var start = -1;
-        while (1)
-        {
-            start = codevalue.substring(searchPos,searchSelection.selEnd).search(regex);
-            if (start != -1)
-            {
-                if (searchWholeWord)
-                {
-                    start++;
-                }
-                start += searchPos;
-                searchPos = start + searchTerm.length;
-                scrollIntoView(start,start+searchTerm.length);
-                break;
-            }
-            else
-            {
-                if (searchPos > searchSelection.selStart)
-                {
-                    searchPos = searchSelection.selStart;
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        if (start == -1)
-        {
-            ae_alert(searchTerm + ' not found');
-        }
-        */
     }
     setFocus();
+}
+
+function searcAndDisplay() {
+    const codevalue = codeValue();
+    var RegExpStr=RegExp.escape(searchTerm);
+    var RegExpModifier='';
+	if (searchWholeWord) {
+	    RegExpStr = '\\b' + RegExpStr + '\\b';
+	}
+	if (!searchMatchCase)
+    {
+        RegExpModifier='i';
+    }
+    let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
+	let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
+	if (searchPos >= matches.length) {
+		searchPos = 0;
+    }
+    if (searchPos < 0) {
+		searchPos = matches.length - 1;
+    }
+    const stats = document.getElementById('searchstats');		    
+    if (stats) {
+		stats.textContent = (searchPos + 1) + ' / ' + matches.length;
+    }
+    const showAllDiv = document.getElementById('hitlist');
+    if (showAllDiv) {
+    	showAllDiv.innerHTML = '';
+        let lines = codevalue.split('\n');
+		let lineStartIndices = [];
+		let index = 0;
+		// Skapa karta med var varje rad börjar i hela koden
+		for (let line of lines) {
+		    lineStartIndices.push(index);
+		    index += line.length + 1; // +1 för \n
+		}
+		// Gå igenom alla matcher
+		let detailedMatches = matches.map((m,i) => {
+		    let matchStart = m.index + searchSelection.selStart;
+		    let matchEnd = matchStart + m[0].length;
+		
+		    // Hitta vilken rad matchen tillhör
+		    let lineNumber = lineStartIndices.findIndex((start, i) => {
+		        return matchStart >= start && matchStart < (lineStartIndices[i + 1] ?? Infinity);
+		    });
+		    const showAllList = document.getElementById('hitlist');
+		    const escapedTerm = RegExp.escape(searchTerm);
+			const flags = searchMatchCase ? 'g' : 'gi';
+			const highlightRegex = new RegExp(escapedTerm, flags);
+			
+			const item = document.createElement('li');
+			item.className = 'search-line';
+			item.onclick = () => {
+				console.log("single");
+				searchPos = i;
+				search_callback(3, '', '');
+			};
+			const numberDiv = document.createElement('div');
+			numberDiv.innerHTML = lineNumber + 1;
+			numberDiv.style.minWidth = '32px';
+			numberDiv.style.textAlign = 'right';
+			numberDiv.style.backgroundColor = '#E0E4EA';
+			numberDiv.style.marginRight = '8px';
+			
+			const lineDiv = document.createElement('div');
+			const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
+			lineDiv.innerHTML = highlightedLine;
+			if (searchPos == i) {
+				item.style.backgroundColor = 'lightblue';
+            }
+
+			item.appendChild(numberDiv);
+			item.appendChild(lineDiv);
+			showAllList.appendChild(item);
+		    let lineText = lines[lineNumber];
+
+		    return {
+		        start: matchStart,
+		        end: matchEnd,
+		        lineNumber: lineNumber + 1, // 1-baserat
+		        lineText
+		    };
+		});
+    }
+    return matches;
 }
 
 function replace_editor()
@@ -973,7 +1252,7 @@ function replace_callback(returncode,id,value)
     var codevalue = codeValue();
     if (returncode == 1)
     {
-        value_array=value.split('|¤|');
+        var value_array=value.split('|¤|');
         searchTerm=value_array[0];
         replaceTerm=value_array[1];
         searchMatchCase=(value_array[2] == 'true') ? true:false;

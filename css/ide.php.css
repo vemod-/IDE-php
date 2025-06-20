@@ -561,3 +561,64 @@ select:focus,textarea:focus,input:focus{
     margin:0px;
     padding:0px;
 }
+#frame-console {
+    font-family: monospace;
+    font-size: 12px;
+    background-color: #f4f4f4;
+    //padding: 8px;
+    border-top: 1px solid #888888;
+}
+
+.log-line {
+	white-space:nowrap;
+    padding: 2px 4px;
+    border-bottom: 1px solid #ddd;
+    padding-left:8px;
+}
+
+.log-line:hover {
+    background-color: #e0e0e0;
+}
+
+.log-line.error   { color: #b00020; }
+.log-line.warning { color: #a06000; }
+.log-line.info    { color: #0066cc; }
+
+.log-msg {
+    white-space: pre-wrap;
+}
+
+.log-jump {
+	color:blue;
+	cursor:pointer;
+}
+/*
+.log-source {
+    color: #888;
+    margin-left: 2px;
+}
+*/
+.log-count {
+	font-size:10px;
+	color: #555;
+	float: right;
+	color:white;
+	background-color:#6666FF;
+	border-radius:14px;
+    width: 14px;
+    height: 14px;
+    text-align:center;
+    line-height:14px;
+    //vertical-align: middle;
+    //text-align:right;
+}
+
+.search-line {
+	display:flex;
+	align-items:baseline;
+	cursor:pointer;
+}
+
+.search-line:hover {
+    background-color: #f0f0f0;
+}

@@ -84,6 +84,15 @@ class Page {
 	   return($ret);
 	}
 	
+	function make_id_safe($string) {
+		// Ta bort HTML-taggar, trimma och konvertera mellanslag till _
+		$string = strip_tags($string);
+		$string = trim($string);
+		$string = strtolower($string);
+		$string = preg_replace('/[^a-z0-9\-_:.]/', '_', $string); // tillåtna tecken
+		return $string;
+	}
+	
 	function menu_item($caption,$action,$disabled=false,$checked=false)
 	{
 		$checkmark='&nbsp;';
@@ -91,7 +100,8 @@ class Page {
 		{
 			$checkmark="&nbsp;&#10003;";
 		}
-		$caption="<span style='position:absolute;left:-7px;'>$checkmark</span>$caption&nbsp;&nbsp;";
+		$safe_id = $this->make_id_safe($caption);
+		$caption="<span id='menu_item_{$safe_id}' style='position:absolute;left:-7px;'>$checkmark</span>$caption&nbsp;&nbsp;";
 		if ($disabled)
 		{
 			return "<li class='disabled'>$caption</li>\n";
@@ -147,6 +157,26 @@ class Page {
 		}   
 		$ret .= "<a href='#' $buttonclass onClick='$action'>$caption</a>\n";
 		$ret.="</div>";
+		return $ret;
+	}
+	
+	function search_button($id,$labelText) {
+		$ret = "<div id = '{$id}' style = 'height:14px;text-align:center;cursor:pointer;margin-left:4px;border:1px solid #888888;border-radius:5px;padding:1px;'>";
+		$ret .= $labelText;
+		$ret .= "</div>";
+		return $ret;
+	}
+	
+	function search_checkbox($id,$labelText) {
+		$ret = "<div style = 'margin-left:10px;height:14px;display:inline-flex;justify-content:center;'>";
+		  $ret .= "<input type = 'checkbox' id = '{$id}' onClick='setFocus()' style = 'margin:0;padding:0;'></input>";
+		  $ret .= "<div style = 'margin-left:4px;'>{$labelText}</div>";
+		$ret .= "</div>";
+		return $ret;
+	}
+	
+	function search_input($id,$placeholder) {
+		$ret = "<input type ='text' id = '{$id}' placeholder = '{$placeholder}' style = 'height:14px;border:1px solid #888888;border-radius:5px;'/>";
 		return $ret;
 	}
 

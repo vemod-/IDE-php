@@ -1001,8 +1001,8 @@ class Ide
 	{
 		$ret ="<div class='top_window_z1000'>";
 		$menu = "";
-		$menu .=$this->Out->menu_item('Search...&emsp;&emsp;&emsp;cmd+F','search_editor(true);',$this->Conf->IsBinary);
-		$menu .=$this->Out->menu_item('Replace...&emsp;&emsp;cmd+H','replace_editor();',$this->Conf->IsBinary);
+		$menu .=$this->Out->menu_item('Search&emsp;&emsp;&emsp;&emsp;cmd+F','search_editor(true);');
+		//$menu .=$this->Out->menu_item('Replace...&emsp;&emsp;cmd+H','replace_editor();',$this->Conf->IsBinary);
 		$menu .=$this->Out->menu_item('Beautify','main_submit("beautify");',$this->Conf->IsBinary);
 		$menu .="<hr/>";
 		$menu .=$this->Out->menu_item('Open tpl','ae_confirm(callback_submit,"Replace current code with new template?","show_template")',($this->Conf->IsBinary));
@@ -1048,6 +1048,8 @@ class Ide
 		for ($i=0; $i<count($this->Conf->Eval_suffix_list); $i++) {
 			$menu .=$this->Out->menu_item('Temporary'.$this->Conf->Eval_suffix_list[$i],'main_form.phpnet.value=0;if ("'.$this->Conf->Syncmode.'"=="temp'.$this->Conf->Eval_suffix_list[$i].'"){main_form.syncmode.value="";}else{main_form.syncmode.value="temp'.$this->Conf->Eval_suffix_list[$i].'";}main_submit("eval_sync");',(!file_exists($this->temp_file()) or ($this->Conf->IsBinary)),$this->Conf->Syncmode=='temp'.$this->Conf->Eval_suffix_list[$i]);
 		}
+		$menu.="<hr/>";
+		$menu .=$this->Out->menu_item('Console','console_toggle();');
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('PHP.net','main_form.phpnet.value=(1-main_form.phpnet.value);main_submit("phpnet");',!$this->is_url($this->Conf->Phpneturl),($this->Conf->Phpnet));
 		$ret .= $this->Out->menu_create('Evaluate',$menu);
@@ -1142,17 +1144,19 @@ class Ide
 					{$this->code_style()}
 				}
 				</style>";
-		    $ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-			$ret.='<div class="leftwrapperinfo" style="border-left:0;'.$this->code_style().'">';
-			$ret .= '<textarea class="absolute" name="CodeMirrorTextArea" id="code" data-mode="'.$this->Edit->detectCodeMirrorMode($this->Conf->Current_file).'">'.$this->Edit->getTextareaCode().'</textarea>';
-			$ret .= "</div>";
-			$ret .= "<div id='infobarborder'></div>";
-			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
-			$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-			$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
-			$ret .= "</div>";
+		    $ret .="<div class='scroll_window_no' id = 'codewrapper' style='$borderstyle'>\n";
+			  $ret .='<div class="leftwrapperinfo" style="border-left:0;'.$this->code_style().'">';
+			//$ret .= "<div id = 'codewrapper' style = 'width:100%;height:100%;display:block;'>";			
+			    $ret .= '<textarea class="absolute" name="CodeMirrorTextArea" id="code" data-mode="'.$this->Edit->detectCodeMirrorMode($this->Conf->Current_file).'">'.$this->Edit->getTextareaCode().'</textarea>';
+			//$ret .= "</div>";
+			  $ret .= "</div>";
+			  $ret .= "<div id='infobarborder'></div>";
+			  $ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+			  $ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+			    $ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
+			  $ret .= "</div>";
 			$ret .= '</div>';
-
+			$ret .= $this->search_window();
 		}
         else {
         	$ret .= "<script>
@@ -1162,27 +1166,30 @@ class Ide
 			</script>";
 			if (!$this->Conf->IsBinary)
 			{
-				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
-				$ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
-				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
-				$ret.='</div>';
-				$ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
-				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
-				$ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
-				$ret.= '</div>';
-				$ret.= '</div>';
-				$ret .= "<div id='infobarborder'></div>";
-				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
-				$ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
-				$ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
-				$ret .= "</div>";
+				$ret .="<div class='scroll_window_no' id = 'codewrapper' style='$borderstyle'>\n";
+				  $ret.='<div class="leftwrapperinfo" style="'.$this->code_style().'">';
+				    $ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getTextareaCode().'</textarea>\n';
+				  $ret.='</div>';
+				  $ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
+				    $ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="'.$this->code_style().'">';
+					  $ret.= '<code class="codeprint" style="'.$this->code_style().'">'. implode('<br />', range(1, $this->Edit->getlen())). '</code>';
+				    $ret.= '</div>';
+				  $ret.= '</div>';
+				  $ret .= "<div id='infobarborder'></div>";
+				  $ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobar'></div>";
+				  $ret .= "<div  onselectstart='return false' unselectable = 'on' id='infobarright'>";
+				    $ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
+				  $ret .= "</div>";
 				$ret .="</div>\n";
 			}
 			else
 			{
-				$ret .="<div class='scroll_window_no' style='$borderstyle'>\n";
+				$ret .="<div class='scroll_window_no' id = 'codewrapper' style='$borderstyle'>\n";
 				$ret.='<div class="leftwrapperinfo" style="border-left:172px solid #e5e5e5;'.$this->code_style().'">';
+				//$ret .= "<div id = 'codeWindow' style = 'width:100%;height:100%;display:block;'>";			
 				$ret .='<textarea class="absolute" style="'.$this->code_style().'" spellcheck="false" WRAP="OFF" ID="code" NAME="code">'.$this->Edit->getCode().'</textarea>\n';
+				//$ret.='</div>';
+				//$ret .= "<div id = 'searchWindow' style = 'width:100%;height:30%;display:none;background-color:#E0E4EA;font-size:12px;'></div>";
 				$ret.='</div>';
 				$ret.='<div class="leftheaderinfo" style="'.$this->code_style().'">';
 				$ret.='<div id="code_numbers" name="code_numbers" class="codeprint" unselectable = "on" onselectstart="return false" style="width:170px;'.$this->code_style().'">';
@@ -1204,11 +1211,36 @@ class Ide
 
 				$ret.='</div>';
 			}
+			$ret .= $this->search_window();
         }
 		$ret .="</div>\n";
 		return $ret;
 	}
 
+	function search_window()
+	{
+		$ret = "<div id = 'searchWindow' style = 'width:100%;height:30%;bottom:0;position:absolute;display:none;background-color:#E0E4EA;font-size:12px;border-top:1px solid #888888;border-right:1px solid #888888;box-sizing:border-box;'>";
+		  $ret .= "<div id = 'searchdiv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;'>";
+		  	$ret .= $this->Out->search_button('closesearchbutton','✖');
+		  	$ret .= $this->Out->search_input('searchText','Search...');
+		  	$ret .= $this->Out->search_button('searchnextbutton','Find next');
+		  	$ret .= $this->Out->search_checkbox('matchcasecb', 'Match case');
+		  	$ret .= $this->Out->search_checkbox('wholewordcb', 'Whole word');
+		  	$ret .= $this->Out->search_checkbox('searchselectedcb', 'Search selected');
+		  	$ret .= "<div id = 'searchstats' style = 'text-align:center;margin-left:20px;'></div>";
+		  $ret .= "</div>";
+		  $ret .= "<div id = 'replacediv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;padding-left:24px;'>";
+		    $ret .= $this->Out->search_input('replaceText','Replace with...');
+		  	$ret .= $this->Out->search_button('replacefindbutton','Replace and find next');
+		  	$ret .= $this->Out->search_button('replaceallbutton','Replace all');
+		  $ret .= "</div>";	
+		  $ret .= '<div id = "showalldiv" style = "width:100%;height:calc(100% - 36px);overflow:scroll;background-color:white;padding:0;margin:0;'.$this->code_style().'">';
+		    $ret .= "<ul id = 'hitlist' style = 'padding:0;margin:0;'></ul>";
+		  $ret .= "</div>";	
+		$ret .= "</div>";
+		return $ret;
+	}
+	
 	function current_eval()
 	{
 		$evalpath=$this->Conf->Eval_path;
@@ -1232,7 +1264,13 @@ class Ide
 			$src='';
 		}
 		$ret ="<div class='fixed_window'>\n";
-		$ret .="<iframe id='evaluationwindow' name='evaluationwindow' frameborder='0' width='100%' height='100%' class='scroll_window' style='$borderstyle' src='".$src."'></iframe></div>\n";
+		$ret .="<iframe id='evaluationwindow' name='evaluationwindow' frameborder='0' class='scroll_window' style='width:100%;height:100%;$borderstyle' src='".$src."'></iframe>";
+		$ret .= '<div id="frame-console" style="position:absolute;bottom:0;height:30%;width:100%;background:#eee; white-space:pre-wrap; font-family:monospace;overflow:scroll;box-sizing:border-box;display:none">';
+			$ret .= "<div id = 'consolediv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;background-color:#E0E4EA;'>";
+		  		$ret .= $this->Out->search_button('consoleclosebutton','✖');
+		  	$ret .= '</div>';
+		$ret .= '</div>';
+		$ret .= "</div>\n";
 		return $ret;
 	}
 
