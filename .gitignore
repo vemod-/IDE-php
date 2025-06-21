@@ -10,3 +10,8 @@ admin/
 
 # Ignorera filen .htpwd i rotkatalogen
 /.htpwd
+
+splitters/testSplit.php
+
+filetable/testFileTable.php
+
