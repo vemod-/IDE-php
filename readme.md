@@ -17,3 +17,5 @@
 
   - The Ide.php homepage is at http://www.ekenberg.se/php/ide
   - The PHP homepage is at http://www.php.net
+  - 
+    ![Skärmavbild 2025-06-20 kl  10 56 28](https://github.com/user-attachments/assets/26e64c7b-ed3c-44db-8907-a3f94f853b4a)
