@@ -1,1 +1,12 @@
 .gitignore.txt
+
+# Ignorera allt i mappen data/
+data/*
+# Men undanta new.php
+!data/new.php
+
+# Ignorera allt i mappen admin/
+admin/
+
+# Ignorera filen .htpwd i rotkatalogen
+/.htpwd
