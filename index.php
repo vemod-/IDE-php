@@ -288,7 +288,10 @@ class Ide
 					$this->save_code_files();
 				}
 			} elseif($_POST['action']=='set_directory') {
-				$dir="{$this->Conf->Dir_path}/{$_POST['current_directory']}";
+				$dir = $_POST['current_directory'];
+				if (!str_starts_with($dir,'./')) {
+					$dir="{$this->Conf->Dir_path}/{$_POST['current_directory']}";
+				}
 				$reldir=$this->shorten_reldir($dir);
 				$alert = "{$this->Conf->Dir_path} - {$_POST['current_directory']} - {$dir} - {$reldir}";
 				if (is_dir($reldir)) {
@@ -1080,28 +1083,45 @@ class Ide
 		require 'filetable/filetable.php';
 	    $filetable = new FileTable($this->Conf->Dir_path,$this->Conf->Current_file,$this->Conf->Dir_sortorder,$this->Conf->Allow_browse_below_root);
 		$ret ="<div class='fixed_window'>\n";
-		$ret .="<div class='scroll_window' style='$borderstyle'>\n";
-		$ret .= $filetable->file_table();
-		$ret .= "<script type=\"text/javascript\">
-			document.addEventListener(\"DOMContentLoaded\", function () {
-				if (typeof FileTableEvents !== 'undefined') {
-					FileTableEvents.onFileClick = function (path) {
-						submit_file(path);
-					};
-					FileTableEvents.onFolderClick = function (path) {
-						submit_dir(path);
-					};
-					FileTableEvents.onChangeSortOrder = function (sortorder) {
-						submit_sort(sortorder);
+		  $ret .="<div class='scroll_window' style='height:50%;$borderstyle'>\n";
+		    $ret .= $filetable->file_table();
+			$ret .= "<script type=\"text/javascript\">
+				document.addEventListener(\"DOMContentLoaded\", function () {
+					if (typeof FileTableEvents !== 'undefined') {
+						FileTableEvents.onFileClick = function (path) {
+							submit_file(path);
+						};
+						FileTableEvents.onFolderClick = function (path) {
+							submit_dir(path);
+						};
+						FileTableEvents.onChangeSortOrder = function (sortorder) {
+							submit_sort(sortorder);
+						}
+						FileTableEvents.onPermissionsClick = function (file,value)
+						{
+							chmod_file(file,value);
+						}
 					}
-					FileTableEvents.onPermissionsClick = function (file,value)
-					{
-						submit_chmod(file,value);
+				});
+				</script>";
+		  $ret .="</div>\n";
+		  $ret .= "<div class='scroll_window' style='height:50%;top:50%;$borderstyle'>";
+		    require_once('./projecttree/projecttree.php');
+		    $prj = new ProjectTree($this->Conf->Current_file);
+		    $ret .= $prj->getHTML();
+		    $ret .= "<script type=\"text/javascript\">
+				document.addEventListener(\"DOMContentLoaded\", function () {
+					if (typeof ProjectTreeEvents !== 'undefined') {
+						ProjectTreeEvents.onFileClick = function (path) {
+							submit_file(path);
+						};
+						ProjectTreeEvents.onFolderClick = function (path) {
+							submit_dir(path);
+						};
 					}
-				}
-			});
-			</script>";
-		$ret .="</div>\n";
+				});
+				</script>";
+		  $ret .= "</div>";
 		$ret .="</div>\n";
 		return $ret;
 	}
@@ -1656,6 +1676,7 @@ class Editor
          return count(preg_split('/[\n]/',$this->data));
 
     }
+    /*
     function detectCodeMirrorMode($filename) {
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
@@ -1776,7 +1797,22 @@ class Editor
 
     return $modeMap[$ext] ?? 'text/plain';
 }
-
+*/
+	function detectCodeMirrorMode($filename) {
+		static $modeMap = null;
+	
+		if ($modeMap === null) {
+			$jsonPath = __DIR__ . '/code_modes.json';
+			if (file_exists($jsonPath)) {
+				$modeMap = json_decode(file_get_contents($jsonPath), true);
+			} else {
+				$modeMap = []; // fallback om filen saknas
+			}
+		}
+	
+		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		return $modeMap[$ext] ?? 'text/plain';
+	}
 }
 
 class Beautifier

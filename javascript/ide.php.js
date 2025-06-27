@@ -510,7 +510,7 @@ function console_toggle() {
 const menu_checkmark = '&nbsp;&#10003;';
 
 function setConsoleMenuCheckmark() {
-    const consoleMenu = document.getElementById('menu_item_Console');
+    const consoleMenu = document.getElementById('menu_item_console');
     const frameConsole = document.getElementById('frame-console');
     if (frameConsole.style.display == 'none') {
 	    consoleMenu.innerHTML = '';
@@ -1199,7 +1199,6 @@ function searcAndDisplay() {
 			const item = document.createElement('li');
 			item.className = 'search-line';
 			item.onclick = () => {
-				console.log("single");
 				searchPos = i;
 				search_callback(3, '', '');
 			};

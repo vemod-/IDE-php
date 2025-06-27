@@ -1,0 +1,117 @@
+/* Remove default bullets */
+ul, .rootUl {
+  list-style-type: none;
+  padding: 0;
+  padding-left:12px;
+}
+
+/* Remove margins and padding from the parent ul */
+.rootUl {
+  margin: 0;
+  padding: 0;
+  padding-left:5px;
+}
+
+/* Style the caret/arrow */
+.caret {
+  cursor: pointer;
+  user-select: none; /* Prevent text selection */
+}
+
+/* Create the caret/arrow with a unicode, and style it */
+.caret::before {
+  content: ">";
+  color: grey;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+.caret-down::before {
+  transform: rotate(90deg);
+}
+
+/* Hide the nested list */
+.nested {
+  display: none;
+}
+
+/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+.active {
+  display: block;
+}
+    
+.file_item {
+    cursor:pointer;
+    padding-left:16px;
+}
+
+li.selected {
+	background: url("menubg.png") repeat-x left top;
+    color:#ffffff;
+}
+
+button {
+  all: unset;
+  display:inline-flex;  
+  height: 12px;
+  width: 13px;
+  margin-right: 5px;
+  font-family: "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+  border:1px solid grey;
+  border-radius:5px;
+  padding:0px;
+  padding-bottom:2px;
+  padding-left:1px;
+  float:right;
+}
+    
+.caret, .file_item, .folder_text, .window-header {
+    font-family: "Lucida Grande","Lucida Sans Unicode",Arial,Verdana,sans-serif;
+    font-size:12px;
+    font-weight:300;
+    white-space: nowrap;
+    line-height:15px;
+    //height:18px;
+    padding-top:1px;
+    padding-bottom:1px;
+    display:inline-block;
+}
+
+.window-header {
+    width:calc(100% - 4px);
+    font-weight:600;
+    background-color:#E0E4EA;
+    padding:1px;
+    padding-left:4px;
+    padding-bottom:2px;
+    margin-bottom:2px;
+}
+
+.folder_text {
+    cursor:pointer;
+}
+
+.fileimg {
+  vertical-align: middle;
+  width:13px;
+  height:13px;
+  transform: translate(0,-1px);
+}
+    
+.file_item.missing {
+  color: #aaa;
+  font-style: italic;
+  cursor: default;
+}    
+
+.project-tree {
+    //padding-top:1px;
+    //padding-bottom:1px;
+    //padding:4px;
+    //background-color:#f0f0f0;
+}
