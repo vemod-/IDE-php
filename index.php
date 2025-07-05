@@ -888,7 +888,26 @@ class Ide
 		$this->make_backup($filepath);
         $this->save_code_files();
 	}
-
+	
+	function getAllFilesInDir() {
+		$base = rtrim($this->Conf->Dir_path, '/');
+		$fileList = [];
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+		);
+	
+		foreach ($iterator as $file) {
+			if ($file->isFile()) {
+				$fullPath = $file->getPathname();
+				//$relativePath = './' . ltrim(str_replace($base, '', $fullPath), '/\\');
+				//$fileList[] = $relativePath;
+				$fileList[] = $file->getPathname();
+			}
+		}
+	
+		return $fileList;
+	}
+	
 	function toolbar_left()
 	{
 		$ret ="<div class='top_window_no_border' style='width:18%;'>";
@@ -981,6 +1000,9 @@ class Ide
 		$menu .=$this->Out->menu_item('Copy file','copy_file("'.$this->Conf->Current_file.'");',!file_exists($this->Conf->Current_file));
 		$menu .=$this->Out->menu_item('Paste file','main_submit("set_paste");',!file_exists($this->Conf->Copy_file));
 		$menu .=$this->Out->menu_item('Rename file...','rename_file("'.basename($this->Conf->Current_file).'");',!file_exists($this->Conf->Current_file));
+		$menu .="<hr/>";
+		$menu .=$this->Out->menu_item('Add file to Current Project','addFileToCurrentProject("'.$this->Conf->Current_file.'")',!file_exists($this->Conf->Current_file));
+		$menu .=$this->Out->menu_item('Add directory to Current Project','addFolderToCurrentProject('.json_encode($this->getAllFilesInDir()).')',$this->dir_is_empty($this->Conf->Dir_path));
 		$ret .= $this->Out->menu_create('File',$menu);
 		//$menu .= $this->Out->menu_bottom();
 		//$ret .= $this->Out->menu_top($this->Conf->Dir_path);
@@ -1053,6 +1075,8 @@ class Ide
 		}
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('Console','console_toggle();');
+		$menu .=$this->Out->menu_item('View Source','showEvalSource();');
+		$menu .=$this->Out->menu_item('View DOM tree','showEvalDomTree();');
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('PHP.net','main_form.phpnet.value=(1-main_form.phpnet.value);main_submit("phpnet");',!$this->is_url($this->Conf->Phpneturl),($this->Conf->Phpnet));
 		$ret .= $this->Out->menu_create('Evaluate',$menu);
@@ -1128,6 +1152,12 @@ class Ide
 
 	function code_window($borderstyle)
 	{
+		$UIdata = $this->recentfiles->latestUIdata();
+		if (isset($_POST['some_file_selection'])) {
+			if ($_POST['some_file_selection'] != "") {
+				$UIdata = $_POST['some_file_selection'];
+			}
+		}
 		$ret = "<div id = 'codewindow' class='fixed_window'>\n";
 		if ($this->Conf->UseCodeMirror && !$this->Conf->IsBinary) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
@@ -1155,7 +1185,7 @@ class Ide
 							indentUnit: 4,
 							tabSize: 4
 						});
-						syncEditor(" . json_encode($this->recentfiles->latestUIdata()) . ");
+						syncEditor(" . json_encode($UIdata) . ");
 					}
 				});
 				</script>";
@@ -1181,7 +1211,7 @@ class Ide
         else {
         	$ret .= "<script>
 			document.addEventListener(\"DOMContentLoaded\", function () {
-				syncEditor(" . json_encode($this->recentfiles->latestUIdata()) . ");
+				syncEditor(" . json_encode($UIdata) . ");
 			});
 			</script>";
 			if (!$this->Conf->IsBinary)
@@ -1247,6 +1277,7 @@ class Ide
 		  	$ret .= $this->Out->search_checkbox('matchcasecb', 'Match case');
 		  	$ret .= $this->Out->search_checkbox('wholewordcb', 'Whole word');
 		  	$ret .= $this->Out->search_checkbox('searchselectedcb', 'Search selected');
+		  	$ret .= $this->Out->search_checkbox('searchinprojectcb', 'Search in Project');
 		  	$ret .= "<div id = 'searchstats' style = 'text-align:center;margin-left:20px;'></div>";
 		  $ret .= "</div>";
 		  $ret .= "<div id = 'replacediv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;padding-left:24px;'>";
@@ -1313,6 +1344,7 @@ function main_page()
 	<input name="current_directory" id="current_directory" type="hidden" value="">
 	<input name="sortorder" id="sortorder" type="hidden" value="">
 	<input name="some_file_name" id="some_file_name" type="hidden" value="">
+	<input name="some_file_selection" id="some_file_selection" type="hidden" value="">
 	<input name="chmod_value" id="chmod_value" type="hidden" value="">
 	HTML;
 
@@ -1439,18 +1471,20 @@ class Editor
 		** performed on $this->code, to restore any previous replacements.
 		*/
 		$safe_code = preg_replace("/<\/(TEXTAREA)>/i", "</ide\\1>", $code);
-        if (!$this->isbinary)
-        {
-		    if ($this->protecthtml) {
-				$safe_code = preg_replace('/&(#[0-9]+|[a-zA-Z0-9]+);/', '&amp;$1;', $safe_code);
-			}
-			if ($this->unixnewlines) {
-			    $safe_code = preg_replace('/[\r\f]/', '', $safe_code);
-		    }
-		}
 		return $safe_code;
 	}
-
+    
+    function escape_code($code) {
+    	$escapedCode = $code;
+		if ($this->protecthtml) {
+			$escapedCode = preg_replace('/&(#[0-9]+|[a-zA-Z0-9]+);/', '&amp;$1;', $escapedCode);
+		}
+		if ($this->unixnewlines) {
+			$escapedCode = preg_replace('/[\r\f]/', '', $escapedCode);
+		}
+		return $escapedCode;
+    }
+    
 	function dataIsBinary() {
 		if (!function_exists('finfo_buffer')) // fallback 
 		{
@@ -1555,7 +1589,8 @@ class Editor
             {
 				$this->trimData();
             }
-            fwrite($handle, $this->data);
+            $originalData = preg_replace('/<\/idetextarea>/i', '</textarea>', $this->data);
+            fwrite($handle, $originalData);
          }
          fclose($handle);
     }
@@ -1571,6 +1606,19 @@ class Editor
             return $this->data;
          }
     }
+    
+    function getEscapedCode()
+	{
+         if ($this->isbinary)
+         {
+            return $this->getHex();
+         }
+         else
+         {
+            return $this->escape_code($this->data);
+         }
+	}  
+	  
     function getTextareaCode()
     {
          if ($this->isbinary)
@@ -1579,7 +1627,7 @@ class Editor
          }
          else
          {
-            return $this->make_textarea_safe($this->data);
+            return $this->escape_code($this->make_textarea_safe($this->data));
          }
     }
 

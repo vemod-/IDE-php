@@ -27,7 +27,7 @@ function closeFrame() {
     }
     hideFrame();
 }
-*/
+
 function closeFrame()
 {
     if (document.getElementById('is_submit').value != 0)
@@ -47,8 +47,26 @@ function closeFrame()
         }
         doc.forms[0].submit();
     }
-    hidedivs('framediv',100);
+    hideDiv('framediv');//hidedivs('framediv',100);
 }
+*/
+function closeFrame() {
+    const isSubmit = document.getElementById('is_submit')?.value === '1';
+
+    if (isSubmit) {
+        const iframe = document.getElementById('previewframe');
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+
+        try {
+            doc?.forms[0]?.submit();
+        } catch (e) {
+            console.warn('Kunde inte skicka formuläret från iframen:', e);
+        }
+    }
+
+    hideDiv('framediv');
+}
+
 /*
 function hideFrame() {
     const borderdiv = document.getElementById('borderdiv');
@@ -117,67 +135,269 @@ function showwindow(url,inf,title)
 	}
 	win.focus();
 }
-
-    function showFrame(url,inf,title,close,is_submit)
-    {
 /*
-        if (olderBrowser)
-        {
-            showwindow(url,inf,title);
-            return;
-        }
-*/
-        var borderdiv=document.getElementById('borderdiv');
-        if (!borderdiv)
-        {
-            borderdiv=document.createElement('div');
-            borderdiv.id='borderdiv';
-            document.body.appendChild(borderdiv);
-        }
-        borderdiv.onclick=new Function("closeFrame()");
-        var framediv=document.getElementById('framediv');
-        if (!framediv)
-        {
-            framediv=document.createElement('div');
-            framediv.id='framediv';
-            document.body.appendChild(framediv);
-        }
+function showFrame(url,inf,title,close,is_submit)
+{
+    var borderdiv=document.getElementById('borderdiv');
+    if (!borderdiv)
+    {
+        borderdiv=document.createElement('div');
+        borderdiv.id='borderdiv';
+        document.body.appendChild(borderdiv);
+    }
+    borderdiv.onclick=new Function("closeFrame()");
+    var framediv=document.getElementById('framediv');
+    if (!framediv)
+    {
+        framediv=document.createElement('div');
+        framediv.id='framediv';
+        document.body.appendChild(framediv);
+    }
 
-        var frameurl=url;
-        if (frameurl.length==0)
-        {
-            frameurl='about:blank';
-        }
-        framediv.innerHTML='<div name="closediv" id="closediv" class="globalheader"></div><IFRAME NAME="previewframe" ID="previewframe" frameborder="0" SRC="'+frameurl+'"><div id="alternativediv"></div></IFRAME><input type="hidden" name="is_submit" id="is_submit"/>';
+    var frameurl=url;
+    if (frameurl.length==0)
+    {
+        frameurl='about:blank';
+    }
+    framediv.innerHTML='<div name="closediv" id="closediv" class="globalheader"></div><IFRAME NAME="previewframe" ID="previewframe" frameborder="0" SRC="'+frameurl+'"><div id="alternativediv"></div></IFRAME><input type="hidden" name="is_submit" id="is_submit"/>';
 
-        var previewframe=window.frames['previewframe'];
+    var previewframe=window.frames['previewframe'];
 
-        var alternativediv=document.getElementById('alternativediv');
-        if (alternativediv)
+    var alternativediv=document.getElementById('alternativediv');
+    if (alternativediv)
+    {
+        alternativediv.innerHTML=inf;
+    }
+    document.getElementById('closediv').innerHTML='<div class="inside_menu_text" style="text-indent:8px;"> '+title+'</div><div class="inside_menu" style="float:right;"><a href="#" class="btn" onClick="closeFrame();"/>'+close+'</a><div>';
+    showdiv('framediv');//showdivs('framediv',100);
+    document.getElementById('borderdiv').style.position="absolute";
+    document.getElementById('borderdiv').style.position="fixed";
+    document.getElementById('is_submit').value=is_submit ? 1 : 0;
+    if (previewframe)
+    {
+        if (url.length==0)
         {
-            alternativediv.innerHTML=inf;
-        }
-        document.getElementById('closediv').innerHTML='<div class="inside_menu_text" style="text-indent:8px;"> '+title+'</div><div class="inside_menu" style="float:right;"><a href="#" class="btn" onClick="closeFrame();"/>'+close+'</a><div>';
-        showdivs('framediv',100);
-        document.getElementById('borderdiv').style.position="absolute";
-        document.getElementById('borderdiv').style.position="fixed";
-        document.getElementById('is_submit').value=is_submit ? 1 : 0;
-        if (previewframe)
-        {
-            if (url.length==0)
+            previewframe.document.open();
+            previewframe.document.write(""+inf+"");
+            previewframe.document.close();
+            if((navigator.userAgent.toLowerCase().indexOf("opera")==-1)&&(navigator.userAgent.toLowerCase().indexOf("safari")==-1))
             {
-                previewframe.document.open();
-                previewframe.document.write(""+inf+"");
-                previewframe.document.close();
-                if((navigator.userAgent.toLowerCase().indexOf("opera")==-1)&&(navigator.userAgent.toLowerCase().indexOf("safari")==-1))
-                {
-                    previewframe.document.location.reload();
-                }
+                previewframe.document.location.reload();
             }
         }
     }
+}
+*/
+function showFrame(url = '', inf = '', title = '', closeText = 'Stäng', isSubmit = false) {
+    // Skapa eller hämta overlay-diven
+    let borderDiv = document.getElementById('borderdiv');
+    if (!borderDiv) {
+        borderDiv = document.createElement('div');
+        borderDiv.id = 'borderdiv';
+        document.body.appendChild(borderDiv);
+    }
+    borderDiv.onclick = () => closeFrame();
 
-   // olderBrowser=true;
+    // Skapa eller hämta container-diven för ramen
+    let frameDiv = document.getElementById('framediv');
+    if (!frameDiv) {
+        frameDiv = document.createElement('div');
+        frameDiv.id = 'framediv';
+        document.body.appendChild(frameDiv);
+    }
+
+    const frameUrl = url || 'about:blank';
+
+    // Sätt HTML-innehållet
+    frameDiv.innerHTML = `
+        <div id="closediv" class="globalheader"></div>
+        <iframe name="previewframe" id="previewframe" frameborder="0" src="${frameUrl}"></iframe>
+        <div id="alternativediv" style="display: none;"></div>
+        <input type="hidden" name="is_submit" id="is_submit" value="${isSubmit ? 1 : 0}" />
+    `;
+
+    // Sätt alternativ HTML-innehåll (om iframe inte används)
+    const alternativeDiv = document.getElementById('alternativediv');
+    if (alternativeDiv) {
+        alternativeDiv.innerHTML = inf;
+    }
+
+    // Rubrik och stäng-knapp
+    const closeDiv = document.getElementById('closediv');
+    closeDiv.innerHTML = `
+        <div class="inside_menu_text" style="text-indent:8px;">${title}</div>
+        <div class="inside_menu" style="float:right;">
+            <a href="#" class="btn" onclick="closeFrame(); return false;">${closeText}</a>
+        </div>
+    `;
+
+    // Visa frame-div och sätt overlay till fixed
+    showDiv('framediv');
+    borderDiv.style.position = 'fixed';
+
+    // Skriv direkt till iframen om ingen URL angavs
+    if (!url && window.frames['previewframe']) {
+        try {
+            const previewFrame = window.frames['previewframe'];
+            previewFrame.document.open();
+            previewFrame.document.write(inf);
+            previewFrame.document.close();
+        } catch (e) {
+            console.warn('Kunde inte skriva till iframen:', e);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, function (match) {
+        return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[match];
+    });
+}
+
+function formatHtml(html) {
+    const voidTags = new Set([
+        'area', 'base', 'br', 'col', 'embed', 'hr',
+        'img', 'input', 'link', 'meta', 'param',
+        'source', 'track', 'wbr'
+    ]);
+
+    const tab = '  ';
+    let result = '';
+    let indentLevel = 0;
+
+    html = html.replace(/>\s*</g, '><').trim();
+
+    const tokens = html
+        .replace(/</g, '\n<')
+        .replace(/>/g, '>\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    tokens.forEach(line => {
+        const isClosingTag = /^<\/\w/.test(line);
+        const tagNameMatch = line.match(/^<(\w+)/);
+        const tagName = tagNameMatch ? tagNameMatch[1].toLowerCase() : null;
+        const isVoidTag = tagName && voidTags.has(tagName);
+
+        if (isClosingTag) {
+            indentLevel--;
+        }
+
+        result += tab.repeat(indentLevel) + line + '\n';
+
+        if (
+            !isClosingTag &&
+            !isVoidTag &&
+            /^<\w[^>]*[^/]?>$/.test(line) && // öppningstaggar, ej self-closing
+            !line.startsWith('<!')           // ej <!DOCTYPE> eller kommentarer
+        ) {
+            indentLevel++;
+        }
+    });
+
+    return result.trim();
+}
+
+
+function showSourceFrame(htmlCode = '', title = '', closeText = 'Close', isSubmit = false) {
+    // Skapa eller hämta overlay
+    const formatedCode = formatHtml(htmlCode);
+    
+    let borderDiv = document.getElementById('borderdiv');
+    if (!borderDiv) {
+        borderDiv = document.createElement('div');
+        borderDiv.id = 'borderdiv';
+        document.body.appendChild(borderDiv);
+    }
+    borderDiv.onclick = () => closeFrame();
+
+    // Skapa eller hämta frame-div
+    let frameDiv = document.getElementById('framediv');
+    if (!frameDiv) {
+        frameDiv = document.createElement('div');
+        frameDiv.id = 'framediv';
+        document.body.appendChild(frameDiv);
+    }
+ 
+    // Sätt innehållet med textarea istället för iframe
+    frameDiv.innerHTML = 
+        `<div id="closediv" class="globalheader">
+            <div class="inside_menu_text" style="text-indent:8px;">${title}</div>
+            <div class="inside_menu" style="float:right;">
+                <a href="#" class="btn" onclick="closeFrame(); return false;">${closeText}</a>
+            </div>
+        </div>
+            <pre id="sourceViewArea" 
+            style="margin:20px;margin-top:40px;width:calc(100% - 40px);height:calc(100% - 60px);
+            box-sizing:border-box;border:1px solid black;padding:10px;overflow:scroll;background-color:white;
+            font-family:monospace;font-size:13px;">${escapeHtml(formatedCode)}</pre>
+        <input type="hidden" id="is_submit" value="${isSubmit ? 1 : 0}" />
+    `;
+	frameDiv.style.display = 'flex';	
+    // Visa popup
+    showDiv('framediv');
+    borderDiv.style.position = 'fixed';
+}
+
+function showElementFrame(element, title = '', close = 'Close', is_submit = false) {
+  let borderdiv = document.getElementById('borderdiv');
+  if (!borderdiv) {
+    borderdiv = document.createElement('div');
+    borderdiv.id = 'borderdiv';
+    document.body.appendChild(borderdiv);
+  }
+  borderdiv.onclick = () => closeFrame();
+
+  let framediv = document.getElementById('framediv');
+  if (!framediv) {
+    framediv = document.createElement('div');
+    framediv.id = 'framediv';
+    document.body.appendChild(framediv);
+  }
+
+  // Rensa innehåll
+  framediv.innerHTML = '';
+
+  // Header med stäng-knapp
+  const closediv = document.createElement('div');
+  closediv.id = 'closediv';
+  closediv.className = 'globalheader';
+  closediv.innerHTML = `
+    <div class="inside_menu_text" style="text-indent:8px;"> ${title}</div>
+    <div class="inside_menu" style="float:right;">
+      <a href="#" class="btn" onclick="closeFrame(); return false;">${close}</a>
+    </div>`;
+  framediv.appendChild(closediv);
+
+  // Lägg till elementet (ex. domTreeContainer)
+  framediv.appendChild(element);
+/*
+    setTimeout(() => {
+	  const headerHeight = closediv.offsetHeight;
+	  element.style.marginTop = headerHeight + 'px';
+	}, 0);
+	*/
+	framediv.style.display = 'flex';	
+  // Dold input för submit-flagg
+  const hiddenInput = document.createElement('input');
+  hiddenInput.type = 'hidden';
+  hiddenInput.id = 'is_submit';
+  hiddenInput.name = 'is_submit';
+  hiddenInput.value = is_submit ? '1' : '0';
+  framediv.appendChild(hiddenInput);
+
+  // Visa fönstret
+  showDiv('framediv');
+  borderdiv.style.position = 'fixed';
+}
+
 
 function ae_alert(text,title)
 {
@@ -369,7 +589,7 @@ function ae_prompt(callback, fields, btns, id, title)
         }
         else if (thistype=='textarea')
         {
-			span.innerHTML+='<textarea rows="1" wrap="off" id="id_jspopup_input_'+i+'" class="aep_text" style="overflow:hidden;" onkeydown="return button_keycheck(event);"/>'+field_array[2]+'</textarea>';
+			span.innerHTML+='<textarea rows="1" wrap="off" id="id_jspopup_input_'+i+'" class="aep_text" style="overflow:hidden;" onkeydown="return button_keycheck(event);"/>'+field_array[2]+'</idetextarea>';
         }
         else if (thistype=='file')
         {
@@ -405,12 +625,12 @@ function ae_prompt(callback, fields, btns, id, title)
     {
         ae$('aep_prompt').innerHTML+='<input type="text" class="aep_hidden_text" id="id_jspopup_input_0" onkeydown="return button_keycheck(event);"/>';
     }
-    showdivs('aep_win',100);
+    showDiv('aep_win');//showdivs('aep_win',100);
 }
 
 function ae_clk(m)
 {
-    hidedivs('aep_win',100);
+    hideDiv('aep_win');//hidedivs('aep_win',100);
     if (!ae_cb)
     {
         return;
@@ -444,91 +664,83 @@ function addvalue(elem,separator)
 var fadeintime=20; // higher is slower
 var fadeouttime=20; // higher is slower
 
-function showdivs(id,opac)
-{
-    document.getElementById('borderdiv').style.visibility='visible';
-    document.getElementById(id).style.visibility='visible';
-        if (id == 'aep_win')
-        {
-            ae$('id_jspopup_input_0').focus();
-            ae$('id_jspopup_input_0').select();
-        }
-}
+function showDiv(id) {
+    const border = document.getElementById('borderdiv');
+    const el = document.getElementById(id);
+    if (border) border.style.visibility = 'visible';
+    if (el) {
+        el.style.visibility = 'visible';
+        el.style.opacity = 1;
 
-function hidedivs(id,opac)
-{
-    document.getElementById('borderdiv').style.visibility='hidden';
-    document.getElementById(id).style.visibility='hidden';
-    if (id=='framediv')
-    {
-        if (document.getElementById('is_submit').value != 0)
-        {
-             setTimeout("main_submit('do_nothing');",0);
-         }
-    }
-}
-
-function fadeindiv(id,targetop)
-{
-    fadeinto=setTimeout("divIn(0,'" + id + "',"+targetop+")",0);
-}
-
-function fadeoutdiv(id,targetop)
-{
-    fadeoutto=setTimeout("divOut("+targetop+",'" + id + "',"+targetop+")",0);
-}
-
-function divIn(opacity, id, targetop) {
-    opacity+=targetop/4;
-    var os = document.getElementById(id).style;
-    if(opacity<targetop)
-    {
-	    os.opacity = (opacity / 100);
-	    os.mozOpacity = (opacity / 100);
-    	os.KhtmlOpacity = (opacity / 100);
-	    os.filter = "alpha(opacity=" + opacity + ")";
-    	os.visibility="visible";
-		fadeinto=setTimeout("divIn(" + opacity + ",'" + id + "',"+targetop+")",fadeintime);
-    }
-    else
-    {
-    	os.opacity = (targetop / 100);
-	    os.mozOpacity = (targetop / 100);
-	    os.KhtmlOpacity = (targetop / 100);
-    	os.filter = "alpha(opacity=" + targetop + ")";
-    	os.visibility="visible";
-        if (id == 'aep_win')
-        {
-            ae$('id_jspopup_input_0').focus();
-            ae$('id_jspopup_input_0').select();
+        if (id === 'aep_win') {
+            const input = document.getElementById('id_jspopup_input_0');
+            input?.focus();
+            input?.select();
         }
     }
 }
 
-function divOut(opacity, id, targetop) {
-    opacity-=targetop/4;
-    var os = document.getElementById(id).style;
-    if(opacity>0)
-    {
-	    os.opacity = (opacity / 100);
-	    os.mozOpacity = (opacity / 100);
-    	os.KhtmlOpacity = (opacity / 100);
-	    os.filter = "alpha(opacity=" + opacity + ")";
-		fadeoutto=setTimeout("divOut(" + opacity + ",'" + id + "',"+targetop+")",fadeouttime);
+function hideDiv(id) {
+    const border = document.getElementById('borderdiv');
+    const el = document.getElementById(id);
+    if (border) border.style.visibility = 'hidden';
+    if (el) {
+        el.style.visibility = 'hidden';
+        el.style.opacity = 0;
     }
-    else
-    {
-	    os.opacity = 0;
-	    os.mozOpacity = 0;
-    	os.KhtmlOpacity = 0;
-	    os.filter = "alpha(opacity=0)";
-	    os.visibility='hidden';
-	    if (id=='framediv')
-	    {
-	        if (document.getElementById('is_submit').value != 0)
-	        {
-                 main_submit('do_nothing');
-             }
+
+    if (id === 'framediv' && document.getElementById('is_submit')?.value === '1') {
+        setTimeout(() => main_submit('do_nothing'), 0);
+    }
+}
+
+function fadeIn(id, targetOpacity = 1, duration = 300) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.style.visibility = 'visible';
+    let opacity = 0;
+    const step = 16 / duration;
+
+    function animate() {
+        opacity += step;
+        if (opacity < targetOpacity) {
+            el.style.opacity = opacity;
+            requestAnimationFrame(animate);
+        } else {
+            el.style.opacity = targetOpacity;
+            if (id === 'aep_win') {
+                const input = document.getElementById('id_jspopup_input_0');
+                input?.focus();
+                input?.select();
+            }
         }
     }
+
+    animate();
+}
+
+function fadeOut(id, duration = 300) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    let opacity = parseFloat(getComputedStyle(el).opacity) || 1;
+    const step = 16 / duration;
+
+    function animate() {
+        opacity -= step;
+        if (opacity > 0) {
+            el.style.opacity = opacity;
+            requestAnimationFrame(animate);
+        } else {
+            el.style.opacity = 0;
+            el.style.visibility = 'hidden';
+
+            if (id === 'framediv' && document.getElementById('is_submit')?.value === '1') {
+                main_submit('do_nothing');
+            }
+        }
+    }
+
+    animate();
 }

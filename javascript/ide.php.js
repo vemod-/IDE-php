@@ -10,6 +10,17 @@ function isTextAreaEditor() {
 	const el = document.getElementById('code');
 	return el && el.tagName && el.tagName.toLowerCase() === 'textarea';
 }
+
+function usesProjects() {
+    return typeof findProject === 'function' && currentProject !== undefined;
+}
+ 
+function currentProjectFiles() {
+    if (!usesProjects()) return [];
+
+    const project = findProject(currentProject);
+    return project ? project.files.map(f => f.path) : [];
+}
 // Läs innehåll
 function codeValue() {
 	if (isUsingCodeMirror()) {
@@ -123,8 +134,7 @@ function toHtmlEntities(str) {
     return str.replace(/[^a-z0-9.\-_\s\t]/ig, c => `&#${c.charCodeAt(0)};`);
 }
 
-window.onbeforeunload=function()
-{
+window.addEventListener('beforeunload', () => {
     if (document.main_form)
     {
     	alert("beforeUnload");
@@ -137,7 +147,7 @@ window.onbeforeunload=function()
         }
     }
     //window.onbeforeunload = null;
-}
+});
 
 function main_submit(action) {
 	serializeUI();
@@ -154,7 +164,7 @@ function main_submit(action) {
     document.main_form.action.value = action;
     document.main_form.submit();
 }
-
+ 
 function startdownload()
 {
 	document.getElementById('save_as_filename').value='./systemzip/idephp.zip';
@@ -174,18 +184,20 @@ function serializeUI() {
 	var selectionRange = getSelectionRange();
 	UIdata['selStart'] = selectionRange.selStart;
 	UIdata['selEnd'] = selectionRange.selEnd;
+	
 	const frameConsole = document.getElementById('frame-console');
-	UIdata['console'] = (frameConsole.style.display != 'none');
+	localStorage.setItem('console', (frameConsole.style.display != 'none'));
 	const searchWindow = document.getElementById('searchWindow');
-	UIdata['searchwindow'] = (searchWindow.style.display != 'none');
-	UIdata['searchPos'] = searchPos;
-	UIdata['searchTerm'] = searchTerm;
-	UIdata['replaceTerm'] = replaceTerm;
-	UIdata['searchMatchCase'] = document.getElementById('matchcasecb').checked;
-	UIdata['searchWholeWord'] = document.getElementById('wholewordcb').checked;
-	UIdata['searchSelected'] = document.getElementById('searchselectedcb').checked;
-	UIdata['searchSelectionStart'] = searchSelection.selStart;
-	UIdata['searchSelectionEnd'] = searchSelection.selEnd;
+	localStorage.setItem('searchwindow', (searchWindow.style.display != 'none'));
+	localStorage.setItem('searchPos', searchPos);
+	localStorage.setItem('searchTerm', searchTerm);
+	localStorage.setItem('replaceTerm', replaceTerm);
+	localStorage.setItem('searchMatchCase', document.getElementById('matchcasecb').checked);
+	localStorage.setItem('searchWholeWord', document.getElementById('wholewordcb').checked);
+	localStorage.setItem('searchSelected', document.getElementById('searchselectedcb').checked);
+	localStorage.setItem('searchInProject', document.getElementById('searchinprojectcb').checked);
+	localStorage.setItem('searchSelectionStart', searchSelection.selStart);
+	localStorage.setItem('searchSelectionEnd', searchSelection.selEnd);
 
     var uidataField = document.getElementById('UIdata');
     if (uidataField) {
@@ -194,6 +206,52 @@ function serializeUI() {
 } 
 
 function unserializeUI() {
+	if (localStorage.getItem('console') !== null) {
+		if (localStorage.getItem('console') == 'true') {
+			console_toggle();
+        }
+    }
+    if (localStorage.getItem('searchPos') !== null) {
+		searchPos = Number(localStorage.getItem('searchPos'));
+    }
+    if (localStorage.getItem('searchTerm') !== null) {
+		searchTerm = localStorage.getItem('searchTerm');
+    }
+    if (localStorage.getItem('replaceTerm') !== null) {
+		replaceTerm = localStorage.getItem('replaceTerm');
+    }
+    if (localStorage.getItem('searchMatchCase') !== null) {
+		searchMatchCase = (localStorage.getItem('searchMatchCase')  == 'true');
+		document.getElementById('matchcasecb').checked = searchMatchCase;
+    }
+    if (localStorage.getItem('searchWholeWord') !== null) {
+		searchWholeWord = (localStorage.getItem('searchWholeWord')  == 'true');
+		document.getElementById('wholewordcb').checked = searchWholeWord;
+    }
+    if (localStorage.getItem('searchSelected') !== null) {
+		searchSelected = (localStorage.getItem('searchSelected')  == 'true');
+		document.getElementById('searchselectedcb').checked = searchSelected;
+    }
+    if (localStorage.getItem('searchInProject') !== null) {
+		searchInProject = (localStorage.getItem('searchInProject')  == 'true');
+		document.getElementById('searchinprojectcb').checked = searchInProject;
+    }
+    if (localStorage.getItem('searchSelectionStart') !== null) {
+		searchSelection.selStart = Number(localStorage.getItem('searchSelectionStart'));
+    }
+    if (localStorage.getItem('searchSelectionEnd') !== null) {
+		searchSelection.selEnd = Number(localStorage.getItem('searchSelectionEnd'));
+    }
+    if (localStorage.getItem('searchwindow') !== null) {
+		if (localStorage.getItem('searchwindow') == 'true') {
+			showSearchWindow();
+			searchAndDisplay(codeValue(),searchSelection,document.getElementById('hitlist'));
+			markSearchItem();
+			searchStats();
+			searchProjectFiles();
+        }
+    }
+    
     var php = new PHP_Serializer();
     var uidataField = document.getElementById('UIdata');
     if (!uidataField || !uidataField.value.length) return;
@@ -202,49 +260,16 @@ function unserializeUI() {
 	if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
 		setSelectionRange(UIdata['selStart'], UIdata['selEnd'], true);
 	}
-	if (UIdata['scrollLeft'] !== null && UIdata['scrollTop'] !== null) {
+	if (UIdata['scrollLeft'] === undefined && UIdata['scrollTop'] === undefined) {
+		if (UIdata['selStart'] !== null && UIdata['selEnd'] !== null) {
+			scrollIntoView(UIdata['selStart'], UIdata['selEnd']);
+        }
+    }
+	else if (UIdata['scrollLeft'] !== null && UIdata['scrollTop'] !== null) {
 		setScrollPosition(UIdata['scrollLeft'], UIdata['scrollTop']);
 	}
-	if (UIdata['console'] !== null) {
-		if (UIdata['console'] > 0) {
-			console_toggle();
-        }
-    }
-    if (UIdata['searchPos'] !== null) {
-		searchPos = UIdata['searchPos'];
-    }
-    if (UIdata['searchTerm'] !== null) {
-		searchTerm = UIdata['searchTerm'];
-    }
-    if (UIdata['replaceTerm'] !== null) {
-		replaceTerm = UIdata['replaceTerm'];
-    }
-    if (UIdata['searchMatchCase'] !== null) {
-		searchMatchCase = UIdata['searchMatchCase'];
-		document.getElementById('matchcasecb').checked = searchMatchCase;
-    }
-    if (UIdata['searchWholeWord'] !== null) {
-		searchWholeWord = UIdata['searchWholeWord'];
-		document.getElementById('wholewordcb').checked = searchWholeWord;
-    }
-    if (UIdata['searchSelected'] !== null) {
-		searchSelected = UIdata['searchSelected'];
-		document.getElementById('searchselectedcb').checked = searchSelected;
-    }
-    if (UIdata['searchSelection'] !== null) {
-		searchSelection.selStart = UIdata['searchSelectionStart'];
-    }
-    if (UIdata['searchSelection'] !== null) {
-		searchSelection.selEnd = UIdata['searchSelectionEnd'];
-    }
-    if (UIdata['searchwindow'] !== null) {
-		if (UIdata['searchwindow'] > 0) {
-			showSearchWindow();
-			searcAndDisplay();
-        }
-    }
 }
-
+ 
 var sel_line_num=-1;
 
 function syncEditor(UIstr) {
@@ -381,44 +406,7 @@ function syncConsoleWindow() {
 	    setConsoleMenuCheckmark();
 	};    
 }
-/*
-function appendLog(type, message, lineno, colno, source = null) {
-    const frameConsole = document.getElementById('frame-console');
-    const line = document.createElement('div');
-    line.className = `log-line ${type}`;
 
-    const sourceText = source ? ` <span class="log-source">${source}:</span>` : '';
-
-    if (typeof lineno === 'number') {
-        line.innerHTML = `
-            ${getIcon(type)}
-            <span class="log-msg">${escapeHtml(message)}</span>
-            ${sourceText}<span class="log-jump">${lineno}&nbsp;</span>
-        `;
-
-        line.querySelector('.log-jump').onclick = () => {
-            //if (isCurrentSource(source)) {
-                setSelectionRangeFromLine(lineno);
-            //} else {
-            //    alert(`Fel kommer från annan fil: ${source}`);
-            //}
-        };
-    } else {
-        line.innerHTML = `
-            ${getIcon(type)} 
-            <span class="log-msg">${escapeHtml(message)}</span>
-            ${sourceText}
-        `;
-    }
-    var prev = frameConsole.lastChild;
-    if (prev) {
-		if (line.innerHTML == prev.innerHTML) {
-			return;
-	    }
-	}
-    frameConsole.appendChild(line);
-}
-*/
 const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/');
 
 function appendLog(type, message, lineno, colno, source = '') {
@@ -467,7 +455,7 @@ function appendLog(type, message, lineno, colno, source = '') {
 	if (source) {
 	    const currentFileElement = document.getElementById('Current_filename');
 		if (currentFileElement) {
-			const currentFilename = document.getElementById('Current_filename').value;
+			const currentFilename = currentFileElement.value;
 			if (currentFilename.length) {
 				if (currentFilename != source) {
 			        line.querySelector('.log-jump').onclick = () => {
@@ -576,7 +564,6 @@ function catchTab(e) {
     // Cmd/Ctrl + H (replace)
     if ((evt.ctrlKey || evt.metaKey) && key === 72) { // H
         evt.preventDefault();
-        //replace_editor();
         search_editor(true);
         return false;
     }
@@ -771,9 +758,19 @@ function submit_dir(dir)
     document.getElementById('current_directory').value=dir;
     main_submit('set_directory');
 }
-
-function submit_file(file)
+ 
+function submit_file(file,selection = "")
 {
+    document.getElementById('some_file_name').value=""+file+"";
+    if (selection != "") {
+	    const someSelection = document.getElementById('some_file_selection');
+	    var php = new PHP_Serializer();
+	    var UIdata = {};
+		UIdata['selStart'] = selection.selStart;
+		UIdata['selEnd'] = selection.selEnd;
+		someSelection.value = php.serialize(UIdata);
+	}
+ 
     document.getElementById('some_file_name').value=""+file+"";
     if (checkDirty())
     {
@@ -918,6 +915,7 @@ var searchWholeWord=false;
 var replaceTerm='';
 var searchSelection = { selStart: 0, selEnd: 0 };
 var searchSelected=false;
+var searchInProject=false;
 
 RegExp.escape = function(text) {
   const specials = /[.*+?^${}()|[\]\\]/g;
@@ -954,7 +952,7 @@ function syncSearchWindow() {
 	inputTextarea.addEventListener('keydown', evt => {
 		if (evt.key === 'Enter') {
 			evt.preventDefault();
-	        search_callback(3,'','');
+	        search_next();
 		}
 		if (evt.key === 'Escape') {
 			evt.preventDefault();
@@ -972,7 +970,7 @@ function syncSearchWindow() {
 	replaceTextarea.addEventListener('keydown', evt => {
 		if (evt.key === 'Enter') {
 			evt.preventDefault();
-	        search_callback(3,'','');
+	        search_next();
 		}
 		if (evt.key === 'Escape') {
 			evt.preventDefault();
@@ -991,14 +989,14 @@ function syncSearchWindow() {
         }
 	};
 	document.getElementById('replaceallbutton').onclick = () => {
-		replace_callback(3,'','');
+		replace_all();
 		setFocus();
 	};
 }
 
 function search_editor(showDialog) {
 	if (!showDialog) {
-		search_callback(3, '', '');
+		search_next();
 		return;
 	}
 	searchSelection = getSelectionRange();
@@ -1019,137 +1017,149 @@ function highlightMatchPreserveCase(line, searchTerm) {
     return escapedLine.replace(regex, match => `<mark>${match}</mark>`);
 }
 
-function search_callback(returncode,id,value)
+function search_next()
 {
-    const codevalue = codeValue();
-    if (returncode == 1)
-    {
-        var value_array = value.split('|¤|');
-        searchTerm=value_array[0];
-        searchMatchCase=(value_array[1] == 'true') ? true:false;
-        searchWholeWord=(value_array[2] == 'true') ? true:false;
-        searchSelected=(value_array[3] == 'true') ? true:false;
-        if (!searchSelected)
-        {
-        	searchSelection = { selStart: 0, selEnd: codevalue.length };
-        }
-        searchPos = 0;//searchSelection.selStart;
-    }
-    if (returncode == 0)
-    {
-        return;
-    }
-    if (returncode == 3) {
-	    searchTerm = document.getElementById('searchText').value;
-        searchMatchCase = document.getElementById('matchcasecb').checked;
-	    searchWholeWord = document.getElementById('wholewordcb').checked;
-	    if (!document.getElementById('searchselectedcb').checked)
-        {
-        	searchSelection = { selStart: 0, selEnd: codevalue.length };
-        }
-    }
+    setSearchVars(codeValue());
     if (searchTerm != '' && searchTerm != null)
     {
-    /*
-        var RegExpStr=RegExp.escape(searchTerm);
-        var RegExpModifier='';
-		if (searchWholeWord) {
-		    RegExpStr = '\\b' + RegExpStr + '\\b';
-		}
-		if (!searchMatchCase)
-        {
-            RegExpModifier='i';
-        }
-        let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
-		let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
-		if (searchPos >= matches.length) {
-			searchPos = 0;
-        }
-        if (searchPos < 0) {
-			searchPos = matches.length - 1;
-        }
-        const stats = document.getElementById('searchstats');		    
-        if (stats) {
-			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
-        }
-        const showAllDiv = document.getElementById('hitlist');
-        if (showAllDiv) {
-        	showAllDiv.innerHTML = '';
-	        let lines = codevalue.split('\n');
-			let lineStartIndices = [];
-			let index = 0;
-			// Skapa karta med var varje rad börjar i hela koden
-			for (let line of lines) {
-			    lineStartIndices.push(index);
-			    index += line.length + 1; // +1 för \n
-			}
-			// Gå igenom alla matcher
-			let detailedMatches = matches.map((m,i) => {
-			    let matchStart = m.index + searchSelection.selStart;
-			    let matchEnd = matchStart + m[0].length;
-			
-			    // Hitta vilken rad matchen tillhör
-			    let lineNumber = lineStartIndices.findIndex((start, i) => {
-			        return matchStart >= start && matchStart < (lineStartIndices[i + 1] ?? Infinity);
-			    });
-			    const showAllList = document.getElementById('hitlist');
-			    const escapedTerm = RegExp.escape(searchTerm);
-				const flags = searchMatchCase ? 'g' : 'gi';
-				const highlightRegex = new RegExp(escapedTerm, flags);
-				
-				const item = document.createElement('li');
-				item.className = 'search-line';
-				item.onclick = () => {
-					console.log("single");
-					searchPos = i;
-					search_callback(3, '', '');
-				};
-				const numberDiv = document.createElement('div');
-				numberDiv.innerHTML = lineNumber + 1;
-				numberDiv.style.minWidth = '32px';
-				numberDiv.style.textAlign = 'right';
-				numberDiv.style.backgroundColor = '#E0E4EA';
-				numberDiv.style.marginRight = '8px';
-				
-				const lineDiv = document.createElement('div');
-				const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
-				lineDiv.innerHTML = highlightedLine;
-				if (searchPos == i) {
-					item.style.backgroundColor = 'lightblue';
-                }
-
-				item.appendChild(numberDiv);
-				item.appendChild(lineDiv);
-				showAllList.appendChild(item);
-			    let lineText = lines[lineNumber];
-
-			    return {
-			        start: matchStart,
-			        end: matchEnd,
-			        lineNumber: lineNumber + 1, // 1-baserat
-			        lineText
-			    };
-			});
-	    }
-	    */
-	    var matches = searcAndDisplay();
-		if (matches.length === 0) {
-		    ae_alert(searchTerm + ' not found');
-		} else {
+		const hitlist = document.getElementById('hitlist');      
+	    var matches = searchAndDisplay(codeValue(),searchSelection,hitlist);
+		if (matches.length) {
             const searchMatches = matches.map(m => ({
 			    start: m.index,
 			    end: m.index + m[0].length
 			}));
+			markSearchItem();
+			searchStats();
 			let match = searchMatches[searchPos];
 		    scrollIntoView(match.start, match.end);
 		    searchPos++;
 		}
+		searchProjectFiles();
     }
-    setFocus();
+    setFocus(); 
 }
 
-function searcAndDisplay() {
-    const codevalue = codeValue();
+function searchProjectFiles() {
+    if (usesProjects() && searchInProject) {
+		if (projects.length === 0) {
+			loadProjects()
+				.then(() => { 
+					console.log('Projects loaded');
+					return renderSearchHits(); // Vänta här
+				})
+				.then(() => {
+					console.log('Sökningen i projektet är klar.');
+				})
+				.catch(err => {
+					console.error('Fel vid laddning eller sökning:', err);
+				});
+		} else {
+			renderSearchHits()
+				.then(() => {
+					console.log('Sökningen i projektet är klar.');
+				})
+				.catch(err => {
+					console.error('Fel vid sökning i projektet:', err);
+				});
+		}
+	}
+}
+
+async function renderSearchHits() {
+    const hitlist = document.getElementById('hitlist');
+    const currentFile = document.getElementById('Current_filename').value;
+    const files = currentProjectFiles();
+    for (const file of files) { 
+        if (file === currentFile) continue;
+
+        const fileLi = document.createElement('li');
+        fileLi.textContent = file;
+
+        const fileUl = document.createElement('ul');
+        fileLi.appendChild(fileUl);
+        hitlist.appendChild(fileLi);
+
+        try {
+            const content = await getFileContent(file);
+            const matches = searchAndDisplay(content, { selStart: 0, selEnd: content.length }, fileUl);
+
+            if (!matches.length) {
+                fileLi.style.display = 'none';
+            }
+            else {
+                const selections = matches.map(m => ({
+				    selStart: m.index,
+				    selEnd: m.index + m[0].length
+				}));
+	
+	            for (let i = 0; i < fileUl.childNodes.length; i++) {
+		            const li = fileUl.childNodes[i];
+		            li.onclick = () => {
+			            searchPos = i;
+			            submit_file(file,selections[i]);
+                    };
+                }
+            }
+        } catch (err) {
+            console.error(`Could not read: ${file}`, err);
+            fileLi.style.display = 'none';
+        }
+    }
+}
+ 
+async function getFileContent(file) {
+	try {
+        const response = await fetch('./read_file.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({file})
+        });
+
+        if (response.ok) {
+			const text = await response.text();
+			return text.replace(/\r\n/g, '\n').trimEnd();
+        }
+    } catch (err) {
+        console.error('Could not read ', file, err);
+    } 
+    return '';   
+}
+
+function searchAndDisplay(code,selection,hitlist) {
+	let matches = searchInText(code,selection);
+	hitlist.innerHTML = '';
+	createHitlist(hitlist,code,matches,selection.selStart);
+    return matches;
+}
+
+function markSearchItem() {
+	const hitlist = document.getElementById('hitlist');
+	var matches = hitlist.childNodes;
+	if (matches.length) {
+		if (searchPos >= matches.length) {
+			searchPos = 0;
+	    }
+	    if (searchPos < 0) {
+			searchPos = matches.length - 1;
+	    }
+		matches[searchPos].style.backgroundColor = 'lightblue';
+	}
+}
+
+function searchStats() {
+    const stats = document.getElementById('searchstats');		    
+	if (stats) {
+		stats.textContent = '';
+		const hitlist = document.getElementById('hitlist');
+		var matches = hitlist.childNodes;
+		if (matches.length) {
+			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
+	    }
+    }
+}
+
+function searchInText(code,selection) {
     var RegExpStr=RegExp.escape(searchTerm);
     var RegExpModifier='';
 	if (searchWholeWord) {
@@ -1160,141 +1170,78 @@ function searcAndDisplay() {
         RegExpModifier='i';
     }
     let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
-	let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
-	if (searchPos >= matches.length) {
-		searchPos = 0;
-    }
-    if (searchPos < 0) {
-		searchPos = matches.length - 1;
-    }
-    const stats = document.getElementById('searchstats');		    
-    if (stats) {
-		stats.textContent = (searchPos + 1) + ' / ' + matches.length;
-    }
-    const showAllDiv = document.getElementById('hitlist');
-    if (showAllDiv) {
-    	showAllDiv.innerHTML = '';
-        let lines = codevalue.split('\n');
-		let lineStartIndices = [];
-		let index = 0;
-		// Skapa karta med var varje rad börjar i hela koden
-		for (let line of lines) {
-		    lineStartIndices.push(index);
-		    index += line.length + 1; // +1 för \n
-		}
-		// Gå igenom alla matcher
-		let detailedMatches = matches.map((m,i) => {
-		    let matchStart = m.index + searchSelection.selStart;
-		    let matchEnd = matchStart + m[0].length;
-		
-		    // Hitta vilken rad matchen tillhör
-		    let lineNumber = lineStartIndices.findIndex((start, i) => {
-		        return matchStart >= start && matchStart < (lineStartIndices[i + 1] ?? Infinity);
-		    });
-		    const showAllList = document.getElementById('hitlist');
-		    const escapedTerm = RegExp.escape(searchTerm);
-			const flags = searchMatchCase ? 'g' : 'gi';
-			const highlightRegex = new RegExp(escapedTerm, flags);
-			
-			const item = document.createElement('li');
-			item.className = 'search-line';
-			item.onclick = () => {
-				searchPos = i;
-				search_callback(3, '', '');
-			};
-			const numberDiv = document.createElement('div');
-			numberDiv.innerHTML = lineNumber + 1;
-			numberDiv.style.minWidth = '32px';
-			numberDiv.style.textAlign = 'right';
-			numberDiv.style.backgroundColor = '#E0E4EA';
-			numberDiv.style.marginRight = '8px';
-			
-			const lineDiv = document.createElement('div');
-			const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
-			lineDiv.innerHTML = highlightedLine;
-			if (searchPos == i) {
-				item.style.backgroundColor = 'lightblue';
-            }
+	let matches = [...code.substring(selection.selStart,selection.selEnd).matchAll(regex)];
 
-			item.appendChild(numberDiv);
-			item.appendChild(lineDiv);
-			showAllList.appendChild(item);
-		    let lineText = lines[lineNumber];
-
-		    return {
-		        start: matchStart,
-		        end: matchEnd,
-		        lineNumber: lineNumber + 1, // 1-baserat
-		        lineText
-		    };
-		});
-    }
-    return matches;
+	return matches;
 }
 
-function replace_editor()
-{
-	searchSelection = getSelectionRange();
-	if (searchSelection.selStart != searchSelection.selEnd)
-	{
-		searchTerm = getSelectedCode().split('\n')[0];
+function createHitlist(hitlist,code,matches,selStart) {
+    let lines = code.split('\n');
+	let lineStartIndices = [];
+	let index = 0;
+	// Skapa karta med var varje rad börjar i hela koden
+	for (let line of lines) {
+	    lineStartIndices.push(index);
+	    index += line.length + 1; // +1 för \n
 	}
-    var caseChecked=(searchMatchCase ? 'checked':'');
-    var wordChecked=(searchWholeWord ? 'checked':'');
-    var selectedChecked=(searchSelected ? 'checked':'');
-    ae_prompt(replace_callback,'textarea%¤%Search for%¤%'+searchTerm+'|¤|textarea%¤%Replace with%¤%'+replaceTerm+'|¤|checkbox%¤%Match case%¤%'+caseChecked+'|¤|checkbox%¤%Whole word%¤%'+wordChecked+'|¤|checkbox%¤%Only inside selection%¤%'+selectedChecked,'OK%¤%1|¤|Cancel%¤%0');
+	// Gå igenom alla matcher
+	for (let i = 0; i < matches.length; i++) {
+		const m = matches[i];
+	    let matchStart = m.index + selStart;
+	    let matchEnd = matchStart + m[0].length;
+	    // Hitta vilken rad matchen tillhör
+	    let lineNumber = lineStartIndices.findIndex((start, i) => {
+	        return matchStart >= start && matchStart < (lineStartIndices[i + 1] ?? Infinity);
+	    });
+
+        const item = hitlistItem(i,lines,lineNumber);
+		hitlist.appendChild(item);
+    }
 }
 
-function replace_callback(returncode,id,value)
+function hitlistItem(i,lines,lineNumber) {
+	const item = document.createElement('li');
+	item.className = 'search-line';
+	item.onclick = () => {
+		searchPos = i;
+		search_next();
+	};
+	const numberDiv = document.createElement('div');
+	numberDiv.innerHTML = lineNumber + 1;
+	numberDiv.style.minWidth = '32px';
+	numberDiv.style.textAlign = 'right';
+	numberDiv.style.backgroundColor = '#E0E4EA';
+	numberDiv.style.marginRight = '8px';
+	
+	const lineDiv = document.createElement('div');
+	const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
+	lineDiv.innerHTML = highlightedLine;
+	item.appendChild(numberDiv);
+	item.appendChild(lineDiv);
+	return item;
+}
+
+function setSearchVars(codevalue) {
+    searchTerm = document.getElementById('searchText').value;
+    replaceTerm = document.getElementById('replaceText').value;
+    searchMatchCase = document.getElementById('matchcasecb').checked;
+    searchWholeWord = document.getElementById('wholewordcb').checked;
+    searchInProject = document.getElementById('searchinprojectcb').checked;
+    if (!document.getElementById('searchselectedcb').checked)
+    {
+    	searchSelection = { selStart: 0, selEnd: codevalue.length };
+    }    
+}
+
+function replace_all()
 {
     var replacements=0;
     var codevalue = codeValue();
-    if (returncode == 1)
-    {
-        var value_array=value.split('|¤|');
-        searchTerm=value_array[0];
-        replaceTerm=value_array[1];
-        searchMatchCase=(value_array[2] == 'true') ? true:false;
-        searchWholeWord=(value_array[3] == 'true') ? true:false;
-        searchSelected=(value_array[4] == 'true') ? true:false;
-        if (!searchSelected)
-	    {
-			searchSelection = { selStart: 0, selEnd: codevalue.length };
-	    }
-    }
-    if (returncode == 0)
-    {
-        return;
-    }
-    if (returncode == 3) {
-	    searchTerm = document.getElementById('searchText').value;
-	    replaceTerm = document.getElementById('replaceText').value;
-        searchMatchCase = document.getElementById('matchcasecb').checked;
-	    searchWholeWord = document.getElementById('wholewordcb').checked;
-	    if (!document.getElementById('searchselectedcb').checked)
-        {
-        	searchSelection = { selStart: 0, selEnd: codevalue.length };
-        }
-    }
-    //searchPos = searchSelection.selStart;
+    setSearchVars(codevalue);
     if (searchTerm != '' && searchTerm != null && replaceTerm != '' && replaceTerm != null)
     {
-        var RegExpStr=RegExp.escape(searchTerm);
-        var RegExpModifier='';
-        if (searchWholeWord)
-		if (searchWholeWord) {
-		    RegExpStr = '\\b' + RegExpStr + '\\b';
-		}
-        if (!searchMatchCase)
-        {
-            RegExpModifier='i';
-        }
-        let regex = new RegExp(RegExpStr, RegExpModifier + 'g'); // global match
-		let matches = [...codevalue.substring(searchSelection.selStart,searchSelection.selEnd).matchAll(regex)];
-		
-		if (matches.length === 0) {
-		    ae_alert(searchTerm + ' not found');
-		} else {
+		let matches = searchInText(codevalue,searchSelection);
+		if (matches.length) {
 		    for (let i = matches.length - 1; i >= 0; i--) {
 		        let match = matches[i];
 		        let start = match.index;
@@ -1307,11 +1254,138 @@ function replace_callback(returncode,id,value)
 		    setCodeValue(codevalue);
 		    checkDirty();
 		    ae_alert(toHtmlEntities(searchTerm) + ' was replaced ' + replacements + ' times');
-		    //setTimeout(() => document.getElementById('code').focus(), 0);
 		    setFocus();
 		}
-		
     }
+}
+
+function showEvalSource() {
+    const iframe = document.getElementById('evaluationwindow');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const sourceCode = doc.documentElement.outerHTML;
+    showSourceFrame(sourceCode,'HTML-source');
+}
+
+function buildDomTreeFromHtml(html, container) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const root = doc.body;
+
+  if (!container) return;
+
+  container.innerHTML = '';
+  container.appendChild(buildTree(root));
+
+  function buildTree(node) {
+    const ul = document.createElement('ul');
+    ul.className = 'tree';
+
+    Array.from(node.childNodes).forEach(child => {
+      const li = document.createElement('li');
+
+      if (child.nodeType === 1) { // Element
+        const tagName = child.nodeName.toLowerCase();
+        let info = `&lt;${tagName}`;
+        for (const attr of child.attributes) {
+          info += ` ${attr.name}="${attr.value}"`;
+        }
+        info += '&gt;';
+
+        const tagSpan = document.createElement('span');
+        tagSpan.className = 'tag';
+
+        const caret = document.createElement('span');
+        caret.className = 'caret';
+        caret.innerHTML = ''; // The arrow is styled with ::before
+
+        tagSpan.innerHTML = info;
+
+        const subtree = buildTree(child);
+        if (subtree.childNodes.length > 0) {
+          li.classList.add('collapsed');
+          caret.style.cursor = 'pointer';
+          caret.onclick = () => {
+            li.classList.toggle('collapsed');
+            caret.classList.toggle('caret-down');
+          };
+          li.appendChild(caret);
+        }
+
+        li.appendChild(tagSpan);
+        if (subtree.childNodes.length > 0) {
+          li.appendChild(subtree);
+        }
+
+      } else if (child.nodeType === 3) { // Text
+        const text = child.textContent.trim();
+        if (text) {
+          li.textContent = `"${text}"`;
+        }
+      }
+
+      if (li.textContent || li.children.length > 0) {
+        ul.appendChild(li);
+      }
+    });
+
+    return ul;
+  }
+}
+
+function showEvalDomTree() {
+    const container = document.createElement('div');
+    container.id = 'domTreeContainer';
+    
+    const iframe = document.getElementById('evaluationwindow');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const sourceCode = doc.documentElement.outerHTML;
+
+	buildDomTreeFromHtml(sourceCode,container);
+	Object.assign(container.style, {
+	    margin: '40px 20px 20px 20px', // top right bottom left
+	    padding: '5px',
+	    overflow: 'auto',
+	    border: '1px solid black',
+	    backgroundColor: 'white',
+	    height: 'calc(100% - 60px)', // tar hänsyn till headern
+	    width: 'calc(100% - 40px)',
+	    boxSizing: 'border-box',
+	});
+	const style = document.createElement('style');
+	style.textContent = `
+	  ul.tree {
+		  list-style: none;
+		  font-family: monospace;
+		  margin: 0;
+		  padding-left: 1em;
+		}
+		
+		.tree li {
+		  margin: 2px 0;
+		}
+		
+		.collapsed > ul {
+		  display: none;
+		}
+		
+		.caret::before {
+		  content: ">";
+		  color: grey;
+		  display: inline-block;
+		  margin-right: 6px;
+		  transition: transform 0.2s ease;
+		}
+		
+		.caret.caret-down::before {
+		  transform: rotate(90deg);
+		}
+		
+		.tag {
+		  color: darkblue;
+		}
+	`;
+	container.prepend(style);
+	showElementFrame(container,'DOM-tree');
 }
 
 //For textarea editor line numbers
@@ -1336,7 +1410,7 @@ function lines_dragStop(event)
     splitbg.style.visibility='hidden';
     checkDirty();
 }
-
+ 
 function line_number(event,elem)
 {
 	var y = event.clientY + window.scrollY;
