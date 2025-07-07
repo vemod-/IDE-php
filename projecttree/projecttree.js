@@ -42,7 +42,7 @@ function saveProjects() {
     }).then(res => res.json())
     .then(response => {
         if (response.status !== 'success') {
-	        alert("Fel vid sparande av projekt.");
+	        ae_alert("Could nor save projects","Project Tree");
         }
     });
 }
@@ -72,13 +72,17 @@ function renderTree() {
 
     const addProjctButton = document.createElement('button');
     addProjctButton.innerHTML = textIcon(basePath+'project_icon.png','+');
-    addProjctButton.onclick = addProject;
+    addProjctButton.onclick = (e) => {
+	    addProject();
+	    e.preventDefault();
+    }
     windowHeader.appendChild(addProjctButton);
     tree.appendChild(windowHeader);
 
     const ul = document.createElement("ul");
     ul.className = "rootUl";
     ul.dataset.projectId = '';
+    ul.dataset.level = 0;
 
     const usedAsSubproject = new Set();
     projects.forEach(p => (p.subprojects || []).forEach(title => usedAsSubproject.add(title)));
@@ -96,7 +100,7 @@ function renderTree() {
 	markCurrentProject();
 }
  
-function renderProjectTree(project, projIndex, containerUl, visited) {
+function renderProjectTree(project, projIndex, containerUl, visited, parentProject = '') {
     //if (visited.has(project.title)) return;
     visited.add(project.title);
 
@@ -109,7 +113,8 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
     const nested = document.createElement("ul");
     nested.className = "nested";
     nested.dataset.projectId = containerUl.dataset.projectId + '_' + project.title;
-
+	nested.dataset.level = Number(containerUl.dataset.level) + 1;
+    
     var subTitle = '';
     if (containerUl.className != 'rootUl') {
 	    subTitle = 'sub';
@@ -124,32 +129,37 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
     const addBtn = document.createElement("button");
     addBtn.textContent = "+";
     addBtn.title = "Add file";
-    addBtn.onclick = () => { addFile(project); };
+    addBtn.onclick = (e) => { 
+	    addFile(project); 
+	    e.preventDefault();
+	};
  
     // ➕ Lägg till subprojekt
     const addSubBtn = document.createElement("button");
     //addSubBtn.textContent = "➕";
     addSubBtn.innerHTML = textIcon(basePath+'project_icon.png','+');
     addSubBtn.title = "Add project";
-    addSubBtn.onclick = () => {
-	    const subTitle = prompt("Name of existing project:");
-	    if (subTitle && subTitle !== project.title) {
-	        project.subprojects ??= [];
-	        if (!project.subprojects.includes(subTitle)) {
-	            project.subprojects.push(subTitle);
-	            setCurrentProject(subTitle);
-	            saveProjects();
-	            renderTree();
-	        }
-	    }
+    addSubBtn.onclick = (e) => {
+	    addSubProject(project);
+	    e.preventDefault();
 	};	
 
     // ❌ Ta bort projekt
     const delBtn = document.createElement("button");
     delBtn.textContent = "-";
     delBtn.title = "Remove project";
-    delBtn.onclick = () => {
+    delBtn.onclick = (e) => {
         removeProject(projIndex);
+        e.preventDefault();
+    };
+
+    // ❌ Ta bort subprojekt
+    const delSubBtn = document.createElement("button");
+    delSubBtn.textContent = "-";
+    delSubBtn.title = "Remove sub project";
+    delSubBtn.onclick = (e) => {
+        removeSubProject(projIndex,parentProject);
+        e.preventDefault();
     };
 
     const header = document.createElement("div");
@@ -157,9 +167,18 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
     header.className = 'project-div';
     header.appendChild(caret);
     header.appendChild(projectText);
-    header.appendChild(delBtn);
-    header.appendChild(addBtn);
-    header.appendChild(addSubBtn);
+    if (nested.dataset.level == '1') {
+	    header.appendChild(delBtn);
+    }
+    if (nested.dataset.level == '2') {
+	    header.appendChild(delSubBtn);
+    }
+    if (nested.dataset.level == '1') {
+	    header.appendChild(addBtn);
+	}
+    if (nested.dataset.level == '1') {
+	    header.appendChild(addSubBtn);
+	}
 
     li.appendChild(header);
     li.appendChild(nested);
@@ -183,7 +202,7 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
 
         Object.entries(folders).forEach(([dir, files]) => {
             if (dir === "") {
-                addFileItems(postfixUl, project, files);
+                addFileItems(postfixUl, project, files, nested.dataset.level);
                 return;
             }
 
@@ -195,9 +214,10 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
             const folderText = document.createElement("span");
             folderText.className = "folder_text";
             folderText.textContent = dir;
-            folderText.onclick = () => {
+            folderText.onclick = (e) => {
             	setCurrentProject(project.title);
 			    onFolderClick(dir);
+			    e.preventDefault();
 	        };
 
             folderLi.appendChild(folderCaret);
@@ -205,7 +225,7 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
             folderLi.appendChild(folderUl);
             postfixUl.appendChild(folderLi);
 
-            addFileItems(folderUl, project, files);
+            addFileItems(folderUl, project, files, nested.dataset.level);
         });
     });
 
@@ -213,7 +233,7 @@ function renderProjectTree(project, projIndex, containerUl, visited) {
     (project.subprojects || []).forEach(subTitle => {
         const subproject = projects.find(p => p.title === subTitle);
         if (subproject) {
-            renderProjectTree(subproject, projects.indexOf(subproject), nested, new Set(visited));
+            renderProjectTree(subproject, projects.indexOf(subproject), nested, new Set(visited), project.title);
         }
     });
 }
@@ -280,7 +300,7 @@ function getCaret(title,icon,storageKey,folderId,folderUl) {
 	return caret;
 }
 
-function addFileItems(folderUl,project,files) {
+function addFileItems(folderUl,project,files,level) {
     /*
     const sortedFiles = files.slice().sort((a, b) => {
 	    const extA = a.file.split('.').pop().toLowerCase();
@@ -294,12 +314,12 @@ function addFileItems(folderUl,project,files) {
 	    return nameA.localeCompare(nameB);
 	});
 	sortedFiles.forEach(({ file, index, exists }) => {
-	    const fileLi = fileItem(project,file,index,exists);
+	    const fileLi = fileItem(project,file,index,exists,level);
 	    folderUl.appendChild(fileLi);
 	});
 }
 
-function fileItem(project, file, index, exists) {
+function fileItem(project, file, index, exists, level) {
     const fileParts = file.split('/');
     const name = fileParts.length > 2 ? fileParts.pop() : file;
 	const isSelected = file === currentFile;
@@ -318,17 +338,21 @@ function fileItem(project, file, index, exists) {
 		<img class='fileimg' src='${basePath}file_icon.png'> ${name}
 		</span>`;
 	if (exists & !isSelected) {
-		fileLi.onclick = () => {
+		fileLi.onclick = (e) => {
 			setCurrentProject(project.title);
 			onFileClick(file);
+		    e.preventDefault();
 		};
 	}	
 	
 	const delBtn = document.createElement("button");
 	delBtn.textContent = "-";
 	delBtn.title = "Remove file";
-	delBtn.onclick = () => { removeFile(project,index); };
-	fileLi.appendChild(delBtn);
+	delBtn.onclick = (e) => { 
+		removeFile(project,index); 
+		e.preventDefault();
+	};
+	if (level == '1') fileLi.appendChild(delBtn);
 	return fileLi;
 }
 
@@ -352,9 +376,10 @@ function saveFolderState(storageKey,folderId,folderUl) {
 }
 
 // ➕ Lägg till projekt
-function addProject() {
-    const title = prompt("Project Name:");
-    if (title) {
+async function addProject() {
+    //const title = prompt("Project Name:");
+    const title = await ae_prompt_async(`text%¤%Project Name%¤%`, 'Add%¤%1|¤|Cancel%¤%0', 'Add Project');
+    if (title != '') {
 	    setCurrentProject(title);
 	    projects.push({ title, files: [] });
 	    saveProjects();
@@ -362,14 +387,71 @@ function addProject() {
     }
 }
 
-function removeProject(projIndex) {
-    if (confirm("Remove Project \"" + projects[projIndex]['title'] + "\"?")) {
+async function addSubProject(project) {
+    if (projects.length < 2) {
+	    ae_alert("No projects to choose from","Add Sub Project");
+	    return;
+    }
+	const options = projects
+	    .filter(p => p.title !== project.title) // 👈 uteslut det aktuella projektet
+	    .map(p => p.title)
+		.join(',');
+    const value = await ae_prompt_async(`select%¤%Choose project to add%¤%${options}`, 'Add%¤%1|¤|Cancel%¤%0', 'Add Sub Project to ' + project.title);
+    if (value == '') {
+	    return;
+    }
+    const selectedTitle = value;
+    const existing = projects.find(p => p.title === selectedTitle);
+    if (!existing) {
+	    ae_alert("Selected project not found","Add Sub Project");
+	    return;
+    }
+    if (selectedTitle && selectedTitle !== project.title) {
+        project.subprojects ??= [];
+        if (!project.subprojects.includes(selectedTitle)) {
+            project.subprojects.push(selectedTitle);
+            setCurrentProject(selectedTitle);
+            saveProjects();
+            renderTree();
+        }
+    }
+}
+
+async function removeProject(projIndex) {
+    const removedTitle = projects[projIndex]?.title;
+    if (!removedTitle) return;
+
+    if (await ae_confirm_async(`Remove Project ${removedTitle}?`,"Remove Project")) {
+        // Ta bort projektet från projects-listan
         projects.splice(projIndex, 1);
+
+        // Gå igenom alla projekt och ta bort det som subprojekt
+        projects.forEach(p => {
+            if (p.subprojects) {
+                p.subprojects = p.subprojects.filter(title => title !== removedTitle);
+            }
+        });
+
         saveProjects();
         renderTree();
     }
 }
 
+async function removeSubProject(projIndex, parentProject) {
+    const project = findProject(parentProject);
+    const subprojectTitle = projects[projIndex]['title'];
+
+    if (!subprojectTitle) return;
+    if (project.title == subprojectTitle) return;
+
+    if (await ae_confirm_async(`Remove Sub Project ${subprojectTitle} from ${project.title}?`,"Remove Sub Project")) {
+        project.subprojects = project.subprojects.filter(title => title !== subprojectTitle);
+        setCurrentProject(parentProject);
+        saveProjects();
+        renderTree();
+    }
+}
+ 
 function findProject(title) {
     return projects.find(project => project.title === title) || null;
 }
@@ -378,15 +460,15 @@ function fileAlreadyInProject(file, project) {
     return project.files.some(f => f.path === file);
 }
 
-function addFileToCurrentProject(file) {
+async function addFileToCurrentProject(file) {
 	if (file) {
 	    var project = findProject(currentProject);
 	    if (project) {
-		    if (fileAlreadyInProject(file,project)) {
-			    alert(file + ' is already in ' + project.title);
+		    if (fileAlreadyInProject(file, project)) {
+			    ae_alert(file + ' is already in ' + project.title,"Add File");
             }
             else {
-			    if (confirm('Add ' + file + ' to ' + project.title)) {
+			    if (await ae_confirm_async('Add ' + file + ' to ' + project.title,"Add File")) {
 			        project.files.push({
 					  path: file,
 					  exists: true // Eller false om du vill kontrollera det sen
@@ -399,14 +481,14 @@ function addFileToCurrentProject(file) {
 	}
 }
 
-function addFolderToCurrentProject(files) {
+async function addFolderToCurrentProject(files) {
     const project = findProject(currentProject);
     if (!project) {
-        alert("No current project found.");
+        ae_alert("No current project found","Add Folder");
         return;
     }
 
-    if (confirm('Add ' + files.length + ' files to ' + project.title)) {
+    if (await ae_confirm_async('Add ' + files.length + ' files to ' + project.title,"Add Folder")) {
     
 	    let addedCount = 0;
 	
@@ -425,14 +507,15 @@ function addFolderToCurrentProject(files) {
 	        renderTree();
 	    }
 	
-	    alert(`${addedCount} fil(es) was added to "${project.title}".`);
+	    ae_alert(`${addedCount} fil(es) was added to "${project.title}"`,"Add Folder");
 	}
 }
 
-function addFile(project) {
+async function addFile(project) {
     setCurrentProject(project.title);
-	const newFile = prompt("File Path:");
-    if (newFile) {
+	//const newFile = prompt("File Path:");
+	const newFile = await ae_prompt_async(`text%¤%File Path%¤%./`, 'Add%¤%1|¤|Cancel%¤%0', 'Add File to ' + currentProject);
+    if (newFile != '') {
         project.files.push({
 		  path: newFile,
 		  exists: true // Eller false om du vill kontrollera det sen
@@ -442,9 +525,9 @@ function addFile(project) {
     }
 }
 
-function removeFile(project,index) {
+async function removeFile(project,index) {
     setCurrentProject(project.title);
-    if (confirm("Remove File \"" + project.files[index].path + "\" from " + currentProject + "?")) {
+    if (await ae_confirm_async("Remove File " + project.files[index].path + " from " + currentProject + "?","Remove File")) {
 	    project.files.splice(index, 1);
 	    saveProjects();
 	    renderTree();

@@ -1075,8 +1075,8 @@ class Ide
 		}
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('Console','console_toggle();');
-		$menu .=$this->Out->menu_item('View Source','showEvalSource();');
-		$menu .=$this->Out->menu_item('View DOM tree','showEvalDomTree();');
+		$menu .=$this->Out->menu_item('View Source...','showEvalSource();');
+		$menu .=$this->Out->menu_item('View DOM tree...','showEvalDomTree();');
 		$menu.="<hr/>";
 		$menu .=$this->Out->menu_item('PHP.net','main_form.phpnet.value=(1-main_form.phpnet.value);main_submit("phpnet");',!$this->is_url($this->Conf->Phpneturl),($this->Conf->Phpnet));
 		$ret .= $this->Out->menu_create('Evaluate',$menu);

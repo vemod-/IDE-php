@@ -1259,11 +1259,65 @@ function replace_all()
     }
 }
 
+function formatHtml(html) {
+    const voidTags = new Set([
+        'area', 'base', 'br', 'col', 'embed', 'hr',
+        'img', 'input', 'link', 'meta', 'param',
+        'source', 'track', 'wbr'
+    ]);
+
+    const tab = '  ';
+    let result = '';
+    let indentLevel = 0;
+
+    html = html.replace(/>\s*</g, '><').trim();
+
+    const tokens = html
+        .replace(/</g, '\n<')
+        .replace(/>/g, '>\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    tokens.forEach(line => {
+        const isClosingTag = /^<\/\w/.test(line);
+        const tagNameMatch = line.match(/^<(\w+)/);
+        const tagName = tagNameMatch ? tagNameMatch[1].toLowerCase() : null;
+        const isVoidTag = tagName && voidTags.has(tagName);
+
+        if (isClosingTag) {
+            indentLevel--;
+        }
+
+        result += tab.repeat(indentLevel) + line + '\n';
+
+        if (
+            !isClosingTag &&
+            !isVoidTag &&
+            /^<\w[^>]*[^/]?>$/.test(line) && // öppningstaggar, ej self-closing
+            !line.startsWith('<!')           // ej <!DOCTYPE> eller kommentarer
+        ) {
+            indentLevel++;
+        }
+    });
+
+    return result.trim();
+}
+
 function showEvalSource() {
     const iframe = document.getElementById('evaluationwindow');
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     const sourceCode = doc.documentElement.outerHTML;
-    showSourceFrame(sourceCode,'HTML-source');
+    
+    const pre = document.createElement('pre');
+    pre.id = "sourceViewArea";
+    pre.style.fontFamily = 'monospace';
+    pre.style.fontSize = '13px';
+    pre.textContent = formatHtml(sourceCode);
+    
+    showElementFrame(pre,'HTML-source');
+    //;">${escapeHtml(formatedCode)}</pre>
+    //showSourceFrame(sourceCode,'HTML-source');
 }
 
 function buildDomTreeFromHtml(html, container) {
@@ -1341,16 +1395,6 @@ function showEvalDomTree() {
     const sourceCode = doc.documentElement.outerHTML;
 
 	buildDomTreeFromHtml(sourceCode,container);
-	Object.assign(container.style, {
-	    margin: '40px 20px 20px 20px', // top right bottom left
-	    padding: '5px',
-	    overflow: 'auto',
-	    border: '1px solid black',
-	    backgroundColor: 'white',
-	    height: 'calc(100% - 60px)', // tar hänsyn till headern
-	    width: 'calc(100% - 40px)',
-	    boxSizing: 'border-box',
-	});
 	const style = document.createElement('style');
 	style.textContent = `
 	  ul.tree {

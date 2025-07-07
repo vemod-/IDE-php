@@ -5,51 +5,7 @@ var win;
 if (String.prototype.right==null) String.prototype.right=function(num){
       return this.substring(this.length-num);  // pull out right num
 }
-/*
-function closeFrame() {
-    const isSubmit = document.getElementById('is_submit');
-    if (isSubmit && isSubmit.value != "0") {
-        const previewFrame = document.getElementById('previewframe');
 
-        try {
-            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-            if (doc && doc.forms.length > 0) {
-                doc.forms[0].submit();
-                previewFrame.onload = function () {
-                    hideFrame();
-                    window.location.reload();
-                };
-                return;
-            }
-        } catch (e) {
-            console.error("closeFrame(): Formulär kunde inte skickas.", e);
-        }
-    }
-    hideFrame();
-}
-
-function closeFrame()
-{
-    if (document.getElementById('is_submit').value != 0)
-    {
-        var doc=window.frames['previewframe'].contentDocument;
-        if (!doc)
-        {
-            doc=document.getElementById('previewframe').contentDocument;
-        }
-        if (!doc)
-        {
-            doc=window.frames['previewframe'].document;
-        }
-        if (!doc)
-        {
-            doc=document.getElementById('previewframe').document;
-        }
-        doc.forms[0].submit();
-    }
-    hideDiv('framediv');//hidedivs('framediv',100);
-}
-*/
 function closeFrame() {
     const isSubmit = document.getElementById('is_submit')?.value === '1';
 
@@ -67,14 +23,6 @@ function closeFrame() {
     hideDiv('framediv');
 }
 
-/*
-function hideFrame() {
-    const borderdiv = document.getElementById('borderdiv');
-    const framediv = document.getElementById('framediv');
-    if (borderdiv) borderdiv.style.display = "none";
-    if (framediv) framediv.style.display = "none";
-}
-*/
 function showwindow(url,inf,title)
 {
     var path='';
@@ -135,59 +83,7 @@ function showwindow(url,inf,title)
 	}
 	win.focus();
 }
-/*
-function showFrame(url,inf,title,close,is_submit)
-{
-    var borderdiv=document.getElementById('borderdiv');
-    if (!borderdiv)
-    {
-        borderdiv=document.createElement('div');
-        borderdiv.id='borderdiv';
-        document.body.appendChild(borderdiv);
-    }
-    borderdiv.onclick=new Function("closeFrame()");
-    var framediv=document.getElementById('framediv');
-    if (!framediv)
-    {
-        framediv=document.createElement('div');
-        framediv.id='framediv';
-        document.body.appendChild(framediv);
-    }
 
-    var frameurl=url;
-    if (frameurl.length==0)
-    {
-        frameurl='about:blank';
-    }
-    framediv.innerHTML='<div name="closediv" id="closediv" class="globalheader"></div><IFRAME NAME="previewframe" ID="previewframe" frameborder="0" SRC="'+frameurl+'"><div id="alternativediv"></div></IFRAME><input type="hidden" name="is_submit" id="is_submit"/>';
-
-    var previewframe=window.frames['previewframe'];
-
-    var alternativediv=document.getElementById('alternativediv');
-    if (alternativediv)
-    {
-        alternativediv.innerHTML=inf;
-    }
-    document.getElementById('closediv').innerHTML='<div class="inside_menu_text" style="text-indent:8px;"> '+title+'</div><div class="inside_menu" style="float:right;"><a href="#" class="btn" onClick="closeFrame();"/>'+close+'</a><div>';
-    showdiv('framediv');//showdivs('framediv',100);
-    document.getElementById('borderdiv').style.position="absolute";
-    document.getElementById('borderdiv').style.position="fixed";
-    document.getElementById('is_submit').value=is_submit ? 1 : 0;
-    if (previewframe)
-    {
-        if (url.length==0)
-        {
-            previewframe.document.open();
-            previewframe.document.write(""+inf+"");
-            previewframe.document.close();
-            if((navigator.userAgent.toLowerCase().indexOf("opera")==-1)&&(navigator.userAgent.toLowerCase().indexOf("safari")==-1))
-            {
-                previewframe.document.location.reload();
-            }
-        }
-    }
-}
-*/
 function showFrame(url = '', inf = '', title = '', closeText = 'Stäng', isSubmit = false) {
     // Skapa eller hämta overlay-diven
     let borderDiv = document.getElementById('borderdiv');
@@ -248,157 +144,86 @@ function showFrame(url = '', inf = '', title = '', closeText = 'Stäng', isSubmi
     }
 }
 
-function escapeHtml(str) {
-    return str.replace(/[&<>"']/g, function (match) {
-        return ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        })[match];
-    });
-}
-
-function formatHtml(html) {
-    const voidTags = new Set([
-        'area', 'base', 'br', 'col', 'embed', 'hr',
-        'img', 'input', 'link', 'meta', 'param',
-        'source', 'track', 'wbr'
-    ]);
-
-    const tab = '  ';
-    let result = '';
-    let indentLevel = 0;
-
-    html = html.replace(/>\s*</g, '><').trim();
-
-    const tokens = html
-        .replace(/</g, '\n<')
-        .replace(/>/g, '>\n')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-    tokens.forEach(line => {
-        const isClosingTag = /^<\/\w/.test(line);
-        const tagNameMatch = line.match(/^<(\w+)/);
-        const tagName = tagNameMatch ? tagNameMatch[1].toLowerCase() : null;
-        const isVoidTag = tagName && voidTags.has(tagName);
-
-        if (isClosingTag) {
-            indentLevel--;
-        }
-
-        result += tab.repeat(indentLevel) + line + '\n';
-
-        if (
-            !isClosingTag &&
-            !isVoidTag &&
-            /^<\w[^>]*[^/]?>$/.test(line) && // öppningstaggar, ej self-closing
-            !line.startsWith('<!')           // ej <!DOCTYPE> eller kommentarer
-        ) {
-            indentLevel++;
-        }
-    });
-
-    return result.trim();
-}
-
-
-function showSourceFrame(htmlCode = '', title = '', closeText = 'Close', isSubmit = false) {
-    // Skapa eller hämta overlay
-    const formatedCode = formatHtml(htmlCode);
-    
-    let borderDiv = document.getElementById('borderdiv');
-    if (!borderDiv) {
-        borderDiv = document.createElement('div');
-        borderDiv.id = 'borderdiv';
-        document.body.appendChild(borderDiv);
-    }
-    borderDiv.onclick = () => closeFrame();
-
-    // Skapa eller hämta frame-div
-    let frameDiv = document.getElementById('framediv');
-    if (!frameDiv) {
-        frameDiv = document.createElement('div');
-        frameDiv.id = 'framediv';
-        document.body.appendChild(frameDiv);
-    }
- 
-    // Sätt innehållet med textarea istället för iframe
-    frameDiv.innerHTML = 
-        `<div id="closediv" class="globalheader">
-            <div class="inside_menu_text" style="text-indent:8px;">${title}</div>
-            <div class="inside_menu" style="float:right;">
-                <a href="#" class="btn" onclick="closeFrame(); return false;">${closeText}</a>
-            </div>
-        </div>
-            <pre id="sourceViewArea" 
-            style="margin:20px;margin-top:40px;width:calc(100% - 40px);height:calc(100% - 60px);
-            box-sizing:border-box;border:1px solid black;padding:10px;overflow:scroll;background-color:white;
-            font-family:monospace;font-size:13px;">${escapeHtml(formatedCode)}</pre>
-        <input type="hidden" id="is_submit" value="${isSubmit ? 1 : 0}" />
-    `;
-	frameDiv.style.display = 'flex';	
-    // Visa popup
-    showDiv('framediv');
-    borderDiv.style.position = 'fixed';
-}
-
 function showElementFrame(element, title = '', close = 'Close', is_submit = false) {
-  let borderdiv = document.getElementById('borderdiv');
-  if (!borderdiv) {
-    borderdiv = document.createElement('div');
-    borderdiv.id = 'borderdiv';
-    document.body.appendChild(borderdiv);
-  }
-  borderdiv.onclick = () => closeFrame();
+    Object.assign(element.style, {
+	    margin: '40px 20px 20px 20px', // top right bottom left
+	    padding: '5px',
+	    overflow: 'auto',
+	    border: '1px solid black',
+	    backgroundColor: 'white',
+	    height: 'calc(100% - 60px)', // tar hänsyn till headern
+	    width: 'calc(100% - 40px)',
+	    boxSizing: 'border-box',
+	});
 
-  let framediv = document.getElementById('framediv');
-  if (!framediv) {
-    framediv = document.createElement('div');
-    framediv.id = 'framediv';
-    document.body.appendChild(framediv);
-  }
+    let borderdiv = document.getElementById('borderdiv');
+    if (!borderdiv) {
+	    borderdiv = document.createElement('div');
+	    borderdiv.id = 'borderdiv';
+	    document.body.appendChild(borderdiv);
+    }
+    borderdiv.onclick = () => closeFrame();
 
-  // Rensa innehåll
-  framediv.innerHTML = '';
+    let framediv = document.getElementById('framediv');
+    if (!framediv) {
+	    framediv = document.createElement('div');
+	    framediv.id = 'framediv';
+	    document.body.appendChild(framediv);
+    }
 
-  // Header med stäng-knapp
-  const closediv = document.createElement('div');
-  closediv.id = 'closediv';
-  closediv.className = 'globalheader';
-  closediv.innerHTML = `
-    <div class="inside_menu_text" style="text-indent:8px;"> ${title}</div>
-    <div class="inside_menu" style="float:right;">
-      <a href="#" class="btn" onclick="closeFrame(); return false;">${close}</a>
-    </div>`;
-  framediv.appendChild(closediv);
+    // Rensa innehåll
+    framediv.innerHTML = '';
 
-  // Lägg till elementet (ex. domTreeContainer)
-  framediv.appendChild(element);
-/*
-    setTimeout(() => {
-	  const headerHeight = closediv.offsetHeight;
-	  element.style.marginTop = headerHeight + 'px';
-	}, 0);
-	*/
-	framediv.style.display = 'flex';	
-  // Dold input för submit-flagg
-  const hiddenInput = document.createElement('input');
-  hiddenInput.type = 'hidden';
-  hiddenInput.id = 'is_submit';
-  hiddenInput.name = 'is_submit';
-  hiddenInput.value = is_submit ? '1' : '0';
-  framediv.appendChild(hiddenInput);
+    // Header med stäng-knapp
+    const closediv = document.createElement('div');
+    closediv.id = 'closediv';
+    closediv.className = 'globalheader';
+    closediv.innerHTML = `
+	    <div class="inside_menu_text" style="text-indent:8px;"> ${title}</div>
+	    <div class="inside_menu" style="float:right;">
+        <a href="#" class="btn" onclick="closeFrame(); return false;">${close}</a>
+	    </div>`;
+    framediv.appendChild(closediv);
 
-  // Visa fönstret
-  showDiv('framediv');
-  borderdiv.style.position = 'fixed';
+    // Lägg till elementet (ex. domTreeContainer)
+    framediv.appendChild(element);
+    framediv.style.display = 'flex';	
+    // Dold input för submit-flagg
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.id = 'is_submit';
+    hiddenInput.name = 'is_submit';
+    hiddenInput.value = is_submit ? '1' : '0';
+    framediv.appendChild(hiddenInput);
+
+    // Visa fönstret
+    showDiv('framediv');
+    borderdiv.style.position = 'fixed';
 }
 
+function ae_alert(text, title = '') {
+  ae_prompt(null, `hidden%¤%${text}%¤%`, 'OK%¤%1', '', title);
+}
 
+async function ae_confirm_async(text, title = '') {
+    //return ae_prompt_async(`hidden%¤%${text}%¤%`, 'Yes%¤%1|¤|No%¤%0', title)
+	//    .then(answer => answer === '1');
+	const { returncode, value } = await ae_promptAsync(`hidden%¤%${text}%¤%`, 'Yes%¤%1|¤|No%¤%0', title);
+	return (returncode == '1');
+}
+
+function ae_confirm(callback = hw2, text, id = '', title = '') {
+  ae_prompt(callback, `hidden%¤%${text}%¤%`, 'Yes%¤%1|¤|No%¤%0', id, title);
+}
+
+function ae_confirm_yes_no(callback = hw2, text, id = '', title = '') {
+  ae_confirm(callback, text, id, title); // Samma
+}
+
+function ae$(id) {
+  return document.getElementById(id);
+}
+/*
 function ae_alert(text,title)
 {
 	ae_prompt(null,'hidden%¤%'+text+'%¤%','OK%¤%1','',title);
@@ -419,7 +244,7 @@ function ae_confirm_yes_no(callback,text,id,title)
 	}
 	ae_prompt(callback,'hidden%¤%'+text+'%¤%','Yes%¤%1|¤|No%¤%0',id,title);
 }
-
+*/
 function hw1(id,title)
 {
 	//ae_prompt(hw2,'text%What is your name ?%Anonymous|text%What is your adress ?%Nowhere|hidden%%dolly|checkbox%select something%checked','OK%1|Cancel%0|don\'t know%2',id,title);
@@ -433,7 +258,7 @@ function hw2(returncode,id,value)
 }
 // ae_prompt function sources
 var ae_cb = null;
-
+/*
 function ae$(a)
 {
     return document.getElementById(a);
@@ -601,6 +426,7 @@ function ae_prompt(callback, fields, btns, id, title)
 		}
 		if (thistype!='hidden') {
 			span.innerHTML+='<br/>';
+			
 		}
 		ae$('aep_prompt').appendChild(span);
 	}
@@ -663,10 +489,271 @@ function addvalue(elem,separator)
 
 var fadeintime=20; // higher is slower
 var fadeouttime=20; // higher is slower
+*/
+function button_keycheck(e) {
+  const evt = e || window.event;
+  const key = evt.which || evt.keyCode;
 
+  const getAllButtons = () => {
+    const btns = [];
+    let i = 0;
+    while (ae$(`button_id_${i}`)) {
+      btns.push(ae$(`button_id_${i}`));
+      i++;
+    }
+    return btns;
+  };
+
+  const activeButton = getAllButtons().find(btn =>
+    btn.style.borderStyle.toLowerCase().includes('dotted')
+  );
+
+  switch (key) {
+    case 13: // Enter
+      if (activeButton) {
+        ae_clk(activeButton.name.slice(-1));
+      } else if (ae$('button_id_0')) {
+        ae_clk(ae$('button_id_0').name.slice(-1));
+      }
+      return false;
+
+    case 27: // Escape
+      const cancelBtn = document.getElementsByName('button_name_0')[0] || ae$('button_id_0');
+      if (cancelBtn) {
+        ae_clk(cancelBtn.name.slice(-1));
+      }
+      return false;
+
+    case 37: // Left arrow
+    case 39: // Right arrow
+      const buttons = getAllButtons();
+      if (buttons.length < 2) return true;
+
+      let idx = buttons.findIndex(btn =>
+        btn.style.borderStyle.toLowerCase().includes('dotted')
+      );
+
+      buttons[idx].style.borderStyle = 'solid';
+      buttons[idx].style.borderColor = 'transparent';
+
+      if (key === 37) idx = (idx - 1 + buttons.length) % buttons.length;
+      if (key === 39) idx = (idx + 1) % buttons.length;
+
+      buttons[idx].style.borderStyle = 'dotted';
+      buttons[idx].style.borderColor = '#000';
+      return false;
+
+    default:
+      return true;
+  }
+}
+
+async function ae_prompt_async(fields, buttons, title = document.title, id = 'current_dialog_id') {
+    const { returncode, value } = await ae_promptAsync(fields,buttons,title,id);
+
+	if (returncode !== '1') return '';
+	return value;
+}
+
+function ae_promptAsync(fields, buttons, title = document.title, id = 'current_dialog_id') {
+  return new Promise(resolve => {
+    ae_prompt((returncode, id, value) => {
+      resolve({ returncode, id, value });
+    }, fields, buttons, id, title);
+  });
+}
+
+function ae_prompt(callback, fields, buttons, id = 'current_dialog_id', title = document.title) {
+  ae_cb = callback;
+
+  let ovrl = ae$('borderdiv');
+  if (!ovrl) {
+    ovrl = document.createElement('div');
+    ovrl.id = 'borderdiv';
+    document.body.appendChild(ovrl);
+  }
+
+  let ae_win = ae$('aep_win');
+  if (!ae_win) {
+    ae_win = document.createElement('div');
+    ae_win.id = 'aep_win';
+    ae_win.style.paddingBottom = '6px';
+    (document.forms[0] || document.body).appendChild(ae_win);
+  }
+
+  ae_win.innerHTML = `
+    <input type="hidden" id="current_dialog_id" value="${id}" />
+    <div class="globalheader" id="aep_t">
+      <div class="inside_menu_text" style="text-indent:8px;">${title}</div>
+    </div>
+    <div id="aep_w">
+      <span id="aep_prompt"><br/></span>
+      <div id="aep_buttons" style="padding-right:8px;"></div>
+    </div>
+  `;
+
+	// Add inputs
+	const promptContainer = ae$('aep_prompt');
+	fields.split('|¤|').forEach((raw, i) => {
+	  const [type, label, value] = raw.split('%¤%');
+	  const span = document.createElement('span');
+	
+	  if (type !== 'checkbox' && type !== 'select') {
+	    span.innerHTML = `${label}<br/>`;
+	  }
+	
+	  let input;
+	
+	  if (type === 'checkbox') {
+	    input = document.createElement('input');
+	    input.type = 'checkbox';
+	    input.id = `id_jspopup_input_${i}`;
+	    input.checked = value === 'true' || value === 'checked';
+	    input.value = label;
+	    span.append(input);
+	    span.innerHTML += ` ${label}`;
+	  }
+	
+	  else if (type === 'textarea') {
+	    input = document.createElement('textarea');
+	    input.id = `id_jspopup_input_${i}`;
+	    input.className = 'aep_text';
+	    input.value = value || '';
+	    input.style.overflow = 'hidden';
+	    input.rows = 1;
+	    span.appendChild(input);
+	  }
+	
+	  else if (type === 'select') {
+		  input = document.createElement('select');
+		  input.id = `id_jspopup_input_${i}`;
+		  input.className = 'aep_text';
+
+		  (value || '').split(',').forEach(optionTextRaw => {
+		    const option = document.createElement('option');
+		    const isSelected = optionTextRaw.endsWith('*');
+		    const optionText = isSelected ? optionTextRaw.slice(0, -1) : optionTextRaw;
+		
+		    option.value = optionText;
+		    option.textContent = optionText;
+		    if (isSelected) option.selected = true;
+		
+		    input.appendChild(option);
+		  });
+		  span.innerHTML = `${label}<br/>`;
+		  span.appendChild(input);
+		}
+			
+	  else {
+	    input = document.createElement('input');
+	    input.type = type === 'hidden' ? 'text' : type;
+	    input.id = `id_jspopup_input_${i}`;
+	    input.value = value || '';
+	    input.defaultValue = value || '';
+	    input.className = type === 'hidden' ? 'aep_hidden_text' : 'aep_text';
+	    span.appendChild(input);
+	  }
+	
+	  input.addEventListener('keydown', button_keycheck);
+	  if (type !== 'hidden' && type !== 'select') span.innerHTML += '<br/>';
+	  promptContainer.appendChild(span);
+	});
+
+  // Add buttons
+  const btnContainer = ae$('aep_buttons');
+  buttons.split('|¤|').reverse().forEach((btn, i) => {
+    const [label, retVal] = btn.split('%¤%');
+    const btnDiv = document.createElement('div');
+    btnDiv.className = 'inside_menu';
+    btnDiv.style.float = 'right';
+    btnDiv.style.clear = 'left';
+
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = 'btn';
+    a.name = `button_name_${retVal}`;
+    a.id = `button_id_${i}`;
+    a.textContent = ` ${label} `;
+    a.style.border = '1px solid transparent';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      ae_clk(retVal);
+    });
+
+    btnDiv.appendChild(a);
+    btnContainer.appendChild(btnDiv);
+  });
+
+  // Set initial focus and highlight
+  const defaultBtn = ae$('button_id_0');
+  if (defaultBtn) {
+    defaultBtn.style.borderStyle = 'dotted';
+    defaultBtn.style.borderColor = '#000';
+  }
+
+  const defaultInput = ae$('id_jspopup_input_0');
+  if (!defaultInput) {
+    const fallback = document.createElement('input');
+    fallback.type = 'text';
+    fallback.className = 'aep_hidden_text';
+    fallback.id = 'id_jspopup_input_0';
+    fallback.addEventListener('keydown', button_keycheck);
+    ae$('aep_prompt').appendChild(fallback);
+  }
+
+  showDiv('aep_win');
+}
+/*
+function ae_clk(returnCode) {
+  hideDiv('aep_win');
+
+  if (!ae_cb) return;
+
+  const id = ae$('current_dialog_id')?.value || 'no_id';
+  const values = [];
+  let i = 0;
+  let input;
+
+  while ((input = ae$(`id_jspopup_input_${i}`))) {
+    values.push(addvalue(input));
+    i++;
+  }
+
+  ae_cb(returnCode, id, values.join('|¤|'));
+}
+*/
+function ae_clk(returncode) {
+  let val = '';
+  let sep = '';
+  let i = 0;
+  let input;
+
+  while ((input = ae$('id_jspopup_input_' + i))) {
+    if (input.type === 'checkbox') {
+      val += sep + (input.checked ? 'true' : 'false');
+    } else if (input.tagName === 'SELECT') {
+      val += sep + input.options[input.selectedIndex].value;
+    } else {
+      val += sep + input.value;
+    }
+    sep = '|¤|';
+    i++;
+  }
+
+  hideDiv('aep_win');
+  ae_cb(returncode, ae$('current_dialog_id').value, val);
+}
+
+function addvalue(elem, separator = '') {
+  if (!elem) return '';
+  const value = elem.type === 'checkbox' ? (elem.checked ? 'true' : 'false') : elem.value;
+  return separator + value;
+}
+/*
 function showDiv(id) {
     const border = document.getElementById('borderdiv');
     const el = document.getElementById(id);
+  
     if (border) border.style.visibility = 'visible';
     if (el) {
         el.style.visibility = 'visible';
@@ -678,6 +765,27 @@ function showDiv(id) {
             input?.select();
         }
     }
+}
+*/
+function showDiv(id) {
+  const border = document.getElementById('borderdiv');
+  const el = document.getElementById(id);
+
+  if (border) border.style.visibility = 'visible';
+  if (el) {
+    el.style.visibility = 'visible';
+    el.style.opacity = 1;
+
+    if (id === 'aep_win') {
+      const input = document.getElementById('id_jspopup_input_0');
+      if (input) {
+        input.focus();
+        if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA') {
+          input.select();
+        }
+      }
+    }
+  }
 }
 
 function hideDiv(id) {

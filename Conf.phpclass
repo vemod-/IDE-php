@@ -24,8 +24,8 @@
 class Conf {
 /* Public vars begin with Uppercase letter,
    private vars all lowercase. */
-   var $Success_message_color		= "#119900";
-   var $Alert_message_color		= "#DD0000";
+   var $Success_message_color		=  "#023020"; //"#119900";
+   var $Alert_message_color		= "#8B0000"; //"#DD0000";
    //var $Fancy_line_number_color		= "#222222";
    var $Conf_file			= "./ide.php.conf";
    var $Code_file			= "./code_ide";	// Keeps the current code.
