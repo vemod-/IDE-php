@@ -84,12 +84,12 @@ function renderTree() {
     ul.dataset.projectId = '';
     ul.dataset.level = 0;
 
-    const usedAsSubproject = new Set();
-    projects.forEach(p => (p.subprojects || []).forEach(title => usedAsSubproject.add(title)));
+    //const usedAsSubproject = new Set();
+    //projects.forEach(p => (p.subprojects || []).forEach(title => usedAsSubproject.add(title)));
 
     projects.forEach((project, projIndex) => {
         //if (usedAsSubproject.has(project.title)) return;
-        renderProjectTree(project, projIndex, ul, new Set());
+        renderProjectTree(project, projIndex, ul);
     });
 
     tree.appendChild(ul);
@@ -100,10 +100,7 @@ function renderTree() {
 	markCurrentProject();
 }
  
-function renderProjectTree(project, projIndex, containerUl, visited, parentProject = '') {
-    //if (visited.has(project.title)) return;
-    visited.add(project.title);
-
+function renderProjectTree(project, projIndex, containerUl, parentProject = '') {
     const li = document.createElement("li");
     li.onclick = (e) => {
 	    setCurrentProject(project.title);
@@ -183,7 +180,7 @@ function renderProjectTree(project, projIndex, containerUl, visited, parentProje
     li.appendChild(header);
     li.appendChild(nested);
     containerUl.appendChild(li);
-
+/*
     const groupedByPostfix = groupByPostfixThenFolder(project);
     Object.entries(groupedByPostfix).forEach(([ext, folders]) => {
         const postfixLi = document.createElement("li");
@@ -200,44 +197,146 @@ function renderProjectTree(project, projIndex, containerUl, visited, parentProje
         postfixLi.appendChild(postfixUl);
         nested.appendChild(postfixLi);
 
+		let rootPath = Object.keys(folders)[0] || '';
+		let rootUl = document.createElement('ul');
         Object.entries(folders).forEach(([dir, files]) => {
             if (dir === "") {
                 addFileItems(postfixUl, project, files, nested.dataset.level);
                 return;
             }
-
-            const folderLi = document.createElement("li");
-            const folderUl = document.createElement("ul");
-            folderUl.className = "nested";
-
-            const folderCaret = getCaret('', basePath + 'folder_icon.png', "openFolders", `${nested.dataset.projectId}/${ext}/${dir}`, folderUl);
-            const folderText = document.createElement("span");
-            folderText.className = "folder_text";
-            folderText.textContent = dir;
-            folderText.onclick = (e) => {
-            	setCurrentProject(project.title);
-			    onFolderClick(dir);
-			    e.preventDefault();
-	        };
-
-            folderLi.appendChild(folderCaret);
-            folderLi.appendChild(folderText);
-            folderLi.appendChild(folderUl);
-            postfixUl.appendChild(folderLi);
-
-            addFileItems(folderUl, project, files, nested.dataset.level);
+            if (dir.replace(rootPath,"").split("/").length < 2) {
+	            rootUl = renderFolder(nested,ext,dir,files,postfixUl,project);
+	        }
+	        else {
+		        renderFolder(nested,ext,dir,files,rootUl,project);
+            }
         });
     });
+*/
+    const groupedByPostfix = groupByPostfixThenFolder(project);
+Object.entries(groupedByPostfix).forEach(([ext, folders]) => {
+    const postfixLi = document.createElement("li");
+    const postfixUl = document.createElement("ul");
+    postfixUl.className = "nested";
 
+    const caret = getCaret(ext, basePath + 'folder_icon.png', "openPostfix", `${nested.dataset.projectId}/${ext}`, postfixUl);
+    const extText = document.createElement("span");
+    extText.className = "folder_text";
+    extText.textContent = ext || "";
+
+    postfixLi.appendChild(caret);
+    postfixLi.appendChild(extText);
+    postfixLi.appendChild(postfixUl);
+    nested.appendChild(postfixLi);
+
+    const folderTree = buildFolderTree(folders);
+    renderFolderTree(folderTree, postfixUl, project, nested, ext);
+});
     // 🔁 Lägg till subprojects rekursivt
     (project.subprojects || []).forEach(subTitle => {
         const subproject = projects.find(p => p.title === subTitle);
         if (subproject) {
-            renderProjectTree(subproject, projects.indexOf(subproject), nested, new Set(visited), project.title);
+            renderProjectTree(subproject, projects.indexOf(subproject), nested, project.title);
         }
     });
 }
+/*
+function buildFolderTree(folderMap) {
+    const root = {};
+    for (const [path, files] of Object.entries(folderMap)) {
+        //const parts = path.replace(/^(\.\/|\.\.\/)+/, '').split('/');
+        const parts = path.split('/');
+        let node = root;
+        for (const part of parts) {
+            if (!node[part]) node[part] = {};
+            node = node[part];
+        }
+        node.__files = files; // special key to store files at this folder
+    }
+    return root;
+}
+*/
+function buildFolderTree(folderMap) {
+    const root = {};
+    for (const [path, files] of Object.entries(folderMap)) {
+        const match = path.match(/^(\.\/|\.\.\/)+[^/]+/); // Matchar t.ex. "./../BeforeAfter"
+        let parts;
 
+        if (match) {
+            const rootFolder = match[0]; // t.ex. "./../BeforeAfter"
+            const rest = path.slice(rootFolder.length + 1); // ta bort root + nästa '/'
+            parts = [rootFolder, ...rest.split('/').filter(Boolean)];
+        } else {
+            parts = path.split('/').filter(Boolean);
+        }
+
+        let node = root;
+        for (const part of parts) {
+            if (!node[part]) node[part] = {};
+            node = node[part];
+        }
+        node.__files = files;
+    }
+    return root;
+}
+
+function renderFolderTree(tree, parentUl, project, nested, ext, parentPath = '') {
+    for (const [folderName, child] of Object.entries(tree)) {
+        if (folderName === "__files") {
+            addFileItems(parentUl, project, child, nested.dataset.level);
+            continue;
+        }
+
+        const fullPath = parentPath ? `${parentPath}/${folderName}` : folderName;
+        const folderLi = document.createElement("li");
+        const folderUl = document.createElement("ul");
+        folderUl.className = "nested";
+
+        const caret = getCaret('', basePath + 'folder_icon.png', "openFolders", `${nested.dataset.projectId}/${ext}/${fullPath}`, folderUl);
+        const folderText = document.createElement("span");
+        folderText.className = "folder_text";
+        folderText.textContent = folderName;
+        folderText.onclick = (e) => {
+            setCurrentProject(project.title);
+            onFolderClick(fullPath);
+            e.preventDefault();
+        };
+
+        folderLi.appendChild(caret);
+        folderLi.appendChild(folderText);
+        folderLi.appendChild(folderUl);
+        parentUl.appendChild(folderLi);
+
+        renderFolderTree(child, folderUl, project, nested, ext, fullPath);
+    }
+}
+
+/*
+function renderFolder(nested,ext,dir,files,parentUl,project) {
+    const folderLi = document.createElement("li");
+    const folderUl = document.createElement("ul");
+    folderUl.className = "nested";
+
+    const folderCaret = getCaret('', basePath + 'folder_icon.png', "openFolders", `${nested.dataset.projectId}/${ext}/${dir}`, folderUl);
+    const folderText = document.createElement("span");
+    folderText.className = "folder_text";
+    folderText.textContent = dir;
+    folderText.onclick = (e) => {
+    	setCurrentProject(project.title);
+	    onFolderClick(dir);
+	    e.preventDefault();
+    };
+   
+    folderLi.appendChild(folderCaret);
+    folderLi.appendChild(folderText);
+    folderLi.appendChild(folderUl);
+    parentUl.appendChild(folderLi);
+
+    addFileItems(folderUl, project, files, nested.dataset.level);
+    
+    return folderUl;
+}
+*/
 function markCurrentProject() {
     const plist = document.querySelectorAll("div.project-div");
     plist.forEach(function(element) {

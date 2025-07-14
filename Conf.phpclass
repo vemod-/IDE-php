@@ -49,9 +49,11 @@ class Conf {
    var $tdleftstyle         ='width:18%';
    var $tdmiddlestyle       ='width:41%';
    var $tdrightstyle         ='width:41%';       
-   var $tdtopleftstyle         ='height:50%;width:18%';
-   var $tdtoprightstyle       ='height:50%;width:82%';
-   var $tdbottomstyle         ='height:50%;width:100%';  
+   var $tdtopleftstyle        ='height:50%;width:18%;';
+   var $tdtoprightstyle       ='height:50%;width:82%;';
+   var $tdbottomstyle         ='height:50%;width:100%;'; 
+   var $filetablestyle 		  ='height:50%;'; 
+   var $projecttreestyle	  ='height:50%;';		 
    var $recentfiles           ="";
    var $recentdirs            ="";
    var $recentevals           ="";  
@@ -86,7 +88,7 @@ class Conf {
                                                 'Eval_executable', 'Unix_newlines','Phpneturl','Overwrite_original','Allow_browse_below_root',
                                                 'Eval_path','Dir_path','Dir_sortorder','Current_file','IsBinary','Encoding','Dirtyfile','Copy_file',
                                                 'Previous_submit','Phpnet','UseCodeMirror','CodeMirrorTheme','LayoutStyle','Eval_suffix_list',
-                                                'tdleftstyle','tdrightstyle','tdmiddlestyle','tdtoprightstyle','tdtopleftstyle','tdbottomstyle',
+                                                'tdleftstyle','tdrightstyle','tdmiddlestyle','tdtoprightstyle','tdtopleftstyle','tdbottomstyle','filetablestyle','projecttreestyle',
                                                 'recentfiles','recentdirs','recentevals','Right_trim','Syncmode','ftp_path','ftp_system_path','editorfont','editorfontsize','editorlinespace');
    /* Other vars */
    var $saved_conf_array;

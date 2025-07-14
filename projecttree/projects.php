@@ -41,9 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Hämta filvägen om det är ett objekt
             $path = is_array($file) ? $file['path'] : $file;
 
-            $fullPath = realpath($basePath . '/' . ltrim($path, './'));
+            //$fullPath = realpath($basePath . '/' . ltrim($path, './'));
+            $fullPath = realpath($basePath . '/' . $path);
             $exists = $fullPath && file_exists($fullPath);
-
+						
             $project['files'][$i] = [
                 'path' => $path,
                 'exists' => $exists,
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
     unset($project);
-
+ 
     header('Content-Type: application/json');
     echo json_encode($data, JSON_UNESCAPED_SLASHES);
     exit;

@@ -1107,7 +1107,7 @@ class Ide
 		require 'filetable/filetable.php';
 	    $filetable = new FileTable($this->Conf->Dir_path,$this->Conf->Current_file,$this->Conf->Dir_sortorder,$this->Conf->Allow_browse_below_root);
 		$ret ="<div class='fixed_window'>\n";
-		  $ret .="<div class='scroll_window' style='height:50%;$borderstyle'>\n";
+		  $ret .="<div class='scroll_window' style='$borderstyle'>\n";
 		    $ret .= $filetable->file_table();
 			$ret .= "<script type=\"text/javascript\">
 				document.addEventListener(\"DOMContentLoaded\", function () {
@@ -1129,7 +1129,13 @@ class Ide
 				});
 				</script>";
 		  $ret .="</div>\n";
-		  $ret .= "<div class='scroll_window' style='height:50%;top:50%;$borderstyle'>";
+		$ret .="</div>\n";
+		return $ret;
+	}
+	
+	function project_window($borderstyle) {
+		$ret ="<div class='fixed_window'>\n";
+		  $ret .= "<div class='scroll_window' style='$borderstyle'>";
 		    require_once('./projecttree/projecttree.php');
 		    $prj = new ProjectTree($this->Conf->Current_file);
 		    $ret .= $prj->getHTML();
@@ -1147,7 +1153,7 @@ class Ide
 				</script>";
 		  $ret .= "</div>";
 		$ret .="</div>\n";
-		return $ret;
+		return $ret;	
 	}
 
 	function code_window($borderstyle)
@@ -1159,6 +1165,7 @@ class Ide
 			}
 		}
 		$ret = "<div id = 'codewindow' class='fixed_window'>\n";
+		//$ret .= '<table style="width:100%;height:100%;border-collapse:collapse;"><tr><td>';
 		if ($this->Conf->UseCodeMirror && !$this->Conf->IsBinary) {
 			$theme = $this->Conf->CodeMirrorTheme ?: 'default';
 			if ($theme !== 'default') {
@@ -1206,7 +1213,8 @@ class Ide
 			    $ret .= "<a href='#' title='Encoding' onclick='showFrame(\"./encoding_ide.php\",\"\",\"Encoding\",\"Close\",true);return false;'>".$this->Conf->Encoding.'</a>  '.FileTable::formatDate(filemtime($this->Conf->Current_file))."<a href='#' title='Revert to saved' onClick='if (checkDirty()){ae_confirm(callback_submit,\"Discard changes?\",\"set_undo\");}else{main_submit(\"set_undo\");}'> <img src='images/lock.gif'> </a>".FileTable::formatDate(filemtime($this->Conf->Backup_file)).' ';
 			  $ret .= "</div>";
 			$ret .= '</div>';
-			$ret .= $this->search_window();
+			//$ret .= '</td></tr><tr><td>';
+			//$ret .= $this->search_window();
 		}
         else {
         	$ret .= "<script>
@@ -1261,15 +1269,17 @@ class Ide
 
 				$ret.='</div>';
 			}
-			$ret .= $this->search_window();
+			//$ret .= '</td></tr><tr><td>';
+			//$ret .= $this->search_window();
         }
+        //$ret .= '</td></tr><table>';
 		$ret .="</div>\n";
 		return $ret;
 	}
 
 	function search_window()
 	{
-		$ret = "<div id = 'searchWindow' style = 'width:100%;height:30%;bottom:0;position:absolute;display:none;background-color:#E0E4EA;font-size:12px;border-top:1px solid #888888;border-right:1px solid #888888;box-sizing:border-box;'>";
+		$ret = "<div id = 'searchWindow' style = 'width:100%;height:100%;bottom:0;position:relative;display:none;background-color:#E0E4EA;font-size:12px;border-top:1px solid #888888;border-right:1px solid #888888;box-sizing:border-box;'>";
 		  $ret .= "<div id = 'searchdiv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;'>";
 		  	$ret .= $this->Out->search_button('closesearchbutton','✖');
 		  	$ret .= $this->Out->search_input('searchText','Search...');
@@ -1285,7 +1295,7 @@ class Ide
 		  	$ret .= $this->Out->search_button('replacefindbutton','Replace and find next');
 		  	$ret .= $this->Out->search_button('replaceallbutton','Replace all');
 		  $ret .= "</div>";	
-		  $ret .= '<div id = "showalldiv" style = "width:100%;height:calc(100% - 36px);overflow:scroll;background-color:white;padding:0;margin:0;'.$this->code_style().'">';
+		  $ret .= '<div id = "showalldiv" style = "width:100%;height:calc(100% - 36px);overflow:scroll;position:absolute;background-color:white;padding:0;margin:0;'.$this->code_style().'">';
 		    $ret .= "<ul id = 'hitlist' style = 'padding:0;margin:0;'></ul>";
 		  $ret .= "</div>";	
 		$ret .= "</div>";
@@ -1316,37 +1326,132 @@ class Ide
 		}
 		$ret ="<div class='fixed_window'>\n";
 		$ret .="<iframe id='evaluationwindow' name='evaluationwindow' frameborder='0' class='scroll_window' style='width:100%;height:100%;$borderstyle' src='".$src."'></iframe>";
-		$ret .= '<div id="frame-console" style="position:absolute;bottom:0;height:30%;width:100%;background:#eee; white-space:pre-wrap; font-family:monospace;overflow:scroll;box-sizing:border-box;display:none">';
+		$ret .= "</div>\n";
+		return $ret;
+	}
+		
+	function console_window() {
+		$ret = '<div id="frame-console" style="position:relative;bottom:0;height:100%;width:100%;background:#eee; white-space:pre-wrap; font-family:monospace;overflow:scroll;box-sizing:border-box;display:none">';
 			$ret .= "<div id = 'consolediv' style = 'display:flex;width:100%;white-space:nowrap;align-items:center;background-color:#E0E4EA;'>";
 		  		$ret .= $this->Out->search_button('consoleclosebutton','✖');
 		  	$ret .= '</div>';
 		$ret .= '</div>';
-		$ret .= "</div>\n";
 		return $ret;
 	}
 
-function main_page()
+	function file_table($f,$filetablestyle,$projecttreestyle) {
+		$filetableContent = '
+			<div class="relative">
+				<div class="insidewrapper">' . $this->file_window('border-left:0px;border-bottom:0px;') . '</div>
+				<div class="header">' . $this->file_menu() . '</div>
+			</div>
+		';
+		
+		$fileTableCell = $f->buildNeutralCell(
+			"filetable_cell",	
+			$filetablestyle,
+			$filetableContent
+		);
+		
+		$projectCell = $f->buildHorizCell(
+			'project_cell',
+			$projecttreestyle,
+			'splitter_files_project',
+			'filetable_cell',
+			$this->project_window('border-left:0px;border-bottom:0px;')
+		);
+		
+		$innerFileTable = '
+			<table style="width:100%;height:100%;border-collapse:collapse;">
+				<tr>' . $fileTableCell . '</tr>
+				<tr>' . $projectCell . '</tr>
+			</table>
+		';
+		return $innerFileTable;
+	}
+
+	function code_table($f) {
+		$codeCellContent = '
+			<div class="relative">
+				<div class="insidewrapper">' . $this->code_window('border-left:0px;border-bottom:0px;') . '</div>
+				<div class="header">' . $this->code_menu() . '</div>
+			</div>
+		';
+		$codeCell = $f->buildNeutralCell(
+			'code_cell', 
+			'height:100%;', 
+			$codeCellContent
+		);
+		$searchCell = $f->buildHorizCell(
+			'search_cell',
+			'height:0%;',
+			'splitter_code_search',
+			'code_cell',
+			$this->search_window()
+		);
+		$innerCodeTable = '
+			<table style="width:100%;height:100%;border-collapse:collapse;">
+				<tr>' . $codeCell . '</tr>
+				<tr>' . $searchCell . '</tr>
+			</table>
+		';
+		return $innerCodeTable;
+	}
+	
+	function eval_table($f) {
+		$evalWindowContent = "
+			<div class=\"relative\">
+				<div class=\"insidewrapper\">
+					{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
+				</div>
+				<div class=\"header\">
+					{$this->eval_menu()}
+				</div>
+			</div>";
+
+		$evalCell = $f->buildNeutralCell(
+			'eval_cell', 
+			'height:100%;', 
+			$evalWindowContent
+		);
+		$consoleCell = $f->buildHorizCell(
+			'console_cell',
+			'height:0%;',
+			'splitter_eval_console',
+			'eval_cell',
+			$this->console_window()
+		);
+		$innerEvalTable = '
+			<table style="width:100%;height:100%;border-collapse:collapse;">
+				<tr>' . $evalCell . '</tr>
+				<tr>' . $consoleCell . '</tr>
+			</table>
+		';
+		return $innerEvalTable;
+	}
+
+	function main_page()
 	{		
 		$h = fn($str) => htmlspecialchars($str ?? '', ENT_QUOTES);
 		$ret = "<script type=\"text/javascript\" src=\"splitters/splitters.js\"></script>
     		<link rel=\"stylesheet\" type=\"text/css\" href=\"splitters/splitters.css\">";
 		$ret .= <<<HTML
-	<form name="main_form" id="main_form" enctype="multipart/form-data" method="POST" action="{$h($_SERVER['PHP_SELF'])}">
-	<input type="hidden" name="action" id="action" value="">
-	<input type="hidden" name="prev_submit" value="{$h(md5(time() . session_id()))}">
-	<input type="hidden" id="change_counter" name="change_counter" value="{$h($this->Conf->Dirtyfile)}">
-	<input type="hidden" name="Current_filename" id="Current_filename" value="{$h($this->Conf->Current_file)}">
-	<input type="hidden" id="save_as_filename" name="save_as_filename" value="{$h($_POST['save_as_filename'] ?? '')}">
-	<input type="hidden" id="use_code_mirror" name="use_code_mirror" value="{$h($this->Conf->UseCodeMirror)}">
-	<input type="hidden" id="phpnet" name="phpnet" value="{$h($this->Conf->Phpnet)}">
-	<input type="hidden" id="syncmode" name="syncmode" value="{$h($this->Conf->Syncmode)}">
-	<input type="hidden" id="layoutstyle" name="layoutstyle" value="{$h($this->Conf->LayoutStyle)}">
-	<input name="current_directory" id="current_directory" type="hidden" value="">
-	<input name="sortorder" id="sortorder" type="hidden" value="">
-	<input name="some_file_name" id="some_file_name" type="hidden" value="">
-	<input name="some_file_selection" id="some_file_selection" type="hidden" value="">
-	<input name="chmod_value" id="chmod_value" type="hidden" value="">
-	HTML;
+		<form name="main_form" id="main_form" enctype="multipart/form-data" method="POST" action="{$h($_SERVER['PHP_SELF'])}">
+		<input type="hidden" name="action" id="action" value="">
+		<input type="hidden" name="prev_submit" value="{$h(md5(time() . session_id()))}">
+		<input type="hidden" id="change_counter" name="change_counter" value="{$h($this->Conf->Dirtyfile)}">
+		<input type="hidden" name="Current_filename" id="Current_filename" value="{$h($this->Conf->Current_file)}">
+		<input type="hidden" id="save_as_filename" name="save_as_filename" value="{$h($_POST['save_as_filename'] ?? '')}">
+		<input type="hidden" id="use_code_mirror" name="use_code_mirror" value="{$h($this->Conf->UseCodeMirror)}">
+		<input type="hidden" id="phpnet" name="phpnet" value="{$h($this->Conf->Phpnet)}">
+		<input type="hidden" id="syncmode" name="syncmode" value="{$h($this->Conf->Syncmode)}">
+		<input type="hidden" id="layoutstyle" name="layoutstyle" value="{$h($this->Conf->LayoutStyle)}">
+		<input name="current_directory" id="current_directory" type="hidden" value="">
+		<input name="sortorder" id="sortorder" type="hidden" value="">
+		<input name="some_file_name" id="some_file_name" type="hidden" value="">
+		<input name="some_file_selection" id="some_file_selection" type="hidden" value="">
+		<input name="chmod_value" id="chmod_value" type="hidden" value="">
+		HTML;
 
 		// Layout style values, using fallback from POST
 		foreach ([
@@ -1355,7 +1460,9 @@ function main_page()
 			'td_right_style' => 'tdrightstyle',
 			'td_top_left_style' => 'tdtopleftstyle',
 			'td_top_right_style' => 'tdtoprightstyle',
-			'td_bottom_style' => 'tdbottomstyle'
+			'td_bottom_style' => 'tdbottomstyle',
+			'filetable_cell_style' => 'filetablestyle',
+			'project_cell_style' => 'projecttreestyle'
 		] as $postKey => $confProp) {
 			$this->Conf->$confProp = $_POST[$postKey] ?? $this->Conf->$confProp;
 			$ret .= "<input type='hidden' name='{$h($postKey)}' id='{$h($postKey)}' value='{$h($this->Conf->$confProp)}'>\n";
@@ -1363,47 +1470,58 @@ function main_page()
 
 		// Start wrapper div
 		$ret .= "<div class='wrapper' id='wrapper_div'><div class='relative'>";
-    require('splitters/splitters.php');
-    $f = new SplitterFactory;
-    $ret .= $f->buildAssets();
+		require('splitters/splitters.php');
+		$f = new SplitterFactory;
+		$ret .= $f->buildAssets();
 
 		if ($this->Conf->LayoutStyle == 1) {
 			// 3-column layout
 			$ret .= "<table class='insidediv'><tr>";
-			$ret .= $f->buildNeutralCell("td_left",$this->Conf->tdleftstyle,
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->file_window('border-left:0px;border-bottom:0px;')}
-			</div><div class=\"header\">{$this->file_menu()}</div></div>"
+						
+			$ret .= $f->buildNeutralCell(
+				"td_left",	
+				$this->Conf->tdleftstyle,
+				$this->file_table($f,$this->Conf->filetablestyle,$this->Conf->projecttreestyle)
 			);
-			$ret .= $f->buildVertCell("td_middle",$this->Conf->tdmiddlestyle,"splitter1","td_left",
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->code_window('border-left:0px;border-bottom:0px;')}
-			</div><div class=\"header\">{$this->code_menu()}</div></div>"
+//-------
+			$ret .= $f->buildVertCell(
+				'td_middle',
+				$this->Conf->tdmiddlestyle,
+				'splitter1',
+				'td_left',
+				$this->code_table($f)
 			);
-			$ret .= $f->buildVertCell("td_right",$this->Conf->tdrightstyle,"splitter2","td_middle",
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
-			</div><div class=\"header\">{$this->eval_menu()}</div></div>"
+//-------			
+
+			$ret .= $f->buildVertCell(
+				"td_right",
+				$this->Conf->tdrightstyle,
+				"splitter2","td_middle",
+				$this->eval_table($f)
 			);
 			$ret .= "</tr></table>";
 		} else {
 			// Split top/bottom layout
 			$ret .= "<table class='insidediv'><tr>";
-			$ret .= $f->buildNeutralCell("td_top_left",$this->Conf->tdtopleftstyle,
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->file_window('border-left:0px;border-bottom:0px;')}
-			</div><div class=\"header\">{$this->file_menu()}</div></div>"
+			$ret .= $f->buildNeutralCell(
+				"td_top_left",
+				$this->Conf->tdtopleftstyle,
+				$this->file_table($f,$this->Conf->filetablestyle,$this->Conf->projecttreestyle)
 			);
-			$ret .= $f->buildVertCell("td_top_right",$this->Conf->tdtoprightstyle,"splitter1","td_top_left",
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->code_window('border-left:0px;border-bottom:0px;')}
-			</div><div class=\"header\">{$this->code_menu()}</div></div>"
+			$ret .= $f->buildVertCell(
+				"td_top_right",
+				$this->Conf->tdtoprightstyle,
+				"splitter1",
+				"td_top_left",
+				$this->code_table($f)
 			);
 			$ret .= "</tr><tr>";
-			$ret .= $f->buildHorizCell("td_bottom",$this->Conf->tdbottomstyle,"splitter2","td_top_left%td_top_right",
-			"<div class=\"relative\"><div class=\"insidewrapper\">
-			{$this->eval_window('border-left:0px;border-bottom:0px;border-right:0px;')}
-			</div><div class=\"header\">{$this->eval_menu()}</div></div>"
+			$ret .= $f->buildHorizCell(
+				"td_bottom",
+				$this->Conf->tdbottomstyle,
+				"splitter2",
+				"td_top_left%td_top_right",
+				$this->eval_table($f)
 			);
 			$ret .= "</tr></table>";
 		}

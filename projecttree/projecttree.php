@@ -1,4 +1,5 @@
 <?php
+
 class ProjectTree {
 	public static $confFile = __DIR__ . '/projects.conf';
 	private $asset_url;
@@ -57,4 +58,5 @@ class ProjectTree {
     }
 
 };
+
 ?>

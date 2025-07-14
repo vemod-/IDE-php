@@ -121,7 +121,7 @@ function scrollIntoView(selectionStart, selectionEnd) {
 	}
 }
 
-function setFocus() {
+function setFocus() { 
 	if (isUsingCodeMirror()) {
 		editor.focus();
 	} else if (isTextAreaEditor()) {
@@ -187,8 +187,12 @@ function serializeUI() {
 	
 	const frameConsole = document.getElementById('frame-console');
 	localStorage.setItem('console', (frameConsole.style.display != 'none'));
+	localStorage.setItem('evalheight', document.getElementById('eval_cell').style.height);
+	localStorage.setItem('consoleheight', document.getElementById('console_cell').style.height);
 	const searchWindow = document.getElementById('searchWindow');
 	localStorage.setItem('searchwindow', (searchWindow.style.display != 'none'));
+	localStorage.setItem('codeheight', document.getElementById('code_cell').style.height);
+	localStorage.setItem('searchheight', document.getElementById('search_cell').style.height)
 	localStorage.setItem('searchPos', searchPos);
 	localStorage.setItem('searchTerm', searchTerm);
 	localStorage.setItem('replaceTerm', replaceTerm);
@@ -201,14 +205,16 @@ function serializeUI() {
 
     var uidataField = document.getElementById('UIdata');
     if (uidataField) {
-        uidataField.value = php.serialize(UIdata);
+        uidataField.value = php.serialize(UIdata); 
 	}
-} 
+}
 
 function unserializeUI() {
 	if (localStorage.getItem('console') !== null) {
 		if (localStorage.getItem('console') == 'true') {
 			console_toggle();
+			document.getElementById('eval_cell').style.height = localStorage.getItem('evalheight');
+			document.getElementById('console_cell').style.height = localStorage.getItem('consoleheight')
         }
     }
     if (localStorage.getItem('searchPos') !== null) {
@@ -245,9 +251,11 @@ function unserializeUI() {
     if (localStorage.getItem('searchwindow') !== null) {
 		if (localStorage.getItem('searchwindow') == 'true') {
 			showSearchWindow();
+			document.getElementById('code_cell').style.height = localStorage.getItem('codeheight');
+			document.getElementById('search_cell').style.height = localStorage.getItem('searchheight')
 			searchAndDisplay(codeValue(),searchSelection,document.getElementById('hitlist'));
 			markSearchItem();
-			searchStats();
+			searchStats(); 
 			searchProjectFiles();
         }
     }
@@ -483,13 +491,16 @@ function escapeHtml(text) {
 
 function console_toggle() {
     const frameConsole = document.getElementById('frame-console');
-    const iframe = document.getElementById('evaluationwindow');
+    const iframe = document.getElementById('eval_cell');
+    const console = document.getElementById('console_cell')
     if (frameConsole.style.display == 'none') {
 	    iframe.style.height = '70%';
+	    console.style.height = '30%';
 	    frameConsole.style.display = 'block';
     }
     else {
 	    iframe.style.height = '100%';
+	    console.style.height = '0%';
 	    frameConsole.style.display = 'none';	    
     }
     setConsoleMenuCheckmark();
@@ -923,25 +934,31 @@ RegExp.escape = function(text) {
 }
 
 function hideSearchWindow() {
-    let codewrapper = document.getElementById('codewrapper');
+    let coderow = document.getElementById('code_cell');
+    let searchrow = document.getElementById('search_cell');
 	let searchWindow = document.getElementById('searchWindow');
     searchWindow.style.display = 'none';
-	codewrapper.style.height = '100%';
+    searchrow.style.height = '0%';
+	coderow.style.height = '100%';
 	setFocus();
 }
 
 function showSearchWindow() {
-	let codewrapper = document.getElementById('codewrapper');
+    let coderow = document.getElementById('code_cell');
+    let searchrow = document.getElementById('search_cell');
 	let searchWindow = document.getElementById('searchWindow');
 	const searchText = document.getElementById('searchText');
-	searchWindow.style.display = 'block';
-	codewrapper.style.height = '70%';
+	if (searchWindow.style.display == 'none') {
+		searchWindow.style.display = 'block';
+		coderow.style.height = '70%';
+		searchrow.style.height = '30%';
+    }
 	searchText.value = searchTerm || '';
 }
 
 function syncSearchWindow() {
-    let codewrapper = document.getElementById('codewrapper');
-	let searchWindow = document.getElementById('searchWindow');
+    //let codewrapper = document.getElementById('codewrapper');
+	//let searchWindow = document.getElementById('searchWindow');
 	const closeButton = document.getElementById('closesearchbutton');
 	closeButton.style.marginRight = '8px';
 	closeButton.onclick = () => {
@@ -1157,7 +1174,7 @@ function searchStats() {
 			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
 	    }
     }
-}
+} 
 
 function searchInText(code,selection) {
     var RegExpStr=RegExp.escape(searchTerm);
