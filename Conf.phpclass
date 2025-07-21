@@ -46,9 +46,9 @@ class Conf {
    var $Phpnet              =0;
    //var $Fancy               =0;
    var $LayoutStyle         =1;  
-   var $tdleftstyle         ='width:18%';
-   var $tdmiddlestyle       ='width:41%';
-   var $tdrightstyle         ='width:41%';       
+   var $tdleftstyle         ='width:18%;';
+   var $tdmiddlestyle       ='width:41%;';
+   var $tdrightstyle         ='width:41%;';       
    var $tdtopleftstyle        ='height:50%;width:18%;';
    var $tdtoprightstyle       ='height:50%;width:82%;';
    var $tdbottomstyle         ='height:50%;width:100%;'; 
@@ -70,7 +70,7 @@ class Conf {
    //var $Code_cols			= 80;
    var $Code_template			= "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n<html>\n<head>\n<style type=\"text/css\">\n\n</style>\n<script language=\"javascript\">\n\n</script>\n</head>\n<body>\n<?php\n\n?>\n</body>\n</html>";
    //var $Fancy_view_line_numbers		= 1;
-   var $Protect_entities		= 0;  
+   var $Protect_entities		= 1;  
    var $Eval_suffix_list		= array(".php", ".html", ".shtml", ".cgi", ".jsp");
    var $Eval_executable			= 0;		// Needed for .cgi etc.
    var $Unix_newlines			= 0;		// For cgi on UNIX
