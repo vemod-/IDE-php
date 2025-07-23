@@ -14,7 +14,7 @@ function isTextAreaEditor() {
 function usesProjects() {
     return typeof findProject === 'function' && currentProject !== undefined;
 }
- 
+
 function currentProjectFiles() {
     if (!usesProjects()) return [];
 
@@ -121,7 +121,7 @@ function scrollIntoView(selectionStart, selectionEnd) {
 	}
 }
 
-function setFocus() { 
+function setFocus() {
 	if (isUsingCodeMirror()) {
 		editor.focus();
 	} else if (isTextAreaEditor()) {
@@ -164,7 +164,7 @@ function main_submit(action) {
     document.main_form.action.value = action;
     document.main_form.submit();
 }
- 
+
 function startdownload()
 {
 	document.getElementById('save_as_filename').value='./systemzip/idephp.zip';
@@ -184,7 +184,7 @@ function serializeUI() {
 	var selectionRange = getSelectionRange();
 	UIdata['selStart'] = selectionRange.selStart;
 	UIdata['selEnd'] = selectionRange.selEnd;
-	
+
 	const frameConsole = document.getElementById('frame-console');
 	localStorage.setItem('console', (frameConsole.style.display != 'none'));
 	localStorage.setItem('evalheight', document.getElementById('eval_cell').style.height);
@@ -205,7 +205,7 @@ function serializeUI() {
 
     var uidataField = document.getElementById('UIdata');
     if (uidataField) {
-        uidataField.value = php.serialize(UIdata); 
+        uidataField.value = php.serialize(UIdata);
 	}
 }
 
@@ -251,15 +251,18 @@ function unserializeUI() {
     if (localStorage.getItem('searchwindow') !== null) {
 		if (localStorage.getItem('searchwindow') == 'true') {
 			showSearchWindow();
-			document.getElementById('code_cell').style.height = localStorage.getItem('codeheight');
-			document.getElementById('search_cell').style.height = localStorage.getItem('searchheight')
-			searchAndDisplay(codeValue(),searchSelection,document.getElementById('hitlist'));
-			markSearchItem();
-			searchStats(); 
-			searchProjectFiles();
+			if (searchTerm != '' && searchTerm != null)
+		    {
+				document.getElementById('code_cell').style.height = localStorage.getItem('codeheight');
+				document.getElementById('search_cell').style.height = localStorage.getItem('searchheight')
+				searchAndDisplay(codeValue(),searchSelection,document.getElementById('hitlist'));
+				markSearchItem();
+				searchStats();
+				searchProjectFiles();
+	        }
         }
     }
-    
+
     var php = new PHP_Serializer();
     var uidataField = document.getElementById('UIdata');
     if (!uidataField || !uidataField.value.length) return;
@@ -277,7 +280,7 @@ function unserializeUI() {
 		setScrollPosition(UIdata['scrollLeft'], UIdata['scrollTop']);
 	}
 }
- 
+
 var sel_line_num=-1;
 
 function syncEditor(UIstr) {
@@ -378,12 +381,12 @@ function syncConsoleWindow() {
 	        const iframeWindow = iframe.contentWindow;
 	        const realLog = iframeWindow.console.log;
 	        const realError = iframeWindow.console.error;
-	
+
 	        iframeWindow.console.log = (...args) => {
 			    appendLog('log', args.join(' '));
 			    realLog.apply(iframeWindow.console, args);
 			};
-			
+
 			iframeWindow.console.warn = (...args) => {
 			    appendLog('warning', args.join(' '));
 			    realLog.apply(iframeWindow.console, args);
@@ -393,7 +396,7 @@ function syncConsoleWindow() {
 			    appendLog('debug', args.join(' '));
 			    realLog.apply(iframeWindow.console, args);
 			};
-			
+
 			iframeWindow.console.info = (...args) => {
 			    appendLog('info', args.join(' '));
 			    realLog.apply(iframeWindow.console, args);
@@ -403,16 +406,16 @@ function syncConsoleWindow() {
 			    appendLog('error', args.join(' '));
 			    realError.apply(iframeWindow.console, args);
 			};
-			
+
 			iframeWindow.onerror = (message, source, lineno, colno, error) => {
 			    appendLog('error', message, lineno, colno, source);
 			};
-				
+
 	    } catch (e) {
 		    appendLog('error', 'Can\'t log from (cross-origin): ' + e.message);
 	    }
 	    setConsoleMenuCheckmark();
-	};    
+	};
 }
 
 const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/');
@@ -437,11 +440,11 @@ function appendLog(type, message, lineno, colno, source = '') {
     const line = document.createElement('div');
     line.className = `log-line ${type}`;
     line.dataset.key = logKey;
-    
+
     if (source.startsWith(baseUrl)) {
 	    source = './' + source.substring(baseUrl.length);
 	}
-	
+
     const icon = getIcon(type);
     const escapedMsg = escapeHtml(message);
     const sourceInfo = source ? `<span class="log-jump"  style="color:blue;cursor:pointer;">${escapeHtml(source)}:</span>` : '';
@@ -501,7 +504,7 @@ function console_toggle() {
     else {
 	    iframe.style.height = '100%';
 	    console.style.height = '0%';
-	    frameConsole.style.display = 'none';	    
+	    frameConsole.style.display = 'none';
     }
     setConsoleMenuCheckmark();
 }
@@ -622,7 +625,7 @@ function catchTab(e) {
             return false;
         }
     }
-    
+
     //Escape
     if (key === 27) {
 	    hideSearchWindow()
@@ -769,7 +772,7 @@ function submit_dir(dir)
     document.getElementById('current_directory').value=dir;
     main_submit('set_directory');
 }
- 
+
 function submit_file(file,selection = "")
 {
     document.getElementById('some_file_name').value=""+file+"";
@@ -781,7 +784,7 @@ function submit_file(file,selection = "")
 		UIdata['selEnd'] = selection.selEnd;
 		someSelection.value = php.serialize(UIdata);
 	}
- 
+
     document.getElementById('some_file_name').value=""+file+"";
     if (checkDirty())
     {
@@ -1039,7 +1042,7 @@ function search_next()
     setSearchVars(codeValue());
     if (searchTerm != '' && searchTerm != null)
     {
-		const hitlist = document.getElementById('hitlist');      
+		const hitlist = document.getElementById('hitlist');
 	    var matches = searchAndDisplay(codeValue(),searchSelection,hitlist);
 		if (matches.length) {
             const searchMatches = matches.map(m => ({
@@ -1054,14 +1057,14 @@ function search_next()
 		}
 		searchProjectFiles();
     }
-    setFocus(); 
+    setFocus();
 }
 
 function searchProjectFiles() {
     if (usesProjects() && searchInProject) {
 		if (projects.length === 0) {
 			loadProjects()
-				.then(() => { 
+				.then(() => {
 					console.log('Projects loaded');
 					return renderSearchHits(); // Vänta här
 				})
@@ -1087,7 +1090,7 @@ async function renderSearchHits() {
     const hitlist = document.getElementById('hitlist');
     const currentFile = document.getElementById('Current_filename').value;
     const files = currentProjectFiles();
-    for (const file of files) { 
+    for (const file of files) {
         if (file === currentFile) continue;
 
         const fileLi = document.createElement('li');
@@ -1109,7 +1112,7 @@ async function renderSearchHits() {
 				    selStart: m.index,
 				    selEnd: m.index + m[0].length
 				}));
-	
+
 	            for (let i = 0; i < fileUl.childNodes.length; i++) {
 		            const li = fileUl.childNodes[i];
 		            li.onclick = () => {
@@ -1124,7 +1127,7 @@ async function renderSearchHits() {
         }
     }
 }
- 
+
 async function getFileContent(file) {
 	try {
         const response = await fetch('./read_file.php', {
@@ -1139,8 +1142,8 @@ async function getFileContent(file) {
         }
     } catch (err) {
         console.error('Could not read ', file, err);
-    } 
-    return '';   
+    }
+    return '';
 }
 
 function searchAndDisplay(code,selection,hitlist) {
@@ -1165,7 +1168,7 @@ function markSearchItem() {
 }
 
 function searchStats() {
-    const stats = document.getElementById('searchstats');		    
+    const stats = document.getElementById('searchstats');
 	if (stats) {
 		stats.textContent = '';
 		const hitlist = document.getElementById('hitlist');
@@ -1174,7 +1177,7 @@ function searchStats() {
 			stats.textContent = (searchPos + 1) + ' / ' + matches.length;
 	    }
     }
-} 
+}
 
 function searchInText(code,selection) {
     var RegExpStr=RegExp.escape(searchTerm);
@@ -1229,7 +1232,7 @@ function hitlistItem(i,lines,lineNumber) {
 	numberDiv.style.textAlign = 'right';
 	numberDiv.style.backgroundColor = '#E0E4EA';
 	numberDiv.style.marginRight = '8px';
-	
+
 	const lineDiv = document.createElement('div');
 	const highlightedLine = highlightMatchPreserveCase(lines[lineNumber], searchTerm);
 	lineDiv.innerHTML = highlightedLine;
@@ -1247,7 +1250,7 @@ function setSearchVars(codevalue) {
     if (!document.getElementById('searchselectedcb').checked)
     {
     	searchSelection = { selStart: 0, selEnd: codevalue.length };
-    }    
+    }
 }
 
 function replace_all()
@@ -1263,11 +1266,11 @@ function replace_all()
 		        let match = matches[i];
 		        let start = match.index;
 		        let end = start + match[0].length;
-		
+
 		        codevalue = codevalue.substring(0, start + searchSelection.selStart) + replaceTerm + codevalue.substring(end + searchSelection.selStart);
 		        replacements++;
 		    }
-		
+
 		    setCodeValue(codevalue);
 		    checkDirty();
 		    ae_alert(toHtmlEntities(searchTerm) + ' was replaced ' + replacements + ' times');
@@ -1325,13 +1328,13 @@ function showEvalSource() {
     const iframe = document.getElementById('evaluationwindow');
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     const sourceCode = doc.documentElement.outerHTML;
-    
+
     const pre = document.createElement('pre');
     pre.id = "sourceViewArea";
     pre.style.fontFamily = 'monospace';
     pre.style.fontSize = '13px';
     pre.textContent = formatHtml(sourceCode);
-    
+
     showElementFrame(pre,'HTML-source');
     //;">${escapeHtml(formatedCode)}</pre>
     //showSourceFrame(sourceCode,'HTML-source');
@@ -1406,7 +1409,7 @@ function buildDomTreeFromHtml(html, container) {
 function showEvalDomTree() {
     const container = document.createElement('div');
     container.id = 'domTreeContainer';
-    
+
     const iframe = document.getElementById('evaluationwindow');
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     const sourceCode = doc.documentElement.outerHTML;
@@ -1420,15 +1423,15 @@ function showEvalDomTree() {
 		  margin: 0;
 		  padding-left: 1em;
 		}
-		
+
 		.tree li {
 		  margin: 2px 0;
 		}
-		
+
 		.collapsed > ul {
 		  display: none;
 		}
-		
+
 		.caret::before {
 		  content: ">";
 		  color: grey;
@@ -1436,11 +1439,11 @@ function showEvalDomTree() {
 		  margin-right: 6px;
 		  transition: transform 0.2s ease;
 		}
-		
+
 		.caret.caret-down::before {
 		  transform: rotate(90deg);
 		}
-		
+
 		.tag {
 		  color: darkblue;
 		}
@@ -1471,7 +1474,7 @@ function lines_dragStop(event)
     splitbg.style.visibility='hidden';
     checkDirty();
 }
- 
+
 function line_number(event,elem)
 {
 	var y = event.clientY + window.scrollY;
